@@ -58,14 +58,16 @@ contract InfraredDeployer is Script {
         ibgt = new InfraredBGT(_bgt);
 
         infrared = Infrared(
-            setupProxy(
-                address(
-                    new Infrared(
-                        address(ibgt),
-                        _berachainRewardsFactory,
-                        _beraChef,
-                        payable(_wbera),
-                        _honey
+            payable(
+                setupProxy(
+                    address(
+                        new Infrared(
+                            address(ibgt),
+                            _berachainRewardsFactory,
+                            _beraChef,
+                            payable(_wbera),
+                            _honey
+                        )
                     )
                 )
             )

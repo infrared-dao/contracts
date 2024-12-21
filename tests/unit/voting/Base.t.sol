@@ -74,14 +74,16 @@ abstract contract Base is Test {
 
         // initialize Infrared contracts
         infrared = Infrared(
-            setupProxy(
-                address(
-                    new Infrared(
-                        address(ibgt),
-                        address(rewardsFactory),
-                        address(chef),
-                        payable(address(WBERA)),
-                        address(honey)
+            payable(
+                setupProxy(
+                    address(
+                        new Infrared(
+                            address(ibgt),
+                            address(rewardsFactory),
+                            address(chef),
+                            payable(address(WBERA)),
+                            address(honey)
+                        )
                     )
                 )
             )

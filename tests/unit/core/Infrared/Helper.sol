@@ -106,14 +106,16 @@ abstract contract Helper is POLTest {
 
         // initialize Infrared contracts
         infrared = Infrared(
-            setupProxy(
-                address(
-                    new Infrared(
-                        address(ibgt),
-                        address(factory),
-                        address(beraChef),
-                        payable(address(wbera)),
-                        address(honey)
+            payable(
+                setupProxy(
+                    address(
+                        new Infrared(
+                            address(ibgt),
+                            address(factory),
+                            address(beraChef),
+                            payable(address(wbera)),
+                            address(honey)
+                        )
                     )
                 )
             )

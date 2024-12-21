@@ -709,4 +709,6 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     {
         return _rewardsStorage().protocolFeeAmounts[_token];
     }
+
+    receive() external payable {}
 }

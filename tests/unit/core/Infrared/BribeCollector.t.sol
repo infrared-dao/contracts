@@ -18,12 +18,15 @@ contract BribeCollectorTest is Helper {
     }
 
     function testClaimFeesSuccess() public {
+        // set collectBribesWeight 50%
+        infrared.updateInfraredBERABribesWeight(1e6 / 2);
+
         address searcher = address(777);
 
         // Arrange
         address recipient = address(3);
         address[] memory feeTokens = new address[](2);
-        feeTokens[0] = address(wibera);
+        feeTokens[0] = address(wbera);
         feeTokens[1] = address(honey);
 
         uint256[] memory feeAmounts = new uint256[](2);
@@ -31,14 +34,18 @@ contract BribeCollectorTest is Helper {
         feeAmounts[1] = 2 ether;
 
         // simulate bribes collected by the collector contract
-        deal(address(wibera), address(collector), 1 ether);
+        deal(address(wbera), address(collector), 1 ether);
         deal(address(honey), address(collector), 2 ether);
 
         address payoutToken = collector.payoutToken();
         uint256 payoutAmount = collector.payoutAmount();
 
         // searcher approves payoutAmount to the collector contract
-        deal(payoutToken, searcher, payoutAmount);
+        // deal(payoutToken, searcher, payoutAmount);
+        // since payoutToken is wbera, deal and deposit
+        vm.deal(searcher, payoutAmount);
+        vm.prank(searcher);
+        wbera.deposit{value: payoutAmount}();
 
         // Act
         vm.startPrank(searcher);
@@ -47,7 +54,9 @@ contract BribeCollectorTest is Helper {
         vm.stopPrank();
 
         // Assert
-        assertEq(wibera.balanceOf(recipient), 1 ether);
+        assertEq(wbera.balanceOf(address(ibgtVault)), payoutAmount / 2);
+        assertEq(address(receivor).balance, payoutAmount / 2);
         assertEq(honey.balanceOf(recipient), 2 ether);
+        assertEq(wbera.balanceOf(recipient), 1 ether);
     }
 }

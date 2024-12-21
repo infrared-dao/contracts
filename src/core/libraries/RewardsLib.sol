@@ -248,8 +248,8 @@ library RewardsLib {
         address rec = IInfraredBERA(ibera).receivor();
         if (rec == address(0)) revert Errors.ZeroAddress();
         // Redeem WBERA for BERA and send to IBERA receivor
-        (bool success,) = rec.call{value: amtInfraredBERA}("");
-        if (!success) revert Errors.ETHTransferFailed();
+        IWBERA(wbera).withdraw(amtInfraredBERA);
+        SafeTransferLib.safeTransferETH(rec, amtInfraredBERA);
 
         // get total and protocol fee rates
         uint256 feeTotal =

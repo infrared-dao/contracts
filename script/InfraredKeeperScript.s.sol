@@ -24,7 +24,8 @@ contract InfraredKeeperScript is Script {
     function run() external {
         vm.startBroadcast();
 
-        Infrared infrared = Infrared(0xe41779952f5485db5440452DFa43350556AA4673);
+        Infrared infrared =
+            Infrared(payable(0xe41779952f5485db5440452DFa43350556AA4673));
         IBerachainBGT bgt =
             IBerachainBGT(0xbDa130737BDd9618301681329bF2e46A016ff9Ad);
 

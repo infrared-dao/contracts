@@ -85,7 +85,7 @@ contract InfraredForkTest is HelperForkTest {
 
         address infraredImplementation = infrared.currentImplementation();
         vm.expectRevert();
-        Infrared(infraredImplementation).initialize(
+        Infrared(payable(infraredImplementation)).initialize(
             admin,
             address(collector),
             address(distributor),
