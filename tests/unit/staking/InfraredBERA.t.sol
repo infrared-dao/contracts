@@ -934,28 +934,28 @@ contract InfraredBERATest is InfraredBERABaseTest {
     }
 
     function testsetFeeShareholdersUpdatesFeeProtocol() public {
-        assertEq(ibera.feeShareholders(), 0);
+        assertEq(ibera.feeDivisorShareholders(), 0);
         uint16 feeShareholders = 4; // 25% of fees
         vm.prank(governor);
-        ibera.setFeeShareholders(feeShareholders);
-        assertEq(ibera.feeShareholders(), feeShareholders);
+        ibera.setFeeDivisorShareholders(feeShareholders);
+        assertEq(ibera.feeDivisorShareholders(), feeShareholders);
     }
 
     function testsetFeeShareholdersEmitssetFeeShareholders() public {
-        assertEq(ibera.feeShareholders(), 0);
+        assertEq(ibera.feeDivisorShareholders(), 0);
         uint16 feeShareholders = 4; // 25% of fees
 
         vm.expectEmit();
         emit IInfraredBERA.SetFeeShareholders(0, feeShareholders);
         vm.prank(governor);
-        ibera.setFeeShareholders(feeShareholders);
+        ibera.setFeeDivisorShareholders(feeShareholders);
     }
 
     function testsetFeeShareholdersRevertsWhenUnauthorized() public {
-        assertEq(ibera.feeShareholders(), 0);
+        assertEq(ibera.feeDivisorShareholders(), 0);
         uint16 feeShareholders = 4; // 25% of fees
         vm.expectRevert();
-        ibera.setFeeShareholders(feeShareholders);
+        ibera.setFeeDivisorShareholders(feeShareholders);
     }
 
     function testSetDepositSignatureUpdatesSignature() public {

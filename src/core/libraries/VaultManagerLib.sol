@@ -61,7 +61,7 @@ library VaultManagerLib {
     }
 
     /// @notice Toggles the pause status of a specific vault.
-    function pauseVault(VaultStorage storage $, address asset) external {
+    function toggleVault(VaultStorage storage $, address asset) external {
         IInfraredVault vault = $.vaultRegistry[asset];
         if (address(vault) == address(0)) revert Errors.NoRewardsVault();
 
@@ -152,11 +152,10 @@ library VaultManagerLib {
         if (address($.vaultRegistry[_asset]) == address(0)) {
             revert Errors.NoRewardsVault();
         }
-        if (_amount == 0) revert Errors.ZeroAmount();
         if (!isWhitelisted($, _token)) {
             revert Errors.RewardTokenNotWhitelisted();
         }
-        if (_to == address(0)) revert Errors.ZeroAddress();
+
         IInfraredVault vault = $.vaultRegistry[_asset];
         vault.recoverERC20(_to, _token, _amount);
     }

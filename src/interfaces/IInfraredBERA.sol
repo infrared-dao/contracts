@@ -25,6 +25,11 @@ interface IInfraredBERA is IERC20, IAccessControl {
     event SetDepositSignature(bytes pubkey, bytes from, bytes to);
     event WithdrawalFlagSet(bool flag);
 
+    event NewDepositor(address indexed depositor, address from, address by);
+    event NewWithdrawor(address indexed withdrawor, address from, address by);
+    event NewReceivor(address indexed receivor, address from, address by);
+    event NewClaimor(address indexed claimor, address from, address by);
+
     /// @notice Address of the Infrared operator contract
     function infrared() external view returns (address);
 
@@ -62,7 +67,7 @@ interface IInfraredBERA is IERC20, IAccessControl {
     /// @notice Fee taken by the shareholders on yield from EL coinbase priority fees + MEV, represented as an integer denominator (1/x)%
     /// @notice additional fees include POL base rewards, POL comission, POL bribes
     /// @return The fee taken by shareholders as an integer denominator (1/x)%, (25% = 4), (50% = 2), (100% = 1)
-    function feeShareholders() external view returns (uint16);
+    function feeDivisorShareholders() external view returns (uint16);
 
     /// @notice Pending deposits yet to be forwarded to CL
     /// @return The amount of BERA yet to be deposited to CL
@@ -155,7 +160,7 @@ interface IInfraredBERA is IERC20, IAccessControl {
 
     /// @notice Sets the fee shareholders taken on yield from EL coinbase priority fees + MEV
     /// @param to The new fee shareholders represented as an integer denominator (1/x)%
-    function setFeeShareholders(uint16 to) external;
+    function setFeeDivisorShareholders(uint16 to) external;
 
     /// @notice Sets the deposit signature to be used when depositing to pubkey
     /// @param pubkey The pubkey of the validator receiving the deposit

@@ -50,7 +50,7 @@ contract InfraredBERAClaimorTest is InfraredBERABaseTest {
         assertTrue(claim > 0);
 
         vm.expectEmit();
-        emit IInfraredBERAClaimor.Sweep(alice, claim, 0);
+        emit IInfraredBERAClaimor.Sweep(alice, claim);
         claimor.sweep(alice);
     }
 }
