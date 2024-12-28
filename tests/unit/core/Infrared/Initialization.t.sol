@@ -108,7 +108,7 @@ contract InfraredInitializationTest is Helper {
                 infrared.GOVERNANCE_ROLE()
             )
         );
-        infrared.pauseVault(address(infraredVault));
+        infrared.toggleVault(address(infraredVault));
 
         vm.expectRevert(
             abi.encodeWithSelector(

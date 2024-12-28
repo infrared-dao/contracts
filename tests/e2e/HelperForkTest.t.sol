@@ -178,7 +178,7 @@ contract HelperForkTest is Test {
 
         uint16 feeShareholders = 4; // 25% of fees
         // address(this) is the governor
-        ibera.setFeeShareholders(feeShareholders);
+        ibera.setFeeDivisorShareholders(feeShareholders);
 
         // set access control
         infrared.grantRole(infrared.KEEPER_ROLE(), keeper);

@@ -48,7 +48,8 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
         returns (uint256 amount, uint256 fees)
     {
         amount = (address(this).balance - shareholderFees);
-        uint16 feeShareholders = IInfraredBERA(InfraredBERA).feeShareholders();
+        uint16 feeShareholders =
+            IInfraredBERA(InfraredBERA).feeDivisorShareholders();
 
         // take protocol fees
         if (feeShareholders > 0) {
@@ -67,7 +68,7 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
 
         // add to protocol fees and sweep amount back to ibera to deposit
         if (fees > 0) shareholderFees += fees;
-        if (amount > 0) IInfraredBERA(InfraredBERA).sweep{value: amount}();
+        IInfraredBERA(InfraredBERA).sweep{value: amount}();
         emit Sweep(InfraredBERA, amount, fees);
     }
 
@@ -78,7 +79,7 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
         uint256 shf = shareholderFees;
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
             + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        if (shf == 0 || shf < min) {
+        if (shf < min) {
             revert Errors.InvalidAmount();
         }
 

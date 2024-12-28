@@ -35,14 +35,14 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
     uint256 public fees;
 
     /// @inheritdoc IInfraredBERADepositor
-    uint256 public nonceSlip = 1;
+    uint256 public nonceSlip;
     /// @inheritdoc IInfraredBERADepositor
-    uint256 public nonceSubmit = 1;
+    uint256 public nonceSubmit;
 
     /// @notice Initialize the contract (replaces the constructor)
     /// @param admin Address for admin to upgrade
     /// @param ibera The initial IBERA address
-
+    /// @param _depositContract The ETH2 (Berachain) Deposit Contract Address
     function initialize(address admin, address ibera, address _depositContract)
         public
         initializer
@@ -127,10 +127,7 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
             }
         } else {
             // Verify subsequent deposit requirements
-            if (
-                currentOperator != operator
-                    || !IInfraredBERA(InfraredBERA).validator(pubkey)
-            ) {
+            if (currentOperator != operator) {
                 revert Errors.UnauthorizedOperator();
             }
         }

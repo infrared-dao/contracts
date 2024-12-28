@@ -306,8 +306,12 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @inheritdoc IInfrared
-    function pauseVault(address _asset) external onlyGovernor whenInitialized {
-        _vaultStorage().pauseVault(_asset);
+    function toggleVault(address _asset)
+        external
+        onlyGovernor
+        whenInitialized
+    {
+        _vaultStorage().toggleVault(_asset);
     }
 
     /// @inheritdoc IInfrared

@@ -34,6 +34,6 @@ contract InfraredBERAClaimor is Upgradeable, IInfraredBERAClaimor {
         uint256 amount = claims[receiver];
         delete claims[receiver];
         if (amount > 0) SafeTransferLib.safeTransferETH(receiver, amount);
-        emit Sweep(receiver, amount, 0);
+        emit Sweep(receiver, amount);
     }
 }
