@@ -6,7 +6,8 @@ import "forge-std/Script.sol";
 import {Infrared, ValidatorTypes} from "src/core/Infrared.sol";
 
 contract InfraredGovernance is Script {
-    Infrared infrared = Infrared(0xEb68CBA7A04a4967958FadFfB485e89fE8C5f219);
+    Infrared infrared =
+        Infrared(payable(0xEb68CBA7A04a4967958FadFfB485e89fE8C5f219));
 
     function addValidators() public {
         ValidatorTypes.Validator[] memory _validators =
