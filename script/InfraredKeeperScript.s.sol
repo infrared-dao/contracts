@@ -40,12 +40,16 @@ contract InfraredKeeperScript is Script {
         // iBERA rewards compound
         rec.sweep();
 
-        // loop over infrared vaults and call harvestVault on infrared wiht address
+        // loop over infrared vaults and call harvestVault on infrared with address
         for (uint256 i = 0; i < stakingAssets.length; i++) {
             infrared.harvestVault(stakingAssets[i]);
         }
 
         infrared.harvestBase();
+
+        // iBERA rewards compound
+        rec.sweep();
+
         infrared.harvestOperatorRewards();
         // infrared.harvestBribes(rewardTokens);
 
