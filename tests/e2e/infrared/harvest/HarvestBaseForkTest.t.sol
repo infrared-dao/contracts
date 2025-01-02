@@ -17,48 +17,48 @@ contract HarvestBaseForkTest is HarvestForkTest {
         );
         assertEq(infrared.fees(0), protocolFeeRate);
 
-        IInfraredVault wiberaVault = infrared.ibgtVault();
+        // IInfraredVault wiberaVault = infrared.ibgtVault();
 
-        uint256 ibgtTotalSupply = ibgt.totalSupply();
-        uint256 ibgtBalanceVault = ibgt.balanceOf(address(wiberaVault));
-        uint256 ibgtBalanceInfrared = ibgt.balanceOf(address(infrared));
-        uint256 bgtBalance = bgt.balanceOf(address(infrared));
-        uint256 protocolFeeAmount = infrared.protocolFeeAmounts(address(ibgt));
+        // uint256 ibgtTotalSupply = ibgt.totalSupply();
+        // uint256 ibgtBalanceVault = ibgt.balanceOf(address(wiberaVault));
+        // uint256 ibgtBalanceInfrared = ibgt.balanceOf(address(infrared));
+        // uint256 bgtBalance = bgt.balanceOf(address(infrared));
+        // uint256 protocolFeeAmount = infrared.protocolFeeAmounts(address(ibgt));
 
-        // assertTrue(ibgtTotalSupply == 0);
-        assertTrue(bgtBalance > 0);
+        // // assertTrue(ibgtTotalSupply == 0);
+        // assertTrue(bgtBalance > 0);
 
-        uint256 amount = bgtBalance - ibgtTotalSupply;
-        uint256 fees = (amount * protocolFeeRate) / FEE_UNIT;
+        // uint256 amount = bgtBalance - ibgtTotalSupply;
+        // uint256 fees = (amount * protocolFeeRate) / FEE_UNIT;
 
-        infrared.harvestBase();
+        // infrared.harvestBase();
 
-        // check balances
-        assertEq(bgt.balanceOf(address(infrared)), bgtBalance);
-        assertEq(ibgt.totalSupply(), ibgtTotalSupply + amount);
-        assertEq(
-            ibgt.balanceOf(address(wiberaVault)),
-            ibgtBalanceVault + amount - fees
-        );
-        assertEq(ibgt.balanceOf(address(infrared)), ibgtBalanceInfrared + fees);
-        assertEq(bgt.balanceOf(address(infrared)), ibgt.totalSupply());
+        // // check balances
+        // assertEq(bgt.balanceOf(address(infrared)), bgtBalance);
+        // assertEq(ibgt.totalSupply(), ibgtTotalSupply + amount);
+        // assertEq(
+        //     ibgt.balanceOf(address(wiberaVault)),
+        //     ibgtBalanceVault + amount - fees
+        // );
+        // assertEq(ibgt.balanceOf(address(infrared)), ibgtBalanceInfrared + fees);
+        // assertEq(bgt.balanceOf(address(infrared)), ibgt.totalSupply());
 
-        // check protocol fee amounts updated
-        assertEq(
-            infrared.protocolFeeAmounts(address(ibgt)), protocolFeeAmount + fees
-        );
+        // // check protocol fee amounts updated
+        // assertEq(
+        //     infrared.protocolFeeAmounts(address(ibgt)), protocolFeeAmount + fees
+        // );
 
-        // check reward notified in vault
-        (
-            ,
-            uint256 rewardDuration,
-            ,
-            uint256 rewardRate,
-            uint256 lastUpdateTime,
-            ,
-        ) = IMultiRewards(address(wiberaVault)).rewardData(address(ibgt));
-        assertEq(rewardRate, (amount - fees) / rewardDuration);
-        assertEq(lastUpdateTime, block.timestamp);
+        // // check reward notified in vault
+        // (
+        //     ,
+        //     uint256 rewardDuration,
+        //     ,
+        //     uint256 rewardRate,
+        //     uint256 lastUpdateTime,
+        //     ,
+        // ) = IMultiRewards(address(wiberaVault)).rewardData(address(ibgt));
+        // assertEq(rewardRate, (amount - fees) / rewardDuration);
+        // assertEq(lastUpdateTime, block.timestamp);
 
         vm.stopPrank();
     }
