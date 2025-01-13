@@ -237,12 +237,12 @@ contract InfraredTest is Helper {
 
         // 2. Mint ibgt to some random address, such that total supply of ibgt is 100 ether
         vm.prank(address(infrared));
-        ibgt.mint(address(12), 100 ether);
+        ibgt.mint(address(12), 10000 ether);
         vm.startPrank(address(blockRewardController));
         // 3. Mint bgt to the Infrared, to simulate the rewards.
-        bgt.mint(address(infrared), 110 ether);
+        bgt.mint(address(infrared), 11000 ether);
         vm.stopPrank();
-        deal(address(bgt), 110 ether);
+        deal(address(bgt), 11000 ether);
 
         assertTrue(
             bgt.balanceOf(address(infrared)) > ibgt.totalSupply(),
@@ -264,8 +264,8 @@ contract InfraredTest is Helper {
 
         // 5. Call harvestOperatorRewards to distribute the rewards
         // 5.1 mint some ibera shares to randrom contract
-        deal(address(this), 2 ether);
-        ibera.mint{value: 1 ether}(address(this));
+        deal(address(this), 20000 ether);
+        ibera.mint{value: 11000 ether}(address(this));
 
         // 5.2 call harvestOperatorRewards to distribute the rewards
         infrared.harvestOperatorRewards();

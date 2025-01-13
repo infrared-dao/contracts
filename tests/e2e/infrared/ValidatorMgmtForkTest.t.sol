@@ -89,8 +89,8 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
         testAddValidators();
 
         // deposit to ibera
-        vm.deal(address(this), 32 ether);
-        ibera.mint{value: 32 ether}(address(this));
+        vm.deal(address(this), InfraredBERAConstants.INITIAL_DEPOSIT);
+        ibera.mint{value: InfraredBERAConstants.INITIAL_DEPOSIT}(address(this));
 
         // set deposit signature from admin account
         vm.prank(infraredGovernance);
@@ -98,7 +98,9 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
 
         // keeper call to execute beacon deposit
         vm.prank(keeper);
-        depositor.execute(infraredValidators[0].pubkey, 32 ether);
+        depositor.execute(
+            infraredValidators[0].pubkey, InfraredBERAConstants.INITIAL_DEPOSIT
+        );
     }
 
     function testQueueNewCuttingBoard() public {

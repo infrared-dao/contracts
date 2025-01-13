@@ -75,6 +75,11 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
         if (_amountsCumulative == 0) revert Errors.ZeroAmount();
 
         Snapshot storage s = _snapshots[keccak256(pubkey)];
+        // Add check to prevent re-removal of already removed validators
+        if (s.amountCumulativeFinal != 0) {
+            revert Errors.ValidatorAlreadyRemoved();
+        }
+
         s.amountCumulativeFinal = _amountsCumulative;
 
         emit Removed(pubkey, validator, _amountsCumulative);

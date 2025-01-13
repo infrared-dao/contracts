@@ -27,7 +27,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         ibera.setFeeDivisorShareholders(feeShareholders);
         assertEq(ibera.feeDivisorShareholders(), feeShareholders);
 
-        uint256 value = 1 ether;
+        uint256 value = 100 ether;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value);
@@ -57,7 +57,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         assertEq(receivor.shareholderFees(), shareholderFees + fees_);
 
         // add in some more fees
-        uint256 value = 0.5 ether;
+        uint256 value = 50 ether;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value + shareholderFees_);
@@ -74,7 +74,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         ibera.setFeeDivisorShareholders(feeShareholders);
         assertEq(ibera.feeDivisorShareholders(), feeShareholders);
 
-        uint256 value = 1 ether;
+        uint256 value = 100 ether;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value);
@@ -94,7 +94,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
     }
 
     function testSweepNotUpdatesProtocolFeesWhenFeesZero() public {
-        uint256 value = 1 ether;
+        uint256 value = 100 ether;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value);
@@ -134,7 +134,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         ibera.setFeeDivisorShareholders(feeShareholders);
         assertEq(ibera.feeDivisorShareholders(), feeShareholders);
 
-        uint256 value = 1 ether;
+        uint256 value = 100 ether;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value);
@@ -155,7 +155,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
     }
 
     function testSweepTransfersETHWhenFeesZero() public {
-        uint256 value = 1 ether;
+        uint256 value = 100 ether;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value);
@@ -198,7 +198,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         ibera.setFeeDivisorShareholders(feeShareholders);
         assertEq(ibera.feeDivisorShareholders(), feeShareholders);
 
-        uint256 value = 1 ether;
+        uint256 value = 120 ether;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value);

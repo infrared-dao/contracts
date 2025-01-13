@@ -6,6 +6,7 @@ import {IRewardVault} from "@berachain/pol/interfaces/IRewardVault.sol";
 import {IMultiRewards} from "src/interfaces/IMultiRewards.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {InfraredForkTest} from "../../InfraredForkTest.t.sol";
+import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 
 contract HarvestForkTest is InfraredForkTest {
     ValidatorTypes.Validator[] public infraredValidators;
@@ -21,8 +22,8 @@ contract HarvestForkTest is InfraredForkTest {
         infrared.addValidators(infraredValidators);
 
         // deposit to ibera
-        vm.deal(address(this), 32 ether);
-        ibera.mint{value: 32 ether}(address(this));
+        vm.deal(address(this), InfraredBERAConstants.INITIAL_DEPOSIT);
+        ibera.mint{value: InfraredBERAConstants.INITIAL_DEPOSIT}(address(this));
 
         // set deposit signature from admin account
         vm.prank(infraredGovernance);
@@ -30,7 +31,9 @@ contract HarvestForkTest is InfraredForkTest {
 
         // keeper call to execute beacon deposit
         vm.prank(keeper);
-        depositor.execute(infraredValidators[0].pubkey, 32 ether);
+        depositor.execute(
+            infraredValidators[0].pubkey, InfraredBERAConstants.INITIAL_DEPOSIT
+        );
 
         // queue cutting board
         address lpRewardsVaultAddress = address(lpVault.rewardsVault());

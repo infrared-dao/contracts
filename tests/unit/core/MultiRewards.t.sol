@@ -250,4 +250,37 @@ contract MultiRewardsTest is Test {
         vm.prank(bob);
         multiRewards.getReward();
     }
+
+    function testMidPeriodResidualCalculation() public {
+        // Setup
+        vm.startPrank(alice);
+        uint256 rewardDuration = 100; // Small duration to make calculations clearer
+        multiRewards.addReward(address(rewardToken), alice, rewardDuration);
+
+        // First notification with amount that will create residual
+        uint256 firstAmount = 104; // Will create residual when divided by 100
+        multiRewards.notifyRewardAmount(address(rewardToken), firstAmount);
+
+        // Check first residual
+        (,,,,,, uint256 firstResidual) =
+            multiRewards.rewardData(address(rewardToken));
+        assertEq(firstResidual, 4, "First residual should be 4");
+
+        // Move to middle of period
+        skip(rewardDuration / 2);
+
+        // Add second amount that will also create residual
+        uint256 secondAmount = 53; // Will create residual when combined with leftover
+        multiRewards.notifyRewardAmount(address(rewardToken), secondAmount);
+        vm.stopPrank();
+
+        // Get final state
+        (,,,,,, uint256 finalResidual) =
+            multiRewards.rewardData(address(rewardToken));
+
+        // Verify final residual exists
+        assertGt(
+            finalResidual, 0, "Should track residual after second notification"
+        );
+    }
 }

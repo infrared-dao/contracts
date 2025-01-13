@@ -71,8 +71,8 @@ contract InfraredBERABaseTest is Helper {
         vm.etch(WITHDRAW_PRECOMPILE, withdrawPrecompile);
 
         // deal to alice and bob + approve ibera to spend for them
-        vm.deal(alice, 1000 ether);
-        vm.deal(bob, 1000 ether);
+        vm.deal(alice, 20000 ether);
+        vm.deal(bob, 20000 ether);
         vm.prank(alice);
         ibera.approve(address(ibera), type(uint256).max);
         vm.prank(bob);
@@ -103,8 +103,8 @@ contract InfraredBERABaseTest is Helper {
 
         assertEq(ibera.allowance(alice, address(ibera)), type(uint256).max);
         assertEq(ibera.allowance(bob, address(ibera)), type(uint256).max);
-        assertEq(alice.balance, 1000 ether);
-        assertEq(bob.balance, 1000 ether);
+        assertEq(alice.balance, 20000 ether);
+        assertEq(bob.balance, 20000 ether);
 
         assertTrue(infrared.isInfraredValidator(pubkey0));
         assertTrue(infrared.isInfraredValidator(pubkey1));

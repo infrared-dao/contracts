@@ -112,12 +112,8 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
         if (!IInfraredBERA(InfraredBERA).validator(pubkey)) {
             revert Errors.InvalidValidator();
         }
-        // check stake + amount divided by 1 gwei fits in uint64
-        if (
-            amount == 0 || (amount % 1 gwei) != 0
-                || ((IInfraredBERA(InfraredBERA).stakes(pubkey) + amount) / 1 gwei)
-                    > type(uint64).max
-        ) {
+
+        if (amount == 0 || (amount % 1 gwei) != 0) {
             revert Errors.InvalidAmount();
         }
 

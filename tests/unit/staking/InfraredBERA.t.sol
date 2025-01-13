@@ -52,7 +52,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
 
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = 1 ether;
+        uint256 value = 12 ether;
         assertTrue(value > min + fee);
 
         deal(ibera.receivor(), value);
@@ -81,7 +81,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testSweepEmitsSweep() public {
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = 1 ether;
+        uint256 value = 12 ether;
         assertTrue(value > min + fee);
         vm.expectEmit();
         emit IInfraredBERA.Sweep(value);
@@ -90,7 +90,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     }
 
     function testSweepAccessControl() public {
-        uint256 value = 1 ether;
+        uint256 value = 11 ether;
         deal(ibera.receivor(), value);
         vm.expectRevert(
             abi.encodeWithSelector(Errors.Unauthorized.selector, address(321))
@@ -114,7 +114,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         uint256 pending = ibera.pending();
         uint256 confirmed = ibera.confirmed();
 
-        (bool success,) = address(receivor).call{value: 1 ether}("");
+        (bool success,) = address(receivor).call{value: 11 ether}("");
         assertTrue(success);
         uint256 balanceReceivor = address(receivor).balance;
         uint256 protocolFeesReceivor = receivor.shareholderFees();
@@ -203,7 +203,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
 
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = 1 ether;
+        uint256 value = 12 ether;
         assertTrue(value > min + fee);
 
         (, uint256 shares_) = ibera.mint{value: value}(alice);
@@ -235,7 +235,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
 
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = 1 ether;
+        uint256 value = 12 ether;
         assertTrue(value > min + fee);
 
         ibera.mint{value: value}(alice);
@@ -252,7 +252,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
 
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = 1 ether;
+        uint256 value = 12 ether;
         assertTrue(value > min + fee);
 
         (uint256 nonce_,) = ibera.mint{value: value}(alice);
@@ -274,7 +274,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     }
 
     function testMintCompoundsPrior() public {
-        (bool success,) = address(receivor).call{value: 1 ether}("");
+        (bool success,) = address(receivor).call{value: 11 ether}("");
         assertTrue(success);
 
         (uint256 comp_,) = receivor.distribution();
@@ -296,7 +296,8 @@ contract InfraredBERATest is InfraredBERABaseTest {
         vm.expectEmit();
         emit IInfraredBERA.Sweep(comp_);
 
-        (uint256 nonce_, uint256 shares_) = ibera.mint{value: 100 ether}(alice);
+        (uint256 nonce_, uint256 shares_) =
+            ibera.mint{value: 20000 ether}(alice);
 
         {
             assertEq(
@@ -304,7 +305,8 @@ contract InfraredBERATest is InfraredBERABaseTest {
                 depositorFees + 2 * InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
             );
             assertEq(
-                address(depositor).balance, depositorBalance + 100 ether + comp_
+                address(depositor).balance,
+                depositorBalance + 20000 ether + comp_
             );
             assertEq(
                 depositor.reserves(),
@@ -319,7 +321,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
             assertEq(timestamp_, uint96(block.timestamp));
             assertEq(fee_, InfraredBERAConstants.MINIMUM_DEPOSIT_FEE);
             assertEq(
-                amount_, 100 ether - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
+                amount_, 20000 ether - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
             );
             // test compounding slip
             (timestamp_, fee_, amount_) = depositor.slips(nonce_ - 1);
@@ -330,13 +332,13 @@ contract InfraredBERATest is InfraredBERABaseTest {
         // check ibera state
         assertEq(
             ibera.deposits(),
-            deposits + comp_ + 100 ether
+            deposits + comp_ + 20000 ether
                 - 2 * InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
         );
 
         uint256 shares = Math.mulDiv(
             totalSupply,
-            100 ether - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE,
+            20000 ether - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE,
             (deposits + comp_ - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE)
         );
         assertEq(shares, shares_);
@@ -350,7 +352,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
 
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = 1 ether;
+        uint256 value = 12 ether;
         assertTrue(value > min + fee);
 
         uint256 nonce = depositor.nonceSlip();
@@ -384,8 +386,8 @@ contract InfraredBERATest is InfraredBERABaseTest {
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
         uint256 value = min + fee;
 
-        // need to donate 1e16 ether to reach this error given min deposit of 0.1 ether
-        vm.deal(address(receivor), 1e16 ether);
+        // need to donate 1e16 ether to reach this error given min deposit of 1 ether
+        vm.deal(address(receivor), 1e20 ether);
         (uint256 comp_,) = receivor.distribution();
 
         uint256 shares =
@@ -556,7 +558,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         assertEq(ibera.confirmed(), _reserves);
         assertEq(depositor.reserves(), 0);
 
-        (bool success,) = address(receivor).call{value: 1 ether}("");
+        (bool success,) = address(receivor).call{value: 12 ether}("");
         assertTrue(success);
 
         (uint256 comp_,) = receivor.distribution();
@@ -757,7 +759,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         // First test basic mint without compound
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = 1 ether;
+        uint256 value = 12 ether;
         assertTrue(value > min + fee);
 
         // Get preview
@@ -778,13 +780,13 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testPreviewMintWithCompoundMatchesActualMint() public {
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        (bool success,) = address(receivor).call{value: 1 ether}("");
+        (bool success,) = address(receivor).call{value: 12 ether}("");
         assertTrue(success);
 
         (uint256 compAmount,) = receivor.distribution();
         assertTrue(compAmount >= min + fee);
 
-        uint256 value = 100 ether;
+        uint256 value = 20000 ether;
 
         // Get compound preview before any state changes
         (uint256 previewShares, uint256 previewFee) = ibera.previewMint(value);

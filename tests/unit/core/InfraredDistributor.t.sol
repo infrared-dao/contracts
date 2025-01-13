@@ -159,6 +159,83 @@ contract InfraredDistributorTest is Test {
         assertEq(fin1, 20 ether + 1);
     }
 
+    function testCannotRemoveValidatorTwice() public {
+        // First add validator1
+        vm.prank(address(infrared));
+        distributor.add(pubkey1, validator1);
+        infrared.addValidator(validator1);
+
+        // Add some rewards
+        vm.prank(user);
+        distributor.notifyRewardAmount(10 ether);
+
+        // First removal should succeed
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+        infrared.removeValidator(validator1);
+
+        // Get snapshot after first removal
+        (uint256 lastAfterRemoval, uint256 finalAfterRemoval) =
+            distributor.snapshots(pubkey1);
+
+        // Attempt to remove again - should revert
+        vm.expectRevert(Errors.ValidatorAlreadyRemoved.selector);
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+
+        // Verify snapshot hasn't changed
+        (uint256 lastAfterAttempt, uint256 finalAfterAttempt) =
+            distributor.snapshots(pubkey1);
+        assertEq(
+            lastAfterAttempt, lastAfterRemoval, "Last amount should not change"
+        );
+        assertEq(
+            finalAfterAttempt,
+            finalAfterRemoval,
+            "Final amount should not change"
+        );
+    }
+
+    function testDoubleRemovalWithMultipleValidators() public {
+        // Add two validators
+        vm.prank(address(infrared));
+        distributor.add(pubkey1, validator1);
+        infrared.addValidator(validator1);
+
+        vm.prank(address(infrared));
+        distributor.add(pubkey2, validator2);
+        infrared.addValidator(validator2);
+
+        // Add initial rewards
+        vm.prank(user);
+        distributor.notifyRewardAmount(20 ether); // 10 ether each
+
+        // Remove first validator
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+        infrared.removeValidator(validator1);
+
+        // Add more rewards (should only go to validator2)
+        vm.prank(user);
+        distributor.notifyRewardAmount(10 ether);
+
+        // Try to remove validator1 again
+        vm.expectRevert(Errors.ValidatorAlreadyRemoved.selector);
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+
+        // Verify validator1 can still claim their original share
+        vm.prank(validator1);
+        distributor.claim(pubkey1, validator1);
+
+        // Final balance for validator1 should be 10 ether (their share of initial rewards)
+        assertEq(
+            token.balanceOf(validator1),
+            10 ether,
+            "Validator1 should only receive initial share"
+        );
+    }
+
     // TODO: test purge
 
     event Claimed(

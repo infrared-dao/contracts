@@ -11,17 +11,17 @@ import {InfraredBERABaseTest} from "./InfraredBERABase.t.sol";
 contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
     function setUp() public virtual override {
         super.setUp();
-        uint256 value = 200 ether + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
+        uint256 value = 20000 ether + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
         ibera.mint{value: value}(alice);
-        uint256 amount = 100 ether + InfraredBERAConstants.MINIMUM_DEPOSIT;
+
+        uint256 amount = value - InfraredBERAConstants.INITIAL_DEPOSIT;
         vm.prank(infraredGovernance);
+
         ibera.setDepositSignature(pubkey0, signature0);
         vm.prank(keeper);
         depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
         vm.prank(keeper);
-        depositor.execute(
-            pubkey0, amount - InfraredBERAConstants.INITIAL_DEPOSIT
-        );
+        depositor.execute(pubkey0, amount);
     }
 
     function testSetUp() public virtual override {
@@ -34,14 +34,16 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
         assertEq(feeFirst_, 0);
         assertEq(feeSecond_, 0);
         assertEq(amountFirst_, 0);
-        assertEq(amountSecond_, 100 ether);
+        assertEq(amountSecond_, 9000000000000000000);
         assertEq(
-            ibera.deposits(), 200 ether + InfraredBERAConstants.MINIMUM_DEPOSIT
+            ibera.deposits(),
+            20000 ether + InfraredBERAConstants.MINIMUM_DEPOSIT
         );
         assertEq(
-            ibera.confirmed(), 100 ether + InfraredBERAConstants.MINIMUM_DEPOSIT
+            ibera.confirmed(),
+            20000 ether + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
         );
-        assertEq(ibera.pending(), 100 ether);
+        assertEq(ibera.pending(), 9000000000000000000);
     }
 
     function testQueueUpdatesFees() public {
@@ -60,7 +62,7 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
 
     function testQueueUpdatesRebalancingWhenKeeper() public {
         uint256 fee = InfraredBERAConstants.MINIMUM_WITHDRAW_FEE + 1;
-        uint256 amount = 1 ether;
+        uint256 amount = 100 ether;
         address receiver = address(depositor);
         uint256 confirmed = ibera.confirmed();
         assertTrue(amount <= confirmed);
@@ -1227,7 +1229,7 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
         );
 
         // Attempt second sweep - should revert because validator is exited
-        vm.deal(address(withdrawor), 32 ether); // Amount doesn't matter, should revert first
+        vm.deal(address(withdrawor), InfraredBERAConstants.INITIAL_DEPOSIT); // Amount doesn't matter, should revert first
         vm.startPrank(keeper);
         vm.expectRevert(
             abi.encodeWithSelector(Errors.ValidatorForceExited.selector)

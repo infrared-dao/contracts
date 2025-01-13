@@ -29,6 +29,7 @@ library Errors {
     error InvalidValidator();
     error InvalidOperator();
     error InvalidDepositAmount();
+    error ValidatorAlreadyRemoved();
 
     // Infrared errors.
     error VaultNotSupported();
