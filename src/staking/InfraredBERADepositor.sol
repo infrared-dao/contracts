@@ -189,7 +189,7 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
             withdrawor
         ); // TODO: check correct
         // if operator already exists on BeaconDeposit, it must be set to zero for new deposits
-        if (IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(pubkey) == operator) {
+        if (currentOperator == operator) {
             operator = address(0);
         }
         IBeaconDeposit(DEPOSIT_CONTRACT).deposit{value: amount}(
