@@ -112,7 +112,7 @@ contract InfraredKeeperScript is Script {
         infrared.dropBoosts(_pubkeys);
     }
 
-    function sweep(uint256 amount, bytes calldata pubkey) external {
-        iberaWithdrawer.sweep(amount, pubkey);
+    function sweep(bytes calldata pubkey) external {
+        iberaWithdrawer.sweep(pubkey);
     }
 }
