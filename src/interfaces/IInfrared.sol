@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
@@ -11,7 +11,7 @@ import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {IRED} from "src/interfaces/IRED.sol";
 
 import {IWBERA} from "src/interfaces/IWBERA.sol";
-import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
+import {InfraredBGT} from "src/core/InfraredBGT.sol";
 
 import {IBribeCollector} from "src/interfaces/IBribeCollector.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
@@ -19,7 +19,6 @@ import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 
 import {DataTypes} from "src/utils/DataTypes.sol";
 
-// import {IInfraredUpgradeable} from "./IInfraredUpgradeable.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 
@@ -48,7 +47,7 @@ interface IInfrared {
      * @notice The InfraredBGT liquid staked token
      * @return IInfraredBGT The InfraredBGT token contract address
      */
-    function ibgt() external view returns (IInfraredBGT);
+    function ibgt() external view returns (InfraredBGT);
 
     /**
      * @notice The Berachain rewards vault factory address
@@ -248,25 +247,6 @@ interface IInfrared {
     ) external;
 
     /**
-     * @notice Initializes Infrared by whitelisting rewards tokens, granting admin access roles, and deploying the iBGT vault
-     * @param _admin The address of the admin
-     * @param _collector The address of the collector
-     * @param _distributor The address of the distributor
-     * @param _voter The address of the voter
-     * @param _rewardsDuration The reward duration period, in seconds
-     * @custom:require _admin, _collector, _distributor, and _voter must be non-zero addresses.
-     * @custom:require _rewardsDuration must be greater than zero.
-     */
-    function initialize(
-        address _admin,
-        address _collector,
-        address _distributor,
-        address _voter,
-        address _iBeraFeeReceivor,
-        uint256 _rewardsDuration
-    ) external;
-
-    /**
      * @notice Delegates BGT votes to `_delegatee` address.
      * @param _delegatee  address The address to delegate votes to
      */
@@ -292,6 +272,13 @@ interface IInfrared {
      * @param _red The address of the RED contract
      */
     function setRed(address _red) external;
+
+    /**
+     * @notice Sets the address of the iBGT contract
+     * @dev Infrared must be granted MINTER_ROLE on IBGT to set the address
+     * @param _ibgt The address of the iBGT contract
+     */
+    function setIBGT(address _ibgt) external;
 
     /**
      * @notice Updates the mint rate for RED
@@ -765,4 +752,11 @@ interface IInfrared {
      * @param _red The address of the RED token.
      */
     event RedSet(address _sender, address _red);
+
+    /**
+     * @notice Emitted when the iBGT token is set.
+     * @param _sender The address that initiated the update.
+     * @param _ibgt The address of the iBGT token.
+     */
+    event IBGTSet(address _sender, address _ibgt);
 }

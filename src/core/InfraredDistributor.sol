@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
@@ -29,11 +29,19 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
         if (_infrared == address(0)) revert Errors.ZeroAddress();
     }
 
-    function initialize(address _token) external initializer {
+    function initialize(address _gov, address _token) external initializer {
+        if (_gov == address(0) || _token == address(0)) {
+            revert Errors.ZeroAddress();
+        }
+
         token = ERC20(_token);
 
         // claim amounts calculated via differences so absolute amount not relevant
         amountsCumulative++;
+
+        // grant admin access roles
+        _grantRole(DEFAULT_ADMIN_ROLE, _gov);
+        _grantRole(GOVERNANCE_ROLE, _gov);
 
         // init upgradeable components
         __InfraredUpgradeable_init();
@@ -78,7 +86,6 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
         if (validator == address(0)) revert Errors.ValidatorDoesNotExist();
 
         Snapshot memory s = _snapshots[keccak256(pubkey)];
-        if (s.amountCumulativeLast == 0) revert Errors.ZeroAmount();
         if (s.amountCumulativeLast != s.amountCumulativeFinal) {
             revert Errors.ClaimableRewardsExist();
         }
@@ -110,11 +117,14 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
         if (validator != msg.sender) revert Errors.InvalidValidator();
 
         Snapshot memory s = _snapshots[keccak256(pubkey)];
-        if (s.amountCumulativeLast == 0) revert Errors.ZeroAmount();
 
         uint256 fin = s.amountCumulativeFinal == 0
             ? amountsCumulative
             : s.amountCumulativeFinal;
+
+        // Check if there are any unclaimed rewards
+        if (s.amountCumulativeLast == fin) revert Errors.NoRewardsToClaim();
+
         uint256 amount;
         unchecked {
             amount = fin - s.amountCumulativeLast;

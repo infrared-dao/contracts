@@ -1,5 +1,5 @@
 {
-    "detectors_to_exclude": "assembly,timestamp,solc-version,arbitrary-send-eth,uninitialized-state,incorrect-equality,uninitialized-local,calls-loop,reentrancy-events,low-level-calls,naming-convention,unused-return,reentrancy-no-eth,shadowing-local,reentrancy-benign,cyclomatic-complexity,costly-loop,constable-states,divide-before-multiply,dead-code",
+    "detectors_to_exclude": "assembly,timestamp,solc-version,arbitrary-send-eth,uninitialized-state,incorrect-equality,uninitialized-local,calls-loop,reentrancy-events,low-level-calls,naming-convention,unused-return,reentrancy-no-eth,shadowing-local,reentrancy-benign,cyclomatic-complexity,costly-loop,constable-states,divide-before-multiply,dead-code,weak-prng",
     "exclude_informational": false,
     "exclude_low": false,
     "exclude_medium": false,

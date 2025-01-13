@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {IRewardVault as IBerachainRewardsVault} from
@@ -53,7 +53,6 @@ contract InfraredVault is MultiRewards, IInfraredVault {
         rewardsVault = _createRewardsVaultIfNecessary(infrared, _stakingToken);
         rewardsVault.setOperator(infrared);
 
-        // add initial reward tokens requiring at least IBGT and IRED
         address _ibgt = address(IInfrared(infrared).ibgt());
 
         _addReward(_ibgt, infrared, _rewardsDuration);

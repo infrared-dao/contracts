@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
@@ -20,7 +20,7 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
     }
 
     function testAddValidators() public {
-        vm.startPrank(admin);
+        vm.startPrank(infraredGovernance);
 
         // priors checked
         assertEq(infrared.numInfraredValidators(), 0);
@@ -47,7 +47,7 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
 
         bytes[] memory pubkeys = new bytes[](1);
         pubkeys[0] = infraredValidators[0].pubkey;
-        vm.startPrank(admin);
+        vm.startPrank(infraredGovernance);
 
         infrared.removeValidators(pubkeys);
 
@@ -68,7 +68,7 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
 
         // move forward beyond buffer length so enough time passed
         vm.roll(block.number + HISTORY_BUFFER_LENGTH + 1);
-        vm.startPrank(admin);
+        vm.startPrank(infraredGovernance);
 
         infrared.replaceValidator(
             infraredValidators[0].pubkey, infraredValidator.pubkey
@@ -93,6 +93,7 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
         ibera.mint{value: 32 ether}(address(this));
 
         // set deposit signature from admin account
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(infraredValidators[0].pubkey, _create96Byte());
 
         // keeper call to execute beacon deposit
@@ -116,7 +117,7 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
         vm.prank(beraChef.owner());
         beraChef.setVaultWhitelistedStatus(lpRewardsVaultAddress, true, "");
 
-        vm.startPrank(admin);
+        vm.startPrank(keeper);
         infrared.queueNewCuttingBoard(
             infraredValidators[0].pubkey, _startBlock, _weights
         );

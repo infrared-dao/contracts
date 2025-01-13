@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
@@ -25,11 +25,6 @@ interface IInfraredBERA is IERC20, IAccessControl {
     event SetDepositSignature(bytes pubkey, bytes from, bytes to);
     event WithdrawalFlagSet(bool flag);
 
-    event NewDepositor(address indexed depositor, address from, address by);
-    event NewWithdrawor(address indexed withdrawor, address from, address by);
-    event NewReceivor(address indexed receivor, address from, address by);
-    event NewClaimor(address indexed claimor, address from, address by);
-
     /// @notice Address of the Infrared operator contract
     function infrared() external view returns (address);
 
@@ -38,9 +33,6 @@ interface IInfraredBERA is IERC20, IAccessControl {
 
     /// @notice Address of the withdrawor that interacts with chain withdraw precompile
     function withdrawor() external view returns (address);
-
-    /// @notice Address of the claimor that receivers can claim withdrawn funds from
-    function claimor() external view returns (address);
 
     /// @notice Address of the fee receivor contract that receives tx priority fees + MEV on EL
     function receivor() external view returns (address);
@@ -56,6 +48,12 @@ interface IInfraredBERA is IERC20, IAccessControl {
     /// @notice Returns whether initial deposit has been staked to validator with given pubkey
     /// @return Whethere initial deposit has been staked to validator
     function staked(bytes calldata pubkey) external view returns (bool);
+
+    /// @notice Checks if a validator has been force exited from the Consensus Layer
+    /// @param pubkey The public key of the validator to check
+    /// @return bool True if the validator has been force exited, false otherwise
+    /// @dev exited validators can no longer be deposited in.
+    function hasExited(bytes calldata pubkey) external view returns (bool);
 
     /// @notice Returns the deposit signature to use for given pubkey
     /// @return The deposit signature for pubkey
@@ -110,11 +108,11 @@ interface IInfraredBERA is IERC20, IAccessControl {
     /// @notice Initializes InfraredBERA to allow for future mints and burns
     /// @dev Must be called before InfraredBERA can offer deposits and withdraws
     function initialize(
-        address admin,
+        address _gov,
+        address _keeper,
         address _infrared,
         address _depositor,
         address _withdrawor,
-        address _claimor,
         address _receivor
     ) external payable;
 

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
@@ -14,7 +14,7 @@ contract BGTMgmtForkTest is InfraredForkTest {
             .Validator({pubkey: _create48Byte(), addr: address(infrared)});
         infraredValidators.push(infraredValidator);
 
-        vm.startPrank(admin);
+        vm.startPrank(infraredGovernance);
 
         infrared.addValidators(infraredValidators);
 

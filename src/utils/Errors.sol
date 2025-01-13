@@ -5,8 +5,6 @@ library Errors {
     // General errors.
     error ZeroAddress();
     error ZeroAmount();
-    error ZeroBytes();
-    error OverFlow();
     error UnderFlow();
     error InvalidArrayLength();
     error AlreadySet();
@@ -15,13 +13,10 @@ library Errors {
     error ValidatorAlreadyExists();
     error FailedToAddValidator();
     error ValidatorDoesNotExist();
-    error FailedToRemoveValidator();
 
     // InfraredVault errors.
-    error WithdrawAddressNotSet();
     error MaxNumberOfRewards();
     error Unauthorized(address sender);
-    error NoRewardsHarvested();
     error IBGTNotRewardToken();
     error IREDNotRewardToken();
     error IBGTNotStakingToken();
@@ -53,6 +48,8 @@ library Errors {
     error MaxProtocolFeeAmount();
     error BoostExceedsSupply();
     error ETHTransferFailed();
+    error TokensReservedForProtocolFees();
+    error NoRewardsToClaim();
 
     // iBERA erros
     error InvalidAmount();
@@ -63,4 +60,5 @@ library Errors {
     error CallFailed();
     error InvalidReserves();
     error UnauthorizedOperator();
+    error ValidatorForceExited();
 }

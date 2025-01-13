@@ -24,7 +24,6 @@ import {IInfrared} from "src/interfaces/IInfrared.sol";
 /// @dev This contract manages votes for POL CuttingBoard allocation and respective bribeVault creation.
 ///      It also provides support for depositing and withdrawing from managed veNFTs. Inspired by Velodrome V2 Voter.
 /// @author Modified from Velodrome (https://github.com/velodrome-finance/contracts/blob/main/contracts/Voter.sol)
-/// @author Infrared, @NoFront
 /// @notice Ensure new epoch before voting and manage staking tokens and bribe vaults.
 contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
     using SafeTransferLib for ERC20;
@@ -125,8 +124,13 @@ contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
      * @notice Initializes the Voter contract with the voting escrow and fee vault
      * @dev Sets up initial state including fee vault with configured reward tokens
      * @param _ve Address of the voting escrow contract
+     * @param _gov Address of the governance multisig
+     * @param _keeper Address of the keeper
      */
-    function initialize(address _ve) external initializer {
+    function initialize(address _ve, address _gov, address _keeper)
+        external
+        initializer
+    {
         if (_ve == address(0)) revert Errors.ZeroAddress();
         ve = _ve;
         maxVotingNum = 30;
@@ -137,6 +141,10 @@ contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
         _rewards[1] = address(infrared.honey());
 
         feeVault = address(new BribeVotingReward(address(this), _rewards));
+
+        _grantRole(DEFAULT_ADMIN_ROLE, _gov);
+        _grantRole(GOVERNANCE_ROLE, _gov);
+        _grantRole(KEEPER_ROLE, _keeper);
 
         // init upgradeable components
         __ReentrancyGuard_init();
@@ -235,6 +243,7 @@ contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
      * @param _weight Total voting power weight available
      * @param _stakingTokenVote Array of staking tokens to vote for
      * @param _weights Array of weights to allocate to each token
+     * @param _isPoke if fees should be deposited in addition to marking tokenId as voted
      * @dev Handles vote accounting, reward deposits and event emissions
      * @dev Implementation sequence:
      * 1. Reset all existing votes and accounting via _reset

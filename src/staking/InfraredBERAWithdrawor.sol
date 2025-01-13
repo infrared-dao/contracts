@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -13,16 +13,16 @@ import {IInfraredBERAWithdrawor} from
 import {InfraredBERAConstants} from "./InfraredBERAConstants.sol";
 
 /// @title InfraredBERAWithdrawor
-/// @author bungabear69420
 /// @notice Withdrawor to withdraw BERA from CL for Infrared liquid staking token
 /// @dev Assumes ETH returned via withdraw precompile credited to contract so receive unnecessary
 contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
     uint8 public constant WITHDRAW_REQUEST_TYPE = 0x01;
-    address public constant WITHDRAW_PRECOMPILE =
-        0x00A3ca265EBcb825B45F985A16CEFB49958cE017; // @dev: EIP7002
+    address public WITHDRAW_PRECOMPILE; // @dev: EIP7002
 
     /// @inheritdoc IInfraredBERAWithdrawor
     address public InfraredBERA;
+
+    address public claimor;
 
     struct Request {
         /// receiver of withdrawn bera funds
@@ -53,21 +53,15 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
     /// @inheritdoc IInfraredBERAWithdrawor
     uint256 public nonceProcess;
 
-    /// @notice Initialize the contract (replaces the constructor)
-    /// @param admin Address for admin to upgrade
-    /// @param ibera The initial InfraredBERA address
-    function initialize(address admin, address ibera) public initializer {
-        if (admin == address(0) || ibera == address(0)) {
+    function initializeV2(address _claimor, address _withdraw_precompile)
+        external
+        onlyGovernor
+    {
+        if (_claimor == address(0) || _withdraw_precompile == address(0)) {
             revert Errors.ZeroAddress();
         }
-        __Upgradeable_init();
-        InfraredBERA = ibera;
-
-        nonceRequest = 1;
-        nonceSubmit = 1;
-        nonceProcess = 1;
-
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        WITHDRAW_PRECOMPILE = _withdraw_precompile;
+        claimor = _claimor;
     }
 
     /// @notice Checks whether enough time has passed beyond min delay
@@ -240,22 +234,28 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
             );
         } else {
             // queue up receiver claim to claimor
-            address claimor = IInfraredBERA(InfraredBERA).claimor();
             IInfraredBERAClaimor(claimor).queue{value: amount}(r.receiver);
         }
         emit Process(r.receiver, nonce, amount);
     }
 
     /// @inheritdoc IInfraredBERAWithdrawor
-    function sweep(uint256 amount, bytes calldata pubkey) external {
-        // only callable when withdrawals are not enabled
+    function sweep(bytes calldata pubkey) external {
+        // Check withdrawals disabled
         if (IInfraredBERA(InfraredBERA).withdrawalsEnabled()) {
             revert Errors.Unauthorized(msg.sender);
         }
-        // onlyKeeper call
+        // Check keeper authorization
         if (!IInfraredBERA(InfraredBERA).keeper(msg.sender)) {
             revert Errors.Unauthorized(msg.sender);
         }
+        // Check if validator has already exited - do this before checking stake
+        if (IInfraredBERA(InfraredBERA).hasExited(pubkey)) {
+            revert Errors.ValidatorForceExited();
+        }
+        // forced exit always withdraw entire stake of validator
+        uint256 amount = IInfraredBERA(InfraredBERA).stakes(pubkey);
+
         // do nothing if InfraredBERA deposit would revert
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
             + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
@@ -273,7 +273,7 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
             value: amount
         }(amount - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE);
 
-        emit Sweep(InfraredBERA, amount);
+        emit Sweep(IInfraredBERA(InfraredBERA).depositor(), amount);
     }
 
     receive() external payable {}

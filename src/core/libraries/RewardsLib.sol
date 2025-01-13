@@ -310,6 +310,7 @@ library RewardsLib {
         address voter,
         address distributor
     ) external returns (uint256 _amt) {
+        IInfraredBERA(ibera).compound();
         uint256 iBERAShares = IInfraredBERA(ibera).collect();
 
         if (iBERAShares == 0) return 0;

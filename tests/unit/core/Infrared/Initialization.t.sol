@@ -36,7 +36,7 @@ contract InfraredInitializationTest is Helper {
         );
 
         assertTrue(
-            infrared.hasRole(infrared.DEFAULT_ADMIN_ROLE(), admin),
+            infrared.hasRole(infrared.DEFAULT_ADMIN_ROLE(), infraredGovernance),
             "Incorrect Admin address"
         );
         assertEq(
@@ -46,7 +46,7 @@ contract InfraredInitializationTest is Helper {
 
     function testRoleAssignments() public view {
         assertTrue(
-            infrared.hasRole(infrared.DEFAULT_ADMIN_ROLE(), admin),
+            infrared.hasRole(infrared.DEFAULT_ADMIN_ROLE(), infraredGovernance),
             "Admin should have DEFAULT_ADMIN_ROLE"
         );
         assertTrue(
@@ -123,9 +123,10 @@ contract InfraredInitializationTest is Helper {
     function testUpdateWhiteListedRewardTokens() public {
         vm.expectEmit();
         emit IInfrared.WhiteListedRewardTokensUpdated(
-            address(this), address(12345), false, true
+            infraredGovernance, address(12345), false, true
         );
         // Update the whitelist
+        vm.prank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(12345), true);
 
         // Check that the whitelist was updated
@@ -138,9 +139,10 @@ contract InfraredInitializationTest is Helper {
     function testUpdateRewardsDuration() public {
         vm.expectEmit();
         emit IInfrared.RewardsDurationUpdated(
-            address(this), infrared.rewardsDuration(), 123
+            infraredGovernance, infrared.rewardsDuration(), 123
         );
         // Update the rewards duration
+        vm.prank(infraredGovernance);
         infrared.updateRewardsDuration(123);
 
         // Check that the rewards duration was updated
@@ -160,6 +162,7 @@ contract InfraredInitializationTest is Helper {
         emit IMultiRewards.RewardsDurationUpdated(
             rewardsToken, newRewardsDuration
         );
+        vm.prank(infraredGovernance);
         infrared.updateRewardsDurationForVault(
             stakingToken, rewardsToken, newRewardsDuration
         );
@@ -186,11 +189,13 @@ contract InfraredInitializationTest is Helper {
 
         // Test for zero rewards duration
         vm.expectRevert(Errors.ZeroAmount.selector);
+        vm.prank(infraredGovernance);
         infrared.updateRewardsDurationForVault(stakingToken, rewardsToken, 0);
 
         // Test for unsupported vault
         address unsupportedStakingToken = address(0x123);
         vm.expectRevert(Errors.VaultNotSupported.selector);
+        vm.prank(infraredGovernance);
         infrared.updateRewardsDurationForVault(
             unsupportedStakingToken, rewardsToken, newRewardsDuration
         );
@@ -198,16 +203,13 @@ contract InfraredInitializationTest is Helper {
         // Test for non-whitelisted reward token
         address nonWhitelistedToken = address(0x456);
         vm.expectRevert(Errors.RewardTokenNotWhitelisted.selector);
+        vm.prank(infraredGovernance);
         infrared.updateRewardsDurationForVault(
             stakingToken, nonWhitelistedToken, newRewardsDuration
         );
     }
 
     function testRewardsStorageLayout() public {
-        // First set the RED token in storage
-        vm.prank(infraredGovernance);
-        infrared.setRed(address(red));
-
         // Get base slot from contract
         bytes32 baseSlot = infrared.REWARDS_STORAGE_LOCATION();
 

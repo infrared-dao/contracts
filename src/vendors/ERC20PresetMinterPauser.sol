@@ -45,11 +45,17 @@ contract ERC20PresetMinterPauser is
      *
      * See {ERC20-constructor}.
      */
-    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
-        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
+    constructor(
+        string memory name,
+        string memory symbol,
+        address _admin,
+        address _minter,
+        address _pauser
+    ) ERC20(name, symbol) {
+        _grantRole(DEFAULT_ADMIN_ROLE, _admin);
 
-        _grantRole(MINTER_ROLE, _msgSender());
-        _grantRole(PAUSER_ROLE, _msgSender());
+        _grantRole(MINTER_ROLE, _minter);
+        _grantRole(PAUSER_ROLE, _pauser);
     }
 
     /**

@@ -142,7 +142,7 @@ library ValidatorManagerLib {
     }
 
     function cancelBoosts(
-        ValidatorStorage storage,
+        ValidatorStorage storage $,
         address bgt,
         bytes[] memory _pubkeys,
         uint128[] memory _amts
@@ -151,8 +151,13 @@ library ValidatorManagerLib {
             revert Errors.InvalidArrayLength();
         }
         for (uint256 i = 0; i < _pubkeys.length; i++) {
+            bytes memory pubkey = _pubkeys[i];
+            bytes32 id = keccak256(pubkey);
+            if (!$.validatorIds.contains(id)) {
+                revert Errors.InvalidValidator();
+            }
             if (_amts[i] == 0) revert Errors.ZeroAmount();
-            IBerachainBGT(bgt).cancelBoost(_pubkeys[i], _amts[i]);
+            IBerachainBGT(bgt).cancelBoost(pubkey, _amts[i]);
         }
     }
 
@@ -188,7 +193,7 @@ library ValidatorManagerLib {
     }
 
     function cancelDropBoosts(
-        ValidatorStorage storage,
+        ValidatorStorage storage $,
         address bgt,
         bytes[] memory _pubkeys,
         uint128[] memory _amts
@@ -197,6 +202,11 @@ library ValidatorManagerLib {
             revert Errors.InvalidArrayLength();
         }
         for (uint256 i = 0; i < _pubkeys.length; i++) {
+            bytes memory pubkey = _pubkeys[i];
+            bytes32 id = keccak256(pubkey);
+            if (!$.validatorIds.contains(id)) {
+                revert Errors.InvalidValidator();
+            }
             if (_amts[i] == 0) revert Errors.ZeroAmount();
             IBerachainBGT(bgt).cancelDropBoost(_pubkeys[i], _amts[i]);
         }

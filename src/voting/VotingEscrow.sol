@@ -21,7 +21,6 @@ import {IInfraredUpgradeable} from "src/interfaces/IInfraredUpgradeable.sol";
 /// @author Modified from Solidly (https://github.com/solidlyexchange/solidly/blob/master/contracts/ve.sol)
 /// @author Modified from Curve (https://github.com/curvefi/curve-dao-contracts/blob/master/contracts/VotingEscrow.vy)
 /// @author Modified from velodrome.finance (https://github.com/velodrome-finance/contracts/blob/main/contracts/VotingEscrow.sol)
-/// @author Infrared, @NoFront
 /// @dev Vote weight decays linearly over time. Lock time cannot be more than `MAXTIME` (4 years).
 contract VotingEscrow is IVotingEscrow, ReentrancyGuard {
     using SafeTransferLib for ERC20;
@@ -72,7 +71,7 @@ contract VotingEscrow is IVotingEscrow, ReentrancyGuard {
     /**
      * @notice Initializes VotingEscrow contract
      * @param _keeper Address of keeper contract
-     * @param _token Address of token (VELO) used to create a veNFT
+     * @param _token Address of token (RED) used to create a veNFT
      * @param _voter Address of Voter contract
      * @param _infrared Address of Infrared contract
      */

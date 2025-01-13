@@ -16,6 +16,8 @@ import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {InfraredBERAClaimor} from "src/staking/InfraredBERAClaimor.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
+import {InfraredBERAWithdraworLite} from
+    "src/staking/InfraredBERAWithdraworLite.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 
@@ -48,6 +50,7 @@ abstract contract Helper is POLTest {
     InfraredBERA public ibera;
     InfraredBERADepositor public depositor;
     InfraredBERAWithdrawor public withdrawor;
+    InfraredBERAWithdraworLite public withdraworLite;
     InfraredBERAClaimor public claimor;
     InfraredBERAFeeReceivor public receivor;
 
@@ -78,15 +81,11 @@ abstract contract Helper is POLTest {
     address validator = address(888);
     address validator2 = address(999);
 
-    // New declaration for mock pools
-    // MockERC20[] internal mockPools;
-
     function setUp() public virtual override {
         super.setUp();
 
         address depositContract = address(new BeaconDeposit());
 
-        ibgt = new InfraredBGT(address(bgt));
         wibera = new MockERC20("WIBERA", "WIBERA", 18);
         honey = new MockERC20("HONEY", "HONEY", 18);
 
@@ -97,29 +96,11 @@ abstract contract Helper is POLTest {
 
         stakingAsset = address(wbera);
 
-        // deploy a rewards vault for InfraredBGT
-        address rewardsVault = factory.createRewardVault(address(ibgt));
-        assertEq(rewardsVault, factory.getVault(address(ibgt)));
-
         // Set up bera bgt distribution for mockPool
         beraVault = factory.createRewardVault(stakingAsset);
 
         // initialize Infrared contracts
-        infrared = Infrared(
-            payable(
-                setupProxy(
-                    address(
-                        new Infrared(
-                            address(ibgt),
-                            address(factory),
-                            address(beraChef),
-                            payable(address(wbera)),
-                            address(honey)
-                        )
-                    )
-                )
-            )
-        );
+        infrared = Infrared(payable(setupProxy(address(new Infrared()))));
 
         // ibera = new InfraredBERA(address(infrared));
         // InfraredBERA
@@ -128,8 +109,8 @@ abstract contract Helper is POLTest {
         depositor = InfraredBERADepositor(
             setupProxy(address(new InfraredBERADepositor()))
         );
-        withdrawor = InfraredBERAWithdrawor(
-            payable(setupProxy(address(new InfraredBERAWithdrawor())))
+        withdraworLite = InfraredBERAWithdraworLite(
+            payable(setupProxy(address(new InfraredBERAWithdraworLite())))
         );
         claimor =
             InfraredBERAClaimor(setupProxy(address(new InfraredBERAClaimor())));
@@ -144,58 +125,72 @@ abstract contract Helper is POLTest {
             setupProxy(address(new InfraredDistributor(address(infrared))))
         );
 
-        red = new RED(address(ibgt), address(infrared));
+        collector.initialize(infraredGovernance, address(wbera), 10 ether);
+        infraredDistributor.initialize(infraredGovernance, address(ibera));
 
-        // ired voting
         voter = Voter(setupProxy(address(new Voter(address(infrared)))));
-        ired = new VotingEscrow(
-            address(this), address(red), address(voter), address(infrared)
-        );
 
-        collector.initialize(address(this), address(wbera), 10 ether);
-        infraredDistributor.initialize(address(ibera));
-        infrared.initialize(
-            address(this),
+        Infrared.InitializationData memory data = Infrared.InitializationData(
+            infraredGovernance,
+            keeper,
+            address(bgt),
+            address(factory),
+            address(beraChef),
+            payable(address(wbera)),
+            address(honey),
             address(collector),
             address(infraredDistributor),
             address(voter),
             address(ibera),
             1 days
-        ); // make helper contract the admin
-        voter.initialize(address(ired));
+        );
+        infrared.initialize(data);
+        ibgt = new InfraredBGT(
+            address(bgt), data._gov, address(infrared), data._gov
+        );
+
+        infrared.setIBGT(address(ibgt));
 
         // initialize ibera proxies
-        depositor.initialize(admin, address(ibera), depositContract);
-        withdrawor.initialize(admin, address(ibera));
-        claimor.initialize(admin);
-        receivor.initialize(admin, address(ibera), address(infrared));
+        depositor.initialize(
+            infraredGovernance, keeper, address(ibera), depositContract
+        );
+        withdraworLite.initialize(infraredGovernance, keeper, address(ibera));
+
+        claimor.initialize(infraredGovernance, keeper, address(ibera));
+
+        receivor.initialize(
+            infraredGovernance, keeper, address(ibera), address(infrared)
+        );
 
         // init deposit to avoid inflation attack
         uint256 _value = InfraredBERAConstants.MINIMUM_DEPOSIT
             + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
 
         ibera.initialize{value: _value}(
-            admin,
+            infraredGovernance,
+            keeper,
             address(infrared),
             address(depositor),
-            address(withdrawor),
-            address(claimor),
+            address(withdraworLite),
             address(receivor)
         );
 
-        ibera.grantRole(ibera.GOVERNANCE_ROLE(), address(this));
-        ibera.grantRole(ibera.KEEPER_ROLE(), keeper);
+        red = new RED(
+            address(ibgt), address(infrared), data._gov, data._gov, data._gov
+        );
+
+        // ired voting
+
+        ired = new VotingEscrow(
+            address(this), address(red), address(voter), address(infrared)
+        );
+        voter.initialize(address(ired), infraredGovernance, keeper);
 
         uint16 feeShareholders = 4; // 25% of fees
-        // address(this) is the governor
+
+        vm.prank(infraredGovernance);
         ibera.setFeeDivisorShareholders(feeShareholders);
-
-        // set access control
-        infrared.grantRole(infrared.KEEPER_ROLE(), keeper);
-        infrared.grantRole(infrared.GOVERNANCE_ROLE(), infraredGovernance);
-
-        ibgt.grantRole(ibgt.MINTER_ROLE(), address(infrared));
-        ibgt.grantRole(ibgt.MINTER_ROLE(), address(blockRewardController));
 
         vm.startPrank(governance);
         bgt.whitelistSender(address(factory), true);

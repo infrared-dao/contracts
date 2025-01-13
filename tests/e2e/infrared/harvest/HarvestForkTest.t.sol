@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
@@ -17,6 +17,7 @@ contract HarvestForkTest is InfraredForkTest {
             .Validator({pubkey: _create48Byte(), addr: address(infrared)});
         infraredValidators.push(infraredValidator);
 
+        vm.prank(infraredGovernance);
         infrared.addValidators(infraredValidators);
 
         // deposit to ibera
@@ -24,6 +25,7 @@ contract HarvestForkTest is InfraredForkTest {
         ibera.mint{value: 32 ether}(address(this));
 
         // set deposit signature from admin account
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(infraredValidators[0].pubkey, _create96Byte());
 
         // keeper call to execute beacon deposit
@@ -43,7 +45,7 @@ contract HarvestForkTest is InfraredForkTest {
         vm.prank(beraChef.owner());
         beraChef.setVaultWhitelistedStatus(lpRewardsVaultAddress, true, "");
 
-        // vm.prank(infraredGovernance);
+        vm.prank(keeper);
         infrared.queueNewCuttingBoard(
             infraredValidators[0].pubkey, _startBlock, _weights
         );

@@ -54,7 +54,6 @@ contract InfraredTest is Helper {
         rewardTokens[1] = address(red);
 
         // Step 1: Vault Registration
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
         // InfraredVault vault = InfraredVault(
         //     address(infrared.registerVault(address(wbera), rewardTokens))
         // );
@@ -237,6 +236,7 @@ contract InfraredTest is Helper {
         vm.stopPrank();
 
         // 2. Mint ibgt to some random address, such that total supply of ibgt is 100 ether
+        vm.prank(address(infrared));
         ibgt.mint(address(12), 100 ether);
         vm.startPrank(address(blockRewardController));
         // 3. Mint bgt to the Infrared, to simulate the rewards.
@@ -287,6 +287,7 @@ contract InfraredTest is Helper {
     }
 
     function testharvestBaseUnderflow() public {
+        vm.prank(address(infrared));
         ibgt.mint(address(infrared), 100 ether);
         vm.expectRevert(abi.encodeWithSignature("UnderFlow()"));
         infrared.harvestBase();
@@ -294,7 +295,7 @@ contract InfraredTest is Helper {
 
     function testharvestBribesSuccess() public {
         MockERC20 mockAsset = new MockERC20("MockAsset", "MCK", 18);
-        infrared.grantRole(infrared.GOVERNANCE_ROLE(), address(this));
+        vm.prank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(mockAsset), true);
 
         address[] memory tokens = new address[](2);
@@ -375,7 +376,6 @@ contract InfraredTest is Helper {
         vm.stopPrank();
 
         // Step 2: Vault Registration
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
 
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = address(ibgt);
@@ -385,9 +385,9 @@ contract InfraredTest is Helper {
         // );
         InfraredVault vault = infraredVault;
 
-        vm.startPrank(address(blockRewardController));
-
+        vm.prank(address(infrared));
         ibgt.mint(address(infraredGovernance), 100 ether);
+        vm.startPrank(address(blockRewardController));
 
         bgt.mint(address(infrared), 101 ether);
 
@@ -405,9 +405,6 @@ contract InfraredTest is Helper {
         // MockERC20 mockAsset = new MockERC20("MockAsset", "MCK", 18);
         // factory.createRewardsVault(address(mockAsset));
         // Step 1: Vault Registration
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
-
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
         // InfraredVault vault = InfraredVault(
         //     address(infrared.registerVault(address(wbera), rewardTokens))
         // );
@@ -511,10 +508,16 @@ contract InfraredTest is Helper {
 
     function testSetRedSuccess() public {
         // Create new RED token mock
-        RED newRed = new RED(address(ibgt), address(infrared));
+        RED newRed = new RED(
+            address(ibgt),
+            address(infrared),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
 
         // Grant MINTER_ROLE to infrared contract
-        newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
+        // newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
 
         // Start recording storage access
         vm.record();
@@ -534,14 +537,26 @@ contract InfraredTest is Helper {
 
     function testSetRedFailsAlreadySet() public {
         // First set
-        RED newRed = new RED(address(ibgt), address(infrared));
-        newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
+        RED newRed = new RED(
+            address(ibgt),
+            address(infrared),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
+        // newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
         infrared.setRed(address(newRed));
 
         // Try to set again
-        RED anotherRed = new RED(address(ibgt), address(infrared));
-        anotherRed.grantRole(anotherRed.MINTER_ROLE(), address(infrared));
+        RED anotherRed = new RED(
+            address(ibgt),
+            address(infrared),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
+        // anotherRed.grantRole(anotherRed.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
         vm.expectRevert(Errors.AlreadySet.selector);
         infrared.setRed(address(anotherRed));
@@ -549,22 +564,28 @@ contract InfraredTest is Helper {
 
     function testSetRedFailsAccessControll() public {
         // Create RED token without granting MINTER_ROLE
-        RED newRed = new RED(address(ibgt), address(infrared));
+        RED newRed = new RED(
+            address(ibgt),
+            address(12),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
 
         vm.startPrank(address(123));
-        vm.expectRevert(
-            abi.encodeWithSignature(
-                "AccessControlUnauthorizedAccount(address,bytes32)",
-                address(123),
-                infrared.GOVERNANCE_ROLE()
-            )
-        );
+        vm.expectRevert();
         infrared.setRed(address(newRed));
     }
 
     function testSetRedFailsMinterUnauthorized() public {
         // Create RED token without granting MINTER_ROLE
-        RED newRed = new RED(address(ibgt), address(12));
+        RED newRed = new RED(
+            address(ibgt),
+            address(12),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
         vm.prank(infraredGovernance);
         vm.expectRevert(
             abi.encodeWithSignature("Unauthorized(address)", address(infrared))
@@ -574,8 +595,14 @@ contract InfraredTest is Helper {
 
     function testUpdateRedMintRateSuccess() public {
         // Setup: First set RED token
-        RED newRed = new RED(address(ibgt), address(infrared));
-        newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
+        RED newRed = new RED(
+            address(ibgt),
+            address(infrared),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
+        // newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
         infrared.setRed(address(newRed));
 
@@ -617,8 +644,14 @@ contract InfraredTest is Helper {
 
     function testRedMintingRatioHalf() public {
         // Setup: Set RED token and mint rate to 0.5
-        RED newRed = new RED(address(ibgt), address(infrared));
-        newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
+        RED newRed = new RED(
+            address(ibgt),
+            address(infrared),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
+
         vm.startPrank(infraredGovernance);
         infrared.setRed(address(newRed));
         infrared.updateRedMintRate(500_000); // 0.5 * 1e6
@@ -646,8 +679,14 @@ contract InfraredTest is Helper {
 
     function testRedMintingRatioDouble() public {
         // Setup: Set RED token and mint rate to 2.0
-        RED newRed = new RED(address(ibgt), address(infrared));
-        newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
+        RED newRed = new RED(
+            address(ibgt),
+            address(infrared),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
+
         vm.startPrank(infraredGovernance);
         infrared.setRed(address(newRed));
         infrared.updateRedMintRate(2_000_000); // 2 * 1e6

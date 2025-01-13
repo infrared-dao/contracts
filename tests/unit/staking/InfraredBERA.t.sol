@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -55,7 +55,8 @@ contract InfraredBERATest is InfraredBERABaseTest {
         uint256 value = 1 ether;
         assertTrue(value > min + fee);
 
-        ibera.sweep{value: value}();
+        deal(ibera.receivor(), value);
+        ibera.compound();
 
         assertEq(ibera.deposits(), deposits + value - fee);
         assertEq(ibera.totalSupply(), totalSupply);
@@ -84,6 +85,22 @@ contract InfraredBERATest is InfraredBERABaseTest {
         assertTrue(value > min + fee);
         vm.expectEmit();
         emit IInfraredBERA.Sweep(value);
+        deal(ibera.receivor(), value);
+        ibera.compound();
+    }
+
+    function testSweepAccessControl() public {
+        uint256 value = 1 ether;
+        deal(ibera.receivor(), value);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.Unauthorized.selector, address(321))
+        );
+        vm.prank(address(321));
+        ibera.sweep();
+
+        vm.expectEmit();
+        emit IInfraredBERA.Sweep(value);
+        vm.prank(address(ibera.receivor()));
         ibera.sweep{value: value}();
     }
 
@@ -388,7 +405,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testBurnBurnsShares() public {
         testMintCompoundsPrior();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         uint256 _reserves = depositor.reserves();
         vm.prank(keeper);
@@ -411,7 +428,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         vm.prank(alice);
         ibera.burn{value: fee}(bob, shares);
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
 
         vm.prank(alice);
@@ -424,7 +441,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testBurnUpdatesDeposits() public {
         testMintCompoundsPrior();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         uint256 _reserves = depositor.reserves();
         vm.prank(keeper);
@@ -445,7 +462,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         assertTrue(shares > 0);
         uint256 amount = Math.mulDiv(deposits, shares, totalSupply);
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
 
         vm.prank(alice);
@@ -458,7 +475,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testBurnQueuesToWithdrawor() public {
         testMintCompoundsPrior();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         uint256 _reserves = depositor.reserves();
         vm.prank(keeper);
@@ -484,7 +501,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         uint256 withdraworBalance = address(withdrawor).balance;
         uint256 withdraworFees = withdrawor.fees();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
 
         vm.prank(alice);
@@ -527,7 +544,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testBurnCompoundsPrior() public {
         testMintCompoundsPrior();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         uint256 _reserves = depositor.reserves();
         vm.prank(keeper);
@@ -564,7 +581,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         uint256 shares = ibera.balanceOf(alice) / 3;
         assertTrue(shares > 0);
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
 
         vm.expectEmit();
@@ -646,7 +663,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testBurnEmitsBurn() public {
         testMintCompoundsPrior();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         uint256 _reserves = depositor.reserves();
         vm.prank(keeper);
@@ -668,7 +685,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         uint256 amount = Math.mulDiv(deposits, shares, totalSupply);
         uint256 nonce = withdrawor.nonceRequest();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
 
         vm.expectEmit();
@@ -681,7 +698,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testBurnRevertsWhenSharesZero() public {
         testMintCompoundsPrior();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         uint256 _reserves = depositor.reserves();
         vm.prank(keeper);
@@ -693,7 +710,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         assertEq(ibera.confirmed(), _reserves);
         assertEq(depositor.reserves(), 0);
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
 
         uint256 fee = InfraredBERAConstants.MINIMUM_WITHDRAW_FEE;
@@ -705,7 +722,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testBurnRevertsWhenFeeBelowMinimum() public {
         testMintCompoundsPrior();
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         uint256 _reserves = depositor.reserves();
         vm.prank(keeper);
@@ -721,7 +738,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         uint256 shares = sharesAlice / 3;
         assertTrue(shares > 0);
 
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
 
         vm.expectRevert(Errors.InvalidFee.selector);
@@ -793,14 +810,14 @@ contract InfraredBERATest is InfraredBERABaseTest {
 
         (uint256 shares, uint256 previewFee) = ibera.previewMint(value);
         assertEq(shares, 0, "Should return 0 shares for invalid amount");
-        assertEq(previewFee, fee, "Should still return fee amount");
+        assertEq(previewFee, 0, "Should still return fee amount");
     }
 
     function testPreviewBurnMatchesActualBurn() public {
         // Setup mint first like in testBurn
         testMintCompoundsPrior();
 
-        vm.startPrank(governor);
+        vm.startPrank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
         ibera.setDepositSignature(pubkey0, signature0);
         vm.stopPrank();
@@ -841,7 +858,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         testMintCompoundsPrior();
 
         // Setup validator signature like in testBurn
-        vm.startPrank(governor);
+        vm.startPrank(infraredGovernance);
         ibera.setWithdrawalsEnabled(true);
         ibera.setDepositSignature(pubkey0, signature0);
         vm.stopPrank();
@@ -886,11 +903,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testPreviewBurnReturnsZeroForInvalidShares() public view {
         (uint256 amount, uint256 fee) = ibera.previewBurn(0);
         assertEq(amount, 0, "Should return 0 amount for 0 shares");
-        assertEq(
-            fee,
-            InfraredBERAConstants.MINIMUM_WITHDRAW_FEE,
-            "Should still return withdraw fee"
-        );
+        assertEq(fee, 0, "Should return 0 for the fee");
     }
 
     function testRegisterUpdatesStakeWhenDeltaGreaterThanZero() public {
@@ -936,7 +949,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
     function testsetFeeShareholdersUpdatesFeeProtocol() public {
         assertEq(ibera.feeDivisorShareholders(), 0);
         uint16 feeShareholders = 4; // 25% of fees
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setFeeDivisorShareholders(feeShareholders);
         assertEq(ibera.feeDivisorShareholders(), feeShareholders);
     }
@@ -947,7 +960,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
 
         vm.expectEmit();
         emit IInfraredBERA.SetFeeShareholders(0, feeShareholders);
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setFeeDivisorShareholders(feeShareholders);
     }
 
@@ -955,12 +968,13 @@ contract InfraredBERATest is InfraredBERABaseTest {
         assertEq(ibera.feeDivisorShareholders(), 0);
         uint16 feeShareholders = 4; // 25% of fees
         vm.expectRevert();
+        vm.prank(address(10));
         ibera.setFeeDivisorShareholders(feeShareholders);
     }
 
     function testSetDepositSignatureUpdatesSignature() public {
         assertEq(ibera.signatures(pubkey0).length, 0);
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         assertEq(ibera.signatures(pubkey0), signature0);
     }
@@ -971,5 +985,49 @@ contract InfraredBERATest is InfraredBERABaseTest {
 
     function testSetDepositSignatureRevertsWhenUnauthorized() public view {
         assertEq(ibera.signatures(pubkey0).length, 0);
+    }
+
+    function testConfirmedReturnsZeroWhenPendingExceedsDeposits() public {
+        // Setup initial deposits
+        uint256 initialDeposit = 100 ether;
+        vm.deal(address(this), initialDeposit);
+        (uint256 nonce,) = ibera.mint{value: initialDeposit}(address(this));
+
+        // Get current deposits
+        uint256 currentDeposits = ibera.deposits();
+
+        // Make a large donation to depositor to cause pending > deposits
+        uint256 donationAmount = currentDeposits * 2;
+        vm.deal(address(depositor), donationAmount);
+
+        // Verify confirmed() returns 0 when pending > deposits
+        assertEq(
+            ibera.confirmed(), 0, "Should return 0 when pending > deposits"
+        );
+
+        // Verify withdrawals revert when confirmed() is 0
+        uint256 withdrawAmount = 1 ether;
+        uint256 fee = InfraredBERAConstants.MINIMUM_WITHDRAW_FEE;
+        vm.deal(address(ibera), fee);
+
+        vm.prank(address(ibera));
+        vm.expectRevert(Errors.InvalidAmount.selector);
+        withdrawor.queue{value: fee}(alice, withdrawAmount);
+    }
+
+    function testFail_QueueDonationUnderflow() public {
+        uint256 fee = InfraredBERAConstants.MINIMUM_WITHDRAW_FEE + 1;
+        uint256 amount = 1 ether;
+        address receiver = alice;
+        uint256 confirmed = ibera.confirmed();
+        assertTrue(amount <= confirmed);
+
+        vm.deal(address(ibera), 2 * fee);
+        uint256 nonce = withdrawor.nonceRequest();
+
+        vm.deal(address(depositor), 201 ether); // DONATION
+
+        vm.prank(address(ibera));
+        withdrawor.queue{value: fee}(receiver, amount);
     }
 }

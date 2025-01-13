@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
 // Testing Libraries.
@@ -8,23 +8,16 @@ import "forge-std/Test.sol";
 import {MockInfrared} from "tests/unit/mocks/MockInfrared.sol";
 
 import {BeaconDeposit} from "@berachain/pol/BeaconDeposit.sol";
-
+import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {InfraredBERAClaimor} from "src/staking/InfraredBERAClaimor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
-import {InfraredBERADeployer} from "script/InfraredBERADeployer.s.sol";
+import {Helper} from "tests/unit/core/Infrared/Helper.sol";
 
-contract InfraredBERABaseTest is Test {
-    InfraredBERA public ibera;
-    InfraredBERADepositor public depositor;
-    InfraredBERAWithdrawor public withdrawor;
-    InfraredBERAClaimor public claimor;
-    InfraredBERAFeeReceivor public receivor;
-    InfraredBERADeployer public deployerScript;
-
+contract InfraredBERABaseTest is Helper {
     BeaconDeposit public depositContract;
     bytes public constant withdrawPrecompile = abi.encodePacked(
         hex"7fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff5f556101f480602d5f395ff33373fffffffffffffffffffffffffffffffffffffffe1460c7573615156028575f545f5260205ff35b36603814156101f05760115f54807fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff146101f057600182026001905f5b5f821115608057810190830284830290049160010191906065565b9093900434106101f057600154600101600155600354806003026004013381556001015f35815560010160203590553360601b5f5260385f601437604c5fa0600101600355005b6003546002548082038060101160db575060105b5f5b81811461017f5780604c02838201600302600401805490600101805490600101549160601b83528260140152807fffffffffffffffffffffffffffffffff0000000000000000000000000000000016826034015260401c906044018160381c81600701538160301c81600601538160281c81600501538160201c81600401538160181c81600301538160101c81600201538160081c81600101535360010160dd565b9101809214610191579060025561019c565b90505f6002555f6003555b5f54807fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff14156101c957505f5b6001546002828201116101de5750505f6101e4565b01600290035b5f555f600155604c025ff35b5f5ffd"
@@ -32,15 +25,7 @@ contract InfraredBERABaseTest is Test {
 
     address public alice = makeAddr("alice");
     address public bob = makeAddr("bob");
-    address public keeper = makeAddr("keeper");
-    address public governor = makeAddr("governor");
-    address public deployer = makeAddr("deployer");
 
-    address public ibgt = makeAddr("iBGT");
-    address public ired = makeAddr("iRED");
-    address public rewardsFactory = makeAddr("berachainRewardsVaultFactory");
-
-    MockInfrared public infrared;
     address public validator0 = makeAddr("v0");
     address public validator1 = makeAddr("v1");
     bytes public pubkey0 = abi.encodePacked(bytes32("v0"), bytes16("")); // must be len 48
@@ -50,22 +35,31 @@ contract InfraredBERABaseTest is Test {
     bytes public signature1 =
         abi.encodePacked(bytes32("v1"), bytes32(""), bytes32(""));
 
-    function setUp() public virtual {
-        depositContract = new BeaconDeposit();
+    ValidatorTypes.Validator[] public infraredValidators;
 
-        infrared = new MockInfrared(ibgt, ired, rewardsFactory);
+    function setUp() public virtual override {
+        super.setUp();
 
-        deployerScript = new InfraredBERADeployer();
+        // deploy new implementation
+        withdrawor = new InfraredBERAWithdrawor();
 
-        // Call deploy script
-        deployerScript.run(address(infrared), address(depositContract));
+        // perform upgrade
+        vm.prank(infraredGovernance);
+        (bool success,) = address(withdraworLite).call(
+            abi.encodeWithSignature(
+                "upgradeToAndCall(address,bytes)", address(withdrawor), ""
+            )
+        );
+        require(success, "Upgrade failed");
 
-        // Fetch deployed contracts
-        ibera = deployerScript.ibera();
-        depositor = deployerScript.depositor();
-        withdrawor = deployerScript.withdrawor();
-        claimor = deployerScript.claimor();
-        receivor = deployerScript.receivor();
+        // point at proxy
+        withdrawor = InfraredBERAWithdrawor(payable(address(withdraworLite)));
+
+        // initialize
+        vm.prank(infraredGovernance);
+        withdrawor.initializeV2(
+            address(claimor), 0x00A3ca265EBcb825B45F985A16CEFB49958cE017
+        );
 
         // etch deposit contract at depositor constant deposit contract address
         // depositContract = new BeaconDeposit();
@@ -76,11 +70,6 @@ contract InfraredBERABaseTest is Test {
         address WITHDRAW_PRECOMPILE = withdrawor.WITHDRAW_PRECOMPILE();
         vm.etch(WITHDRAW_PRECOMPILE, withdrawPrecompile);
 
-        // initialize InfraredBERA
-        // uint256 value =
-        //     InfraredBERAConstants.MINIMUM_DEPOSIT + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        // ibera.initialize{value: value}();
-
         // deal to alice and bob + approve ibera to spend for them
         vm.deal(alice, 1000 ether);
         vm.deal(bob, 1000 ether);
@@ -90,29 +79,18 @@ contract InfraredBERABaseTest is Test {
         ibera.approve(address(ibera), type(uint256).max);
 
         // add validators to infrared
-        infrared.addValidator(validator0, pubkey0);
-        infrared.addValidator(validator1, pubkey1);
+        ValidatorTypes.Validator memory infraredValidator =
+            ValidatorTypes.Validator({pubkey: pubkey0, addr: address(infrared)});
+        infraredValidators.push(infraredValidator);
+        infraredValidator =
+            ValidatorTypes.Validator({pubkey: pubkey1, addr: address(infrared)});
+        infraredValidators.push(infraredValidator);
 
-        // grant roles to keeper and governor
-        bytes32 kr = ibera.KEEPER_ROLE();
-        bytes32 gr = ibera.GOVERNANCE_ROLE();
-        // vm.prank(deployer);
-        ibera.grantRole(kr, keeper);
-        // vm.prank(deployer);
-        ibera.grantRole(gr, governor);
+        vm.startPrank(infraredGovernance);
+        infrared.addValidators(infraredValidators);
 
-        labelContracts();
-    }
-
-    function labelContracts() public {
-        vm.label(address(infrared), "Infrared");
-        vm.label(address(ibera), "iBERA");
-        vm.label(address(depositor), "iBERADepositor");
-        vm.label(address(withdrawor), "iBERAWithdrawor");
-        vm.label(address(claimor), "iBERAClaimor");
-        vm.label(address(receivor), "iBERAReceivor");
-        vm.label(depositor.DEPOSIT_CONTRACT(), "DepositContract");
-        vm.label(withdrawor.WITHDRAW_PRECOMPILE(), "WithdrawPrecompile");
+        ibera.setFeeDivisorShareholders(0);
+        vm.stopPrank();
     }
 
     function testSetUp() public virtual {
@@ -131,9 +109,11 @@ contract InfraredBERABaseTest is Test {
         assertTrue(infrared.isInfraredValidator(pubkey0));
         assertTrue(infrared.isInfraredValidator(pubkey1));
 
-        assertTrue(ibera.hasRole(ibera.DEFAULT_ADMIN_ROLE(), address(this)));
+        assertTrue(
+            ibera.hasRole(ibera.DEFAULT_ADMIN_ROLE(), infraredGovernance)
+        );
         assertTrue(ibera.keeper(keeper));
-        assertTrue(ibera.governor(governor));
+        assertTrue(ibera.governor(infraredGovernance));
 
         address DEPOSIT_CONTRACT = depositor.DEPOSIT_CONTRACT();
         assertTrue(DEPOSIT_CONTRACT.code.length > 0);

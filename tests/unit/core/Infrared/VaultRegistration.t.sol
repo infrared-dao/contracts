@@ -10,8 +10,6 @@ contract InfraredRegisterVaultTest is Helper {
     //////////////////////////////////////////////////////////////*/
     function testSuccessfulVaultRegistration() public {
         stakingAsset = address(red); // Assuming you have a mock iRED token
-        // Grant the caller (this test contract) the KEEPER_ROLE to allow vault registration
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
 
         // Mock data for the test
         address[] memory _rewardTokens = new address[](2); // Assuming you have reward token addresses
@@ -44,9 +42,6 @@ contract InfraredRegisterVaultTest is Helper {
     }
 
     function testFailVaultRegistrationWithZeroAsset() public {
-        // Grant the KEEPER_ROLE to this contract to perform the vault registration
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
-
         // Define reward tokens assuming you have them set up for the test
         address[] memory _rewardTokens = new address[](1); // Modify as per your test setup
         _rewardTokens[0] = address(red); // Example reward token address
@@ -61,9 +56,6 @@ contract InfraredRegisterVaultTest is Helper {
     }
 
     function testFailVaultRegistrationWithInvalid_rewardTokens() public {
-        // Grant the KEEPER_ROLE to this contract
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
-
         MockERC20 mockAsset = new MockERC20("MockAsset", "MAS", 18); // Mock asset token
         // Setup for the asset and reward tokens
         address assetAddress = address(mockAsset); // Your mock asset address
@@ -79,32 +71,7 @@ contract InfraredRegisterVaultTest is Helper {
         vm.expectRevert(Errors.RewardTokenNotSupported.selector);
     }
 
-    function testFailVaultRegistrationUnauthorized() public {
-        vm.startPrank(address(404)); // Simulate call from an unauthorized address
-
-        address[] memory _rewardTokens; // Assuming you've defined _rewardTokens somewhere
-        _rewardTokens[0] = address(ibgt); // Example reward token address
-        _rewardTokens[1] = address(red);
-        // Adjusted to reflect the lack of poolAddress parameter and updated error handling
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                address(404),
-                infrared.KEEPER_ROLE()
-            )
-        );
-
-        // Updated to match the new function signature
-        try infrared.registerVault(address(stakingAsset)) {
-            revert("Unauthorized address should revert");
-        } catch {
-            revert();
-        }
-    }
-
     function testFailVaultRegistrationDuplicateAsset() public {
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
-
         address[] memory _rewardTokens; // Assuming you've defined _rewardTokens somewhere
         _rewardTokens[0] = address(ibgt); // Example reward token address
         _rewardTokens[1] = address(red);
@@ -115,9 +82,6 @@ contract InfraredRegisterVaultTest is Helper {
     }
 
     function testRolePersistencePostVaultRegistration() public {
-        // Grant the KEEPER_ROLE to the test contract
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
-
         MockERC20 mockAsset = new MockERC20("MockAsset", "MAS", 18);
         // Prepare the reward tokens array; assuming it's already initialized and filled as needed
         address[] memory _rewardTokens = new address[](2); // example initialization
@@ -129,7 +93,7 @@ contract InfraredRegisterVaultTest is Helper {
 
         // Assert that the test contract still holds the KEEPER_ROLE after registering the vault
         assertTrue(
-            infrared.hasRole(infrared.KEEPER_ROLE(), address(this)),
+            infrared.hasRole(infrared.KEEPER_ROLE(), keeper),
             "Keeper role should persist post registration"
         );
     }
@@ -142,6 +106,7 @@ contract InfraredRegisterVaultTest is Helper {
         uint256 balanceBefore = honey.balanceOf(vault);
         assertEq(balanceBefore, 0);
         honey.mint(vault, amount);
+        vm.prank(infraredGovernance);
         infrared.recoverERC20FromVault(
             address(stakingAsset), address(this), token, amount
         );

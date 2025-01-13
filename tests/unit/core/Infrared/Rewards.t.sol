@@ -20,7 +20,6 @@ contract InfraredRewardsTest is Helper {
         rewardTokens[0] = address(ibgt);
         rewardTokens[1] = address(red);
 
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
         // InfraredVault vault = InfraredVault(
         //     address(infrared.registerVault(address(wbera), rewardTokens))
         // );
@@ -146,6 +145,102 @@ contract InfraredRewardsTest is Helper {
         vm.stopPrank();
     }
 
+    function testRecoverERC20WithProtocolFees() public {
+        // First run harvestVault to accumulate protocol fees
+        testHarvestVaultWithProtocolFees();
+
+        // Get initial state
+        uint256 initialProtocolFees = infrared.protocolFeeAmounts(address(ibgt));
+        uint256 initialBalance = ibgt.balanceOf(address(infrared));
+
+        // Mint extra "unaccounted" tokens to the contract
+        // Make sure we mint enough to have some available after protocol fees
+        uint256 extraTokens = 100 ether; // Increased amount
+        vm.startPrank(address(infrared));
+        ibgt.mint(address(infrared), extraTokens);
+        vm.stopPrank();
+
+        // Calculate available balance (total - protocol fees)
+        uint256 totalBalance = ibgt.balanceOf(address(infrared));
+        uint256 protocolFees = infrared.protocolFeeAmounts(address(ibgt));
+        uint256 availableBalance = totalBalance - protocolFees;
+
+        // Verify we have unaccounted tokens
+        assertTrue(
+            availableBalance > 0, "Should have unaccounted tokens available"
+        );
+
+        // Test 1: Attempt to recover more than available balance (should fail)
+        vm.startPrank(infraredGovernance);
+        vm.expectRevert(
+            abi.encodeWithSignature("TokensReservedForProtocolFees()")
+        );
+        infrared.recoverERC20(address(123), address(ibgt), availableBalance + 1);
+        vm.stopPrank();
+
+        // Test 2: Attempt to recover exactly available balance (should succeed)
+        vm.startPrank(infraredGovernance);
+        infrared.recoverERC20(address(456), address(ibgt), availableBalance);
+        vm.stopPrank();
+
+        // Verify balances after successful recovery
+        assertEq(
+            ibgt.balanceOf(address(456)),
+            availableBalance,
+            "Recipient should have received available balance"
+        );
+        assertEq(
+            ibgt.balanceOf(address(infrared)),
+            protocolFees,
+            "Infrared should retain only protocol fees"
+        );
+
+        // Test 3: Attempt to recover remaining amount (should fail)
+        vm.startPrank(infraredGovernance);
+        vm.expectRevert(
+            abi.encodeWithSignature("TokensReservedForProtocolFees()")
+        );
+        infrared.recoverERC20(address(789), address(ibgt), 1);
+        vm.stopPrank();
+    }
+
+    function testRecoverERC20WithZeroProtocolFees() public {
+        // Mint tokens directly to the contract without harvesting
+        uint256 amount = 100 ether;
+        vm.startPrank(address(infrared));
+        ibgt.mint(address(infrared), amount);
+        vm.stopPrank();
+
+        // Verify initial state
+        uint256 totalBalance = ibgt.balanceOf(address(infrared));
+        uint256 protocolFees = infrared.protocolFeeAmounts(address(ibgt));
+
+        // Log values for debugging
+        console.log("Total Balance:", totalBalance);
+        console.log("Protocol Fees:", protocolFees);
+        console.log("Available Balance:", totalBalance - protocolFees);
+
+        // Should be able to recover full amount since no protocol fees
+        assertTrue(protocolFees == 0, "Should have no protocol fees");
+
+        // Test 1: Recover full amount (should succeed)
+        vm.startPrank(infraredGovernance);
+        infrared.recoverERC20(address(456), address(ibgt), amount);
+        vm.stopPrank();
+
+        // Verify balances after recovery
+        assertEq(
+            ibgt.balanceOf(address(456)),
+            amount,
+            "Recipient should have received full amount"
+        );
+        assertEq(
+            ibgt.balanceOf(address(infrared)),
+            0,
+            "Infrared should have zero balance"
+        );
+    }
+
     /*//////////////////////////////////////////////////////////////
                 Incentives test
     //////////////////////////////////////////////////////////////*/
@@ -180,18 +275,24 @@ contract InfraredRewardsTest is Helper {
 
     function testAddRewardFailsWithNonWhitelistedReward() public {
         vm.expectRevert(abi.encodeWithSignature("RewardTokenNotWhitelisted()"));
+        vm.prank(infraredGovernance);
         infrared.addReward(address(wbera), address(red), 7 days);
     }
 
     function testAddRewardFailsWithZeroDuration() public {
+        vm.startPrank(infraredGovernance);
+        infrared.updateWhiteListedRewardTokens(address(red), true);
         vm.expectRevert(abi.encodeWithSignature("ZeroAmount()"));
         infrared.addReward(address(wbera), address(red), 0);
+        vm.stopPrank();
     }
 
     function testAddRewardFailsWithNoVault() public {
+        vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(red), true);
         vm.expectRevert(abi.encodeWithSignature("NoRewardsVault()"));
         infrared.addReward(address(1), address(red), 7 days);
+        vm.stopPrank();
     }
 
     function testAddRewardFailsWithNotAuthorized() public {

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
@@ -14,7 +14,7 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
         uint256 value = 200 ether + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
         ibera.mint{value: value}(alice);
         uint256 amount = 100 ether + InfraredBERAConstants.MINIMUM_DEPOSIT;
-        vm.prank(governor);
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
         vm.prank(keeper);
         depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
@@ -717,6 +717,7 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
         uint256 amount = amountSubmitFirst + amountSubmitSecond / 4;
         assertTrue(amount % 1 gwei == 0);
         vm.expectRevert();
+        vm.prank(address(10));
         withdrawor.execute(pubkey0, amount);
     }
 
@@ -734,6 +735,7 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
         uint256 amount = amountSubmitFirst + amountSubmitSecond / 4;
         assertTrue(amount % 1 gwei == 0);
         vm.expectRevert();
+        vm.prank(address(10));
         withdrawor.execute(pubkey0, amount);
         // should now succeed
         vm.warp(block.timestamp + InfraredBERAConstants.FORCED_MIN_DELAY + 1);
@@ -1125,15 +1127,112 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
     }
 
     function testSweep() public {
-        // simulate forced withdrawal
-        vm.deal(address(withdrawor), 32 ether);
-        // test only keeper can access
+        // Get current stake from setup
+        uint256 validatorStake = ibera.stakes(pubkey0);
+
+        // Disable withdrawals (required for sweep)
+        vm.prank(infraredGovernance);
+        ibera.setWithdrawalsEnabled(false);
+
+        // Simulate forced withdrawal by dealing ETH to withdrawor
+        vm.deal(address(withdrawor), validatorStake);
+
+        // Test unauthorized caller
+        vm.prank(address(10));
         vm.expectRevert();
-        withdrawor.sweep(32 ether, pubkey0);
+        withdrawor.sweep(pubkey0);
+
+        // Test successful sweep
+        vm.prank(keeper);
+        withdrawor.sweep(pubkey0);
+
+        // Verify stake and balance after sweep
+        assertEq(ibera.stakes(pubkey0), 0, "Stake should be zero after sweep");
+        assertEq(
+            address(withdrawor).balance,
+            0,
+            "Withdrawor balance should be zero after sweep"
+        );
+    }
+
+    function testExecuteRevertsWhenValidatorExited() public {
+        // First sweep the validator
+        vm.prank(infraredGovernance);
+        ibera.setWithdrawalsEnabled(false);
+
+        uint256 validatorStake = ibera.stakes(pubkey0);
+        vm.deal(address(withdrawor), validatorStake);
+        vm.prank(keeper);
+        withdrawor.sweep(pubkey0);
+
+        // Try to execute a new deposit - should revert
+        uint256 value = InfraredBERAConstants.INITIAL_DEPOSIT
+            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
+        ibera.mint{value: value}(alice);
+        vm.prank(infraredGovernance);
+        ibera.setDepositSignature(pubkey0, signature0);
 
         vm.prank(keeper);
-        withdrawor.sweep(32 ether, pubkey0);
+        vm.expectRevert(Errors.ValidatorForceExited.selector);
+        depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
+    }
 
-        assertEq(address(withdrawor).balance, 0);
+    function testSweepRevertsWhenWithdrawalsEnabled() public {
+        uint256 validatorStake = ibera.stakes(pubkey0);
+        vm.deal(address(withdrawor), validatorStake);
+
+        // Enable withdrawals
+        vm.prank(infraredGovernance);
+        ibera.setWithdrawalsEnabled(true);
+
+        // Verify withdrawals are enabled
+        assertTrue(ibera.withdrawalsEnabled(), "Withdrawals should be enabled");
+
+        // Should revert with unauthorized when trying to sweep with withdrawals enabled
+        vm.prank(keeper);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.Unauthorized.selector, keeper)
+        );
+        withdrawor.sweep(pubkey0);
+    }
+
+    function testSweepRevertsWhenInsufficientBalance() public {
+        uint256 validatorStake = ibera.stakes(pubkey0);
+
+        vm.prank(infraredGovernance);
+        ibera.setWithdrawalsEnabled(false);
+
+        // Deal less than validator stake
+        vm.deal(address(withdrawor), validatorStake - 1 ether);
+
+        vm.prank(keeper);
+        vm.expectRevert(Errors.InvalidAmount.selector);
+        withdrawor.sweep(pubkey0);
+    }
+
+    function testSweepRevertsWhenValidatorAlreadyExited() public {
+        uint256 validatorStake = ibera.stakes(pubkey0);
+
+        // First sweep - exit the validator
+        vm.prank(infraredGovernance);
+        ibera.setWithdrawalsEnabled(false);
+        vm.deal(address(withdrawor), validatorStake);
+        vm.prank(keeper);
+        withdrawor.sweep(pubkey0);
+
+        // Verify validator state after first sweep
+        assertEq(ibera.stakes(pubkey0), 0, "Stake should be zero after sweep");
+        assertTrue(
+            ibera.hasExited(pubkey0), "Validator should be marked as exited"
+        );
+
+        // Attempt second sweep - should revert because validator is exited
+        vm.deal(address(withdrawor), 32 ether); // Amount doesn't matter, should revert first
+        vm.startPrank(keeper);
+        vm.expectRevert(
+            abi.encodeWithSelector(Errors.ValidatorForceExited.selector)
+        );
+        withdrawor.sweep(pubkey0);
+        vm.stopPrank();
     }
 }

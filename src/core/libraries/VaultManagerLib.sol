@@ -87,7 +87,6 @@ library VaultManagerLib {
         address _rewardsToken,
         uint256 _rewardsDuration
     ) external {
-        if (_rewardsDuration == 0) revert Errors.ZeroAmount();
         if (!isWhitelisted($, _rewardsToken)) {
             revert Errors.RewardTokenNotWhitelisted();
         }
@@ -105,7 +104,6 @@ library VaultManagerLib {
         address _rewardsToken,
         uint256 _amount
     ) external {
-        if (_amount == 0) revert Errors.ZeroAmount();
         if (address($.vaultRegistry[_stakingToken]) == address(0)) {
             revert Errors.NoRewardsVault();
         }
@@ -166,9 +164,6 @@ library VaultManagerLib {
         address _rewardsToken,
         uint256 _rewardsDuration
     ) external {
-        if (_rewardsDuration == 0) {
-            revert Errors.ZeroAmount();
-        }
         if ($.vaultRegistry[_stakingToken] == IInfraredVault(address(0))) {
             revert Errors.VaultNotSupported();
         }

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import "forge-std/Script.sol";
@@ -20,7 +20,8 @@ import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {InfraredBERAClaimor} from "src/staking/InfraredBERAClaimor.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
+import {InfraredBERAWithdraworLite} from
+    "src/staking/InfraredBERAWithdraworLite.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 
@@ -30,8 +31,7 @@ contract InfraredDeployer is Script {
 
     InfraredBERA public ibera;
     InfraredBERADepositor public depositor;
-    InfraredBERAWithdrawor public withdrawor;
-    InfraredBERAClaimor public claimor;
+    InfraredBERAWithdraworLite public withdrawor;
     InfraredBERAFeeReceivor public receivor;
 
     BribeCollector public collector;
@@ -42,8 +42,8 @@ contract InfraredDeployer is Script {
     VotingEscrow public veIRED;
 
     function run(
-        address _admin,
-        address _votingKeeper,
+        address _gov,
+        address _keeper,
         address _bgt,
         address _berachainRewardsFactory,
         address _beraChef,
@@ -55,35 +55,13 @@ contract InfraredDeployer is Script {
     ) external {
         vm.startBroadcast();
 
-        ibgt = new InfraredBGT(_bgt);
+        infrared = Infrared(payable(setupProxy(address(new Infrared()))));
 
-        infrared = Infrared(
-            payable(
-                setupProxy(
-                    address(
-                        new Infrared(
-                            address(ibgt),
-                            _berachainRewardsFactory,
-                            _beraChef,
-                            payable(_wbera),
-                            _honey
-                        )
-                    )
-                )
-            )
-        );
         collector = BribeCollector(
             setupProxy(address(new BribeCollector(address(infrared))))
         );
         distributor = InfraredDistributor(
             setupProxy(address(new InfraredDistributor(address(infrared))))
-        );
-
-        // IRED voting
-        red = new RED(address(ibgt), address(infrared));
-        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
-        veIRED = new VotingEscrow(
-            _votingKeeper, address(red), address(voter), address(infrared)
         );
 
         // InfraredBERA
@@ -92,49 +70,70 @@ contract InfraredDeployer is Script {
         depositor = InfraredBERADepositor(
             setupProxy(address(new InfraredBERADepositor()))
         );
-        withdrawor = InfraredBERAWithdrawor(
-            payable(setupProxy(address(new InfraredBERAWithdrawor())))
+        withdrawor = InfraredBERAWithdraworLite(
+            payable(setupProxy(address(new InfraredBERAWithdraworLite())))
         );
-        claimor =
-            InfraredBERAClaimor(setupProxy(address(new InfraredBERAClaimor())));
+
         receivor = InfraredBERAFeeReceivor(
             payable(setupProxy(address(new InfraredBERAFeeReceivor())))
         );
 
         // initialize proxies
-        collector.initialize(_admin, _wbera, _bribeCollectorPayoutAmount);
-        distributor.initialize(address(ibera));
-        infrared.initialize(
-            _admin,
+        collector.initialize(_gov, _wbera, _bribeCollectorPayoutAmount);
+        distributor.initialize(_gov, address(ibera));
+
+        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+
+        Infrared.InitializationData memory data = Infrared.InitializationData(
+            _gov,
+            _keeper,
+            _bgt,
+            _berachainRewardsFactory,
+            _beraChef,
+            payable(_wbera),
+            _honey,
             address(collector),
             address(distributor),
             address(voter),
             address(ibera),
             _rewardsDuration
         );
-        voter.initialize(address(veIRED));
+        infrared.initialize(data);
+
+        ibgt = new InfraredBGT(
+            address(_bgt), data._gov, address(infrared), data._gov
+        );
+
+        red = new RED(
+            address(ibgt), address(infrared), data._gov, data._gov, data._gov
+        );
+
+        infrared.setIBGT(address(ibgt));
+        infrared.setRed(address(red));
+
+        veIRED = new VotingEscrow(
+            _keeper, address(red), address(voter), address(infrared)
+        );
+        voter.initialize(address(veIRED), data._gov, data._keeper);
 
         // initialize ibera proxies
-        depositor.initialize(_admin, address(ibera), _beaconDeposit);
-        withdrawor.initialize(_admin, address(ibera));
-        claimor.initialize(_admin);
-        receivor.initialize(_admin, address(ibera), address(infrared));
+        depositor.initialize(_gov, _keeper, address(ibera), _beaconDeposit);
+        withdrawor.initialize(_gov, _keeper, address(ibera));
+
+        receivor.initialize(_gov, _keeper, address(ibera), address(infrared));
 
         // init deposit to avoid inflation attack
         uint256 _value = InfraredBERAConstants.MINIMUM_DEPOSIT
             + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
 
         ibera.initialize{value: _value}(
-            _admin,
+            _gov,
+            _keeper,
             address(infrared),
             address(depositor),
             address(withdrawor),
-            address(claimor),
             address(receivor)
         );
-
-        // grant infrared ibgt minter role
-        ibgt.grantRole(ibgt.MINTER_ROLE(), address(infrared));
 
         vm.stopBroadcast();
     }

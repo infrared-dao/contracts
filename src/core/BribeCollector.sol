@@ -30,11 +30,11 @@ contract BribeCollector is InfraredUpgradeable, IBribeCollector {
     }
 
     function initialize(
-        address _admin,
+        address _gov,
         address _payoutToken,
         uint256 _payoutAmount
     ) external initializer {
-        if (_admin == address(0) || _payoutToken == address(0)) {
+        if (_gov == address(0) || _payoutToken == address(0)) {
             revert Errors.ZeroAddress();
         }
         if (_payoutAmount == 0) revert Errors.ZeroAmount();
@@ -42,6 +42,10 @@ contract BribeCollector is InfraredUpgradeable, IBribeCollector {
         payoutToken = _payoutToken;
         payoutAmount = _payoutAmount;
         emit PayoutAmountSet(0, _payoutAmount);
+
+        // grant admin access roles
+        _grantRole(DEFAULT_ADMIN_ROLE, _gov);
+        _grantRole(GOVERNANCE_ROLE, _gov);
 
         // init upgradeable components
         __InfraredUpgradeable_init();

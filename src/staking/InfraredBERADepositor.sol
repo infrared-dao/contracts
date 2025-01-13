@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -10,7 +10,6 @@ import {IInfraredBERADepositor} from "src/interfaces/IInfraredBERADepositor.sol"
 import {InfraredBERAConstants} from "./InfraredBERAConstants.sol";
 
 /// @title InfraredBERADepositor
-/// @author bungabear69420
 /// @notice Depositor to deposit BERA to CL for Infrared liquid staking token
 contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
     uint8 public constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = 0x01;
@@ -40,22 +39,27 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
     uint256 public nonceSubmit;
 
     /// @notice Initialize the contract (replaces the constructor)
-    /// @param admin Address for admin to upgrade
+    /// @param _gov Address for admin / gov to upgrade
+    /// @param _keeper Address for keeper
     /// @param ibera The initial IBERA address
     /// @param _depositContract The ETH2 (Berachain) Deposit Contract Address
-    function initialize(address admin, address ibera, address _depositContract)
-        public
-        initializer
-    {
+    function initialize(
+        address _gov,
+        address _keeper,
+        address ibera,
+        address _depositContract
+    ) public initializer {
         if (
-            admin == address(0) || ibera == address(0)
+            _gov == address(0) || _keeper == address(0) || ibera == address(0)
                 || _depositContract == address(0)
         ) revert Errors.ZeroAddress();
         __Upgradeable_init();
         InfraredBERA = ibera;
         nonceSlip = 1;
         nonceSubmit = 1;
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
+        _grantRole(DEFAULT_ADMIN_ROLE, _gov);
+        _grantRole(GOVERNANCE_ROLE, _gov);
+        _grantRole(KEEPER_ROLE, _keeper);
         DEPOSIT_CONTRACT = _depositContract;
     }
 
@@ -80,7 +84,7 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
 
     /// @inheritdoc IInfraredBERADepositor
     function queue(uint256 amount) external payable returns (uint256 nonce) {
-        // @dev can be called by withdrawor when rebalancing
+        // @dev can be called by withdrawor when rebalancing and sweeping
         if (
             msg.sender != InfraredBERA
                 && msg.sender != IInfraredBERA(InfraredBERA).withdrawor()
