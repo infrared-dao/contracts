@@ -18,7 +18,7 @@ remappings = [
     '@solmate/=lib/solmate/src/',
     'solady/src/=lib/solady/src/',
     'solady/test/=lib/solady/test/',
-    '@berachain/=lib/contracts-monorepo/src/',
+    '@berachain/=lib/contracts/src/',
     '@prb/=lib/prb-test/src/',
 ]
 fs_permissions = [{ access = "read", path = "./" }]
@@ -34,7 +34,7 @@ remappings = [
     '@solmate/=lib/solmate/src/',
     'solady/src/=lib/solady/src/',
     'solady/test/=lib/solady/test/',
-    '@berachain/=lib/contracts-monorepo/src/',
+    '@berachain/=lib/contracts/src/',
     '@prb/=lib/prb-test/src/',
 ]
 
