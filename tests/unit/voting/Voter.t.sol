@@ -859,6 +859,7 @@ contract VoterTest is Base {
 
     function testCannotCreateBribeVaultIfBribeVaultAlreadyExists() public {
         vm.expectRevert(IVoter.BribeVaultExists.selector);
+        vm.prank(keeper);
         voter.createBribeVault(stakingTokens[0], stakingTokens);
     }
 
@@ -873,10 +874,10 @@ contract VoterTest is Base {
 
         vm.startPrank(keeper);
         infrared.registerVault(bribeRewardToken3);
-        vm.stopPrank();
 
         vm.expectRevert(IVoter.NotWhitelistedToken.selector);
         voter.createBribeVault(bribeRewardToken3, _rewardTokens);
+        vm.stopPrank();
     }
 
     function testCannotVoteForBribeVaultThatDoesNotExist() public {
@@ -927,8 +928,7 @@ contract VoterTest is Base {
     }
 
     function testSetGovernor() public {
-        // address this == governor
-        infrared.grantRole(infrared.GOVERNANCE_ROLE(), user2);
+        voter.grantRole(voter.GOVERNANCE_ROLE(), user2);
 
         vm.prank(user2);
         voter.setMaxVotingNum(10);

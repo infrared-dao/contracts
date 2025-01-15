@@ -4,6 +4,8 @@ pragma solidity ^0.8.26;
 import "forge-std/Test.sol";
 import "src/core/MultiRewards.sol";
 import {MockERC20} from "tests/unit/mocks/MockERC20.sol";
+import {MissingReturnToken} from
+    "@solmate/test/utils/weird-tokens/MissingReturnToken.sol";
 
 contract MultiRewardsConcrete is MultiRewards {
     constructor(address _stakingToken) MultiRewards(_stakingToken) {}
@@ -53,6 +55,9 @@ contract MultiRewardsTest is Test {
     MockERC20 rewardToken;
     MockERC20 rewardToken2;
     MockERC20 baseToken;
+
+    MissingReturnToken missingReturnToken;
+
     address alice;
     address bob;
     address charlie;
@@ -62,6 +67,8 @@ contract MultiRewardsTest is Test {
         rewardToken = new MockERC20("RewardToken", "RWD", 18);
         rewardToken2 = new MockERC20("RewardToken2", "RWD2", 18);
         baseToken = new MockERC20("BaseToken", "BASE", 18);
+
+        missingReturnToken = new MissingReturnToken();
 
         // Deploy MultiRewards contract
         multiRewards = new MultiRewardsConcrete(address(baseToken));
@@ -79,10 +86,13 @@ contract MultiRewardsTest is Test {
         baseToken.mint(bob, 1e20);
         baseToken.mint(charlie, 1e20);
 
+        deal(address(missingReturnToken), alice, 1e20);
+
         // Set up users
         vm.startPrank(alice);
         rewardToken.approve(address(multiRewards), type(uint256).max);
         rewardToken2.approve(address(multiRewards), type(uint256).max);
+        missingReturnToken.approve(address(multiRewards), type(uint256).max);
         vm.stopPrank();
     }
 
@@ -227,5 +237,50 @@ contract MultiRewardsTest is Test {
         baseToken.approve(address(multiRewards), amount);
         multiRewards.stake(amount);
         vm.stopPrank();
+    }
+
+    function testRevertingTokens() public {
+        vm.startPrank(alice);
+        multiRewards.addReward(address(missingReturnToken), alice, 3600);
+        multiRewards.notifyRewardAmount(address(missingReturnToken), 1e10);
+        vm.stopPrank();
+
+        testMultipleRewardEarnings();
+
+        vm.prank(bob);
+        multiRewards.getReward();
+    }
+
+    function testMidPeriodResidualCalculation() public {
+        // Setup
+        vm.startPrank(alice);
+        uint256 rewardDuration = 100; // Small duration to make calculations clearer
+        multiRewards.addReward(address(rewardToken), alice, rewardDuration);
+
+        // First notification with amount that will create residual
+        uint256 firstAmount = 104; // Will create residual when divided by 100
+        multiRewards.notifyRewardAmount(address(rewardToken), firstAmount);
+
+        // Check first residual
+        (,,,,,, uint256 firstResidual) =
+            multiRewards.rewardData(address(rewardToken));
+        assertEq(firstResidual, 4, "First residual should be 4");
+
+        // Move to middle of period
+        skip(rewardDuration / 2);
+
+        // Add second amount that will also create residual
+        uint256 secondAmount = 53; // Will create residual when combined with leftover (50 + 53 + 4) % D = 7
+        multiRewards.notifyRewardAmount(address(rewardToken), secondAmount);
+        vm.stopPrank();
+
+        // Get final state
+        (,,,,,, uint256 finalResidual) =
+            multiRewards.rewardData(address(rewardToken));
+
+        // Verify final residual exists
+        assertEq(
+            finalResidual, 7, "Should track residual after second notification"
+        );
     }
 }

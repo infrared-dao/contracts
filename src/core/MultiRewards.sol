@@ -209,7 +209,7 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         _totalSupply = _totalSupply - amount;
         _balances[msg.sender] = _balances[msg.sender] - amount;
 
-        // hook withdraw then transfer staking token out, in case hook needs to bring in collateral
+        // hook withdraw then transfer staking token out
         onWithdraw(amount);
         stakingToken.safeTransfer(msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
@@ -228,13 +228,22 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         updateReward(_user)
     {
         onReward();
-        for (uint256 i; i < rewardTokens.length; i++) {
+        uint256 len = rewardTokens.length;
+        for (uint256 i; i < len; i++) {
             address _rewardsToken = rewardTokens[i];
             uint256 reward = rewards[_user][_rewardsToken];
             if (reward > 0) {
                 rewards[_user][_rewardsToken] = 0;
-                ERC20(_rewardsToken).safeTransfer(_user, reward);
-                emit RewardPaid(_user, _rewardsToken, reward);
+                (bool success, bytes memory data) = _rewardsToken.call(
+                    abi.encodeWithSelector(
+                        ERC20.transfer.selector, _user, reward
+                    )
+                );
+                if (success && (data.length == 0 || abi.decode(data, (bool)))) {
+                    emit RewardPaid(_user, _rewardsToken, reward);
+                } else {
+                    continue;
+                }
             }
         }
     }
@@ -284,6 +293,7 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
      */
     function _notifyRewardAmount(address _rewardsToken, uint256 reward)
         internal
+        whenNotPaused
         updateReward(address(0))
     {
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
@@ -303,8 +313,17 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
             uint256 remaining =
                 rewardData[_rewardsToken].periodFinish - block.timestamp;
             uint256 leftover = remaining * rewardData[_rewardsToken].rewardRate;
+
+            // Calculate total and its residual
+            uint256 totalAmount =
+                reward + leftover + rewardData[_rewardsToken].rewardResidual;
+            rewardData[_rewardsToken].rewardResidual =
+                totalAmount % rewardData[_rewardsToken].rewardsDuration;
+
+            // Remove residual before setting rate
+            totalAmount = totalAmount - rewardData[_rewardsToken].rewardResidual;
             rewardData[_rewardsToken].rewardRate =
-                (reward + leftover) / rewardData[_rewardsToken].rewardsDuration;
+                totalAmount / rewardData[_rewardsToken].rewardsDuration;
         }
 
         rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
@@ -325,10 +344,6 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         address tokenAddress,
         uint256 tokenAmount
     ) internal {
-        require(
-            tokenAddress != address(stakingToken),
-            "Cannot withdraw staking token"
-        );
         require(
             rewardData[tokenAddress].lastUpdateTime == 0,
             "Cannot withdraw reward token"
@@ -354,8 +369,6 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         require(_rewardsDuration > 0, "Reward duration must be non-zero");
 
         rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
-        emit RewardsDurationUpdated(
-            _rewardsToken, rewardData[_rewardsToken].rewardsDuration
-        );
+        emit RewardsDurationUpdated(_rewardsToken, _rewardsDuration);
     }
 }

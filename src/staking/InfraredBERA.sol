@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {ERC20Upgradeable} from
@@ -20,7 +20,6 @@ import {InfraredBERAClaimor} from "./InfraredBERAClaimor.sol";
 import {InfraredBERAFeeReceivor} from "./InfraredBERAFeeReceivor.sol";
 
 /// @title InfraredBERA
-/// @author bungabear69420
 /// @notice Infrared liquid staking token for BERA
 /// @dev Assumes BERA balances do *not* change at the CL
 contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
@@ -37,8 +36,6 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
     /// @inheritdoc IInfraredBERA
     address public withdrawor;
     /// @inheritdoc IInfraredBERA
-    address public claimor;
-    /// @inheritdoc IInfraredBERA
     address public receivor;
     /// @inheritdoc IInfraredBERA
     uint256 public deposits;
@@ -47,21 +44,23 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
     mapping(bytes32 pubkeyHash => bool isStaked) internal _staked;
 
+    mapping(bytes32 pubkeyHash => bool hasExited) internal _exited;
+
     mapping(bytes32 pubkeyHash => bytes) internal _signatures;
 
     /// @inheritdoc IInfraredBERA
     function initialize(
-        address admin,
+        address _gov,
+        address _keeper,
         address _infrared,
         address _depositor,
         address _withdrawor,
-        address _claimor,
         address _receivor
     ) external payable initializer {
         if (
-            admin == address(0) || _infrared == address(0)
+            _gov == address(0) || _infrared == address(0)
                 || _depositor == address(0) || _withdrawor == address(0)
-                || _claimor == address(0) || _receivor == address(0)
+                || _receivor == address(0)
         ) revert Errors.ZeroAddress();
         __ERC20_init("Infrared BERA", "iBERA");
         __Upgradeable_init();
@@ -69,11 +68,13 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         infrared = _infrared;
         depositor = _depositor;
         withdrawor = _withdrawor;
-        claimor = _claimor;
         receivor = _receivor;
-        _grantRole(DEFAULT_ADMIN_ROLE, admin);
 
-        // burn minimum amount to mitigate inflation attack with shares
+        _grantRole(DEFAULT_ADMIN_ROLE, _gov);
+        _grantRole(GOVERNANCE_ROLE, _gov);
+        _grantRole(KEEPER_ROLE, _keeper);
+
+        // mint minimum amount to mitigate inflation attack with shares
         _initialized = true;
         mint(address(this));
     }
@@ -126,7 +127,9 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
     /// @inheritdoc IInfraredBERA
     function confirmed() external view returns (uint256) {
-        return (deposits - pending());
+        uint256 _pending = pending();
+        // If pending is greater than deposits, return 0 instead of underflowing
+        return _pending > deposits ? 0 : deposits - _pending;
     }
 
     /// @inheritdoc IInfraredBERA
@@ -151,6 +154,9 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
     /// @inheritdoc IInfraredBERA
     function sweep() external payable {
+        if (msg.sender != receivor) {
+            revert Errors.Unauthorized(msg.sender);
+        }
         _deposit(msg.value);
         emit Sweep(msg.value);
     }
@@ -203,6 +209,9 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         // withdraw bera request
         // @dev pay withdraw precompile fee via funds sent in on payable call
         uint256 fee = msg.value;
+        if (fee < InfraredBERAConstants.MINIMUM_WITHDRAW_FEE) {
+            revert Errors.InvalidFee();
+        }
         nonce = _withdraw(receiver, amount, fee);
 
         emit Burn(receiver, nonce, amount, shares, fee);
@@ -213,6 +222,9 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         if (msg.sender != depositor && msg.sender != withdrawor) {
             revert Errors.Unauthorized(msg.sender);
         }
+        if (_exited[keccak256(pubkey)]) {
+            revert Errors.ValidatorForceExited();
+        }
         // update validator pubkey stake for delta
         uint256 stake = _stakes[keccak256(pubkey)];
         if (delta > 0) stake += uint256(delta);
@@ -221,6 +233,11 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         // update whether have staked to validator before
         if (delta > 0 && !_staked[keccak256(pubkey)]) {
             _staked[keccak256(pubkey)] = true;
+        }
+        // only 0 if validator was force exited
+        if (stake == 0) {
+            _staked[keccak256(pubkey)] = false;
+            _exited[keccak256(pubkey)] = true;
         }
 
         emit Register(pubkey, delta, stake);
@@ -242,42 +259,6 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
             pubkey, _signatures[keccak256(pubkey)], signature
         );
         _signatures[keccak256(pubkey)] = signature;
-    }
-
-    /// @param _depositor The address of the new depositor
-    function setDepositor(address _depositor) public onlyGovernor {
-        if (_depositor == address(0)) revert Errors.ZeroAddress();
-        address old = depositor;
-        depositor = _depositor;
-
-        emit NewDepositor(_depositor, old, msg.sender);
-    }
-
-    /// @param _withdrawor The address of the new withdrawor
-    function setWithdrawor(address _withdrawor) public onlyGovernor {
-        if (_withdrawor == address(0)) revert Errors.ZeroAddress();
-        address old = withdrawor;
-        withdrawor = _withdrawor;
-
-        emit NewWithdrawor(_withdrawor, old, msg.sender);
-    }
-
-    /// @param _claimor The address of the new claimor
-    function setClaimor(address _claimor) public onlyGovernor {
-        if (_claimor == address(0)) revert Errors.ZeroAddress();
-        address old = claimor;
-        claimor = _claimor;
-
-        emit NewClaimor(_claimor, old, msg.sender);
-    }
-
-    /// @param _receivor The address of the new fee receivor
-    function setReceivor(address _receivor) public onlyGovernor {
-        if (_receivor == address(0)) revert Errors.ZeroAddress();
-        address old = receivor;
-        receivor = _receivor;
-
-        emit NewReceivor(_receivor, old, msg.sender);
     }
 
     /// @inheritdoc IInfraredBERA
@@ -307,7 +288,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
 
         if (beraAmount < min + fee) {
-            return (0, fee);
+            return (0, 0);
         }
 
         // Calculate shares considering both:
@@ -333,7 +314,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         }
 
         if (shares == 0) {
-            return (0, fee);
+            return (0, 0);
         }
     }
 
@@ -344,7 +325,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         returns (uint256 beraAmount, uint256 fee)
     {
         if (!_initialized || shareAmount == 0) {
-            return (0, InfraredBERAConstants.MINIMUM_WITHDRAW_FEE);
+            return (0, 0);
         }
 
         // First simulate compound effects like in actual burn
@@ -385,6 +366,11 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
     }
 
     /// @inheritdoc IInfraredBERA
+    function hasExited(bytes calldata pubkey) external view returns (bool) {
+        return _exited[keccak256(pubkey)];
+    }
+    /// @inheritdoc IInfraredBERA
+
     function signatures(bytes calldata pubkey)
         external
         view

@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
@@ -84,7 +84,7 @@ interface IInfraredDistributor {
      * @return amountCumulativeFinal Final accumulator value if removed
      * @dev Returns (0,0) if validator doesn't exist
      */
-    function snapshots(bytes calldata pubkey)
+    function getSnapshot(bytes calldata pubkey)
         external
         view
         returns (uint256 amountCumulativeLast, uint256 amountCumulativeFinal);
@@ -94,7 +94,7 @@ interface IInfraredDistributor {
      * @param pubkey Validator's public key
      * @return Address authorized to claim validator rewards
      */
-    function validators(bytes calldata pubkey)
+    function getValidator(bytes calldata pubkey)
         external
         view
         returns (address);

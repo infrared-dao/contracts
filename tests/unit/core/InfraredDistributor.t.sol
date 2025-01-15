@@ -12,7 +12,7 @@ import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 
 import {MockERC20} from "tests/unit/mocks/MockERC20.sol";
 import {MockInfrared} from "tests/unit/mocks/MockInfrared.sol";
-// import {MockBeaconDepositContract} from "tests/unit/mocks/MockBeaconDepositContract.sol";
+import {Errors} from "src/utils/Errors.sol";
 
 import {stdStorage, StdStorage} from "forge-std/Test.sol";
 
@@ -39,7 +39,7 @@ contract InfraredDistributorTest is Test {
         distributor = InfraredDistributor(
             setupProxy(address(new InfraredDistributor(address(infrared))))
         );
-        distributor.initialize(address(token));
+        distributor.initialize(address(this), address(token));
 
         // Set up initial state for tests
         deal(address(token), user, 1000 ether);
@@ -106,7 +106,7 @@ contract InfraredDistributorTest is Test {
         vm.prank(address(infrared));
         distributor.add(pubkey1, validator1);
 
-        (uint256 last1, uint256 fin1) = distributor.snapshots(pubkey1);
+        (uint256 last1, uint256 fin1) = distributor.getSnapshot(pubkey1);
         assertEq(last1, 1);
         assertEq(fin1, 0);
 
@@ -127,7 +127,7 @@ contract InfraredDistributorTest is Test {
         // @dev need this for infrared.numInfraredValidators to be correct
         infrared.addValidator(validator2);
 
-        (uint256 last2, uint256 fin2) = distributor.snapshots(pubkey2);
+        (uint256 last2, uint256 fin2) = distributor.getSnapshot(pubkey2);
         assertEq(last2, 10 ether + 1);
         assertEq(fin2, 0);
     }
@@ -154,9 +154,86 @@ contract InfraredDistributorTest is Test {
         // @dev need this for infrared.numInfraredValidators to be correct
         infrared.removeValidator(validator1);
 
-        (uint256 last1, uint256 fin1) = distributor.snapshots(pubkey1);
+        (uint256 last1, uint256 fin1) = distributor.getSnapshot(pubkey1);
         assertEq(last1, 1);
         assertEq(fin1, 20 ether + 1);
+    }
+
+    function testCannotRemoveValidatorTwice() public {
+        // First add validator1
+        vm.prank(address(infrared));
+        distributor.add(pubkey1, validator1);
+        infrared.addValidator(validator1);
+
+        // Add some rewards
+        vm.prank(user);
+        distributor.notifyRewardAmount(10 ether);
+
+        // First removal should succeed
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+        infrared.removeValidator(validator1);
+
+        // Get snapshot after first removal
+        (uint256 lastAfterRemoval, uint256 finalAfterRemoval) =
+            distributor.getSnapshot(pubkey1);
+
+        // Attempt to remove again - should revert
+        vm.expectRevert(Errors.ValidatorAlreadyRemoved.selector);
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+
+        // Verify snapshot hasn't changed
+        (uint256 lastAfterAttempt, uint256 finalAfterAttempt) =
+            distributor.getSnapshot(pubkey1);
+        assertEq(
+            lastAfterAttempt, lastAfterRemoval, "Last amount should not change"
+        );
+        assertEq(
+            finalAfterAttempt,
+            finalAfterRemoval,
+            "Final amount should not change"
+        );
+    }
+
+    function testDoubleRemovalWithMultipleValidators() public {
+        // Add two validators
+        vm.prank(address(infrared));
+        distributor.add(pubkey1, validator1);
+        infrared.addValidator(validator1);
+
+        vm.prank(address(infrared));
+        distributor.add(pubkey2, validator2);
+        infrared.addValidator(validator2);
+
+        // Add initial rewards
+        vm.prank(user);
+        distributor.notifyRewardAmount(20 ether); // 10 ether each
+
+        // Remove first validator
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+        infrared.removeValidator(validator1);
+
+        // Add more rewards (should only go to validator2)
+        vm.prank(user);
+        distributor.notifyRewardAmount(10 ether);
+
+        // Try to remove validator1 again
+        vm.expectRevert(Errors.ValidatorAlreadyRemoved.selector);
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+
+        // Verify validator1 can still claim their original share
+        vm.prank(validator1);
+        distributor.claim(pubkey1, validator1);
+
+        // Final balance for validator1 should be 10 ether (their share of initial rewards)
+        assertEq(
+            token.balanceOf(validator1),
+            10 ether,
+            "Validator1 should only receive initial share"
+        );
     }
 
     // TODO: test purge
@@ -184,7 +261,7 @@ contract InfraredDistributorTest is Test {
         vm.prank(validator1);
         distributor.claim(pubkey1, validator1);
 
-        (uint256 last1, uint256 fin1) = distributor.snapshots(pubkey1);
+        (uint256 last1, uint256 fin1) = distributor.getSnapshot(pubkey1);
         assertEq(last1, 20 ether + 1);
         assertEq(fin1, 20 ether + 1);
 
@@ -198,11 +275,57 @@ contract InfraredDistributorTest is Test {
         vm.prank(validator2);
         distributor.claim(pubkey2, validator2);
 
-        (uint256 last2, uint256 fin2) = distributor.snapshots(pubkey2);
+        (uint256 last2, uint256 fin2) = distributor.getSnapshot(pubkey2);
         assertEq(last2, 50 ether + 1);
         assertEq(fin2, 0);
 
         assertEq(token.balanceOf(validator2), 40 ether);
         assertEq(token.balanceOf(address(distributor)), 0);
+    }
+
+    function testClaimRevertsWhenNoRewardsToClaim() public {
+        // Setup initial state
+        vm.prank(address(infrared));
+        distributor.add(pubkey1, validator1);
+        infrared.addValidator(validator1);
+
+        // Initial state - validator was just added, no rewards yet distributed
+        (uint256 last1,) = distributor.getSnapshot(pubkey1);
+        assertEq(last1, distributor.amountsCumulative());
+
+        // Should revert since no new rewards to claim (amountCumulativeLast == fin)
+        vm.prank(validator1);
+        vm.expectRevert(Errors.NoRewardsToClaim.selector);
+        distributor.claim(pubkey1, validator1);
+
+        // Add some rewards and claim them
+        vm.prank(user);
+        distributor.notifyRewardAmount(10 ether);
+
+        // Claim rewards first time - should succeed
+        vm.prank(validator1);
+        distributor.claim(pubkey1, validator1);
+
+        // Try to claim again immediately - should revert
+        vm.prank(validator1);
+        vm.expectRevert(Errors.NoRewardsToClaim.selector);
+        distributor.claim(pubkey1, validator1);
+
+        // Add more rewards before removal
+        vm.prank(user);
+        distributor.notifyRewardAmount(10 ether);
+
+        // Remove validator
+        vm.prank(address(infrared));
+        distributor.remove(pubkey1);
+
+        // Can claim one last time after removal
+        vm.prank(validator1);
+        distributor.claim(pubkey1, validator1);
+
+        // Should revert after claiming all final rewards
+        vm.prank(validator1);
+        vm.expectRevert(Errors.NoRewardsToClaim.selector);
+        distributor.claim(pubkey1, validator1);
     }
 }

@@ -65,7 +65,7 @@ abstract contract Base is Test {
         ired = new MockERC20("IRED", "IRED", 18);
         // Mock non transferable token BGT token
         bgt = address(new MockERC20("BGT", "BGT", 18));
-        ibgt = new InfraredBGT(bgt);
+        // ibgt = new InfraredBGT(bgt);
         WBERA = new MockWbera();
         honey = new MockERC20("HONEY", "HONEY", 18);
         ibera = new MockERC20("iBERA", "iBERA", 18);
@@ -73,21 +73,7 @@ abstract contract Base is Test {
         rewardsFactory = new RewardVaultFactory();
 
         // initialize Infrared contracts
-        infrared = Infrared(
-            payable(
-                setupProxy(
-                    address(
-                        new Infrared(
-                            address(ibgt),
-                            address(rewardsFactory),
-                            address(chef),
-                            payable(address(WBERA)),
-                            address(honey)
-                        )
-                    )
-                )
-            )
-        );
+        infrared = Infrared(payable(setupProxy(address(new Infrared()))));
 
         address collector = address(new MockCollector(address(WBERA)));
         address distributor = address(new MockDistributor(address(ibera)));
@@ -98,19 +84,22 @@ abstract contract Base is Test {
             address(this), address(ired), address(voter), address(infrared)
         );
 
-        infrared.initialize(
+        Infrared.InitializationData memory data = Infrared.InitializationData(
             address(this),
+            keeper,
+            address(bgt),
+            address(rewardsFactory),
+            address(chef),
+            payable(address(WBERA)),
+            address(honey),
             collector,
             distributor,
             address(voter),
             address(ibera),
             1 days
-        ); // make helper contract the admin
-        voter.initialize(address(escrow));
-
-        // set access control
-        infrared.grantRole(infrared.KEEPER_ROLE(), keeper);
-        infrared.grantRole(infrared.GOVERNANCE_ROLE(), address(this));
+        );
+        infrared.initialize(data);
+        voter.initialize(address(escrow), address(this), keeper);
 
         escrow.setVoterAndDistributor(address(voter), keeper);
         escrow.setAllowedManager(keeper);

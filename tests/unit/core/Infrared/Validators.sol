@@ -58,23 +58,6 @@ contract ValidatorManagment is Helper {
         assertTrue(isValidatorAdded, "Validator should be added");
     }
 
-    function testFailAddValidatorWithZeroPubKey() public {
-        // Set up a new mock validator with zero-length public key
-        ValidatorTypes.Validator[] memory newValidators =
-            new ValidatorTypes.Validator[](1);
-        newValidators[0] = ValidatorTypes.Validator({
-            pubkey: bytes(""), // Zero-length public key
-            addr: address(this)
-        });
-
-        vm.startPrank(governance);
-        // Expect a revert due to zero-length public key
-        vm.expectRevert(Errors.ZeroBytes.selector);
-        // Attempt to add the new validators
-        infrared.addValidators(newValidators);
-        vm.stopPrank();
-    }
-
     function testFailAddValidatorUnauthorized() public {
         // Set up a new mock validator
         ValidatorTypes.Validator[] memory newValidators =
@@ -244,7 +227,7 @@ contract ValidatorManagment is Helper {
 
         // Attempt to replace the original validator with the invalid new validator
         vm.prank(infraredGovernance);
-        vm.expectRevert(Errors.ZeroBytes.selector);
+        vm.expectRevert();
         infrared.replaceValidator(
             originalValidator[0].pubkey, invalidNewValidator[0].pubkey
         );

@@ -51,5 +51,6 @@ abstract contract VotingReward is Reward {
         external
         virtual
         override
+        nonReentrant
     {}
 }

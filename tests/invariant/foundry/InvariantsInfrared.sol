@@ -72,7 +72,6 @@ contract InvariantsInfrared is Test {
         // Mock non transferable token BGT token
         bgt = new MockERC20("BGT", "BGT", 18);
         // Mock contract instantiations
-        ibgt = new InfraredBGT(address(bgt));
         ired = new MockERC20("IRED", "IRED", 18);
         ibera = new MockERC20("WInfraredBERA", "WInfraredBERA", 18);
         honey = new MockERC20("HONEY", "HONEY", 18);
@@ -90,25 +89,8 @@ contract InvariantsInfrared is Test {
         // deploy a rewards vault for InfraredBGT
         rewardsFactory = new RewardVaultFactory();
 
-        // Set up the chef
-        // TODO: fix chef
-
         // initialize Infrared contracts;
-        infrared = Infrared(
-            payable(
-                setupProxy(
-                    address(
-                        new Infrared(
-                            address(ibgt),
-                            address(rewardsFactory),
-                            address(chef),
-                            payable(address(mockWbera)),
-                            address(honey)
-                        )
-                    )
-                )
-            )
-        );
+        infrared = Infrared(payable(setupProxy(address(new Infrared()))));
         collector = BribeCollector(
             setupProxy(address(new BribeCollector(address(infrared))))
         );
@@ -123,23 +105,30 @@ contract InvariantsInfrared is Test {
         );
 
         collector.initialize(address(this), address(mockWbera), 10 ether);
-        distributor.initialize(address(ibera));
-        infrared.initialize(
-            address(this),
+        distributor.initialize(address(this), address(ibera));
+        Infrared.InitializationData memory data = Infrared.InitializationData(
+            governance,
+            keeper,
+            address(bgt),
+            address(rewardsFactory),
+            address(chef),
+            payable(address(mockWbera)),
+            address(honey),
             address(collector),
             address(distributor),
             address(voter),
             address(ibera),
             1 days
-        ); // make helper contract the admin
+        );
+        infrared.initialize(data); // make helper contract the admin
+        ibgt = new InfraredBGT(
+            address(bgt), data._gov, address(infrared), data._gov
+        );
+
+        infrared.setIBGT(address(ibgt));
 
         // @dev must initialize after infrared so address(this) has keeper role
-        voter.initialize(address(veIRED));
-
-        // set access control
-        infrared.grantRole(infrared.KEEPER_ROLE(), keeper);
-        infrared.grantRole(infrared.GOVERNANCE_ROLE(), governance);
-        ibgt.grantRole(ibgt.MINTER_ROLE(), address(infrared));
+        voter.initialize(address(veIRED), governance, keeper);
         /* Handler Setup */
 
         // deploy the handler contracts

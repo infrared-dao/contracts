@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 import {IRewardVault as IBerachainRewardsVault} from
@@ -24,6 +24,7 @@ interface IInfraredVault is IMultiRewards {
 
     /**
      * @notice Returns all rewards for a user
+     * @notice Only up to date since the `lastUpdateTime`
      * @param _user The address of the user
      * @return An array of UserReward structs
      */

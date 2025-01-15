@@ -20,7 +20,6 @@ contract InfraredRewardsTest is Helper {
         rewardTokens[0] = address(ibgt);
         rewardTokens[1] = address(red);
 
-        infrared.grantRole(infrared.KEEPER_ROLE(), address(this));
         // InfraredVault vault = InfraredVault(
         //     address(infrared.registerVault(address(wbera), rewardTokens))
         // );
@@ -146,6 +145,102 @@ contract InfraredRewardsTest is Helper {
         vm.stopPrank();
     }
 
+    function testRecoverERC20WithProtocolFees() public {
+        // First run harvestVault to accumulate protocol fees
+        testHarvestVaultWithProtocolFees();
+
+        // Get initial state
+        uint256 initialProtocolFees = infrared.protocolFeeAmounts(address(ibgt));
+        uint256 initialBalance = ibgt.balanceOf(address(infrared));
+
+        // Mint extra "unaccounted" tokens to the contract
+        // Make sure we mint enough to have some available after protocol fees
+        uint256 extraTokens = 100 ether; // Increased amount
+        vm.startPrank(address(infrared));
+        ibgt.mint(address(infrared), extraTokens);
+        vm.stopPrank();
+
+        // Calculate available balance (total - protocol fees)
+        uint256 totalBalance = ibgt.balanceOf(address(infrared));
+        uint256 protocolFees = infrared.protocolFeeAmounts(address(ibgt));
+        uint256 availableBalance = totalBalance - protocolFees;
+
+        // Verify we have unaccounted tokens
+        assertTrue(
+            availableBalance > 0, "Should have unaccounted tokens available"
+        );
+
+        // Test 1: Attempt to recover more than available balance (should fail)
+        vm.startPrank(infraredGovernance);
+        vm.expectRevert(
+            abi.encodeWithSignature("TokensReservedForProtocolFees()")
+        );
+        infrared.recoverERC20(address(123), address(ibgt), availableBalance + 1);
+        vm.stopPrank();
+
+        // Test 2: Attempt to recover exactly available balance (should succeed)
+        vm.startPrank(infraredGovernance);
+        infrared.recoverERC20(address(456), address(ibgt), availableBalance);
+        vm.stopPrank();
+
+        // Verify balances after successful recovery
+        assertEq(
+            ibgt.balanceOf(address(456)),
+            availableBalance,
+            "Recipient should have received available balance"
+        );
+        assertEq(
+            ibgt.balanceOf(address(infrared)),
+            protocolFees,
+            "Infrared should retain only protocol fees"
+        );
+
+        // Test 3: Attempt to recover remaining amount (should fail)
+        vm.startPrank(infraredGovernance);
+        vm.expectRevert(
+            abi.encodeWithSignature("TokensReservedForProtocolFees()")
+        );
+        infrared.recoverERC20(address(789), address(ibgt), 1);
+        vm.stopPrank();
+    }
+
+    function testRecoverERC20WithZeroProtocolFees() public {
+        // Mint tokens directly to the contract without harvesting
+        uint256 amount = 100 ether;
+        vm.startPrank(address(infrared));
+        ibgt.mint(address(infrared), amount);
+        vm.stopPrank();
+
+        // Verify initial state
+        uint256 totalBalance = ibgt.balanceOf(address(infrared));
+        uint256 protocolFees = infrared.protocolFeeAmounts(address(ibgt));
+
+        // Log values for debugging
+        console.log("Total Balance:", totalBalance);
+        console.log("Protocol Fees:", protocolFees);
+        console.log("Available Balance:", totalBalance - protocolFees);
+
+        // Should be able to recover full amount since no protocol fees
+        assertTrue(protocolFees == 0, "Should have no protocol fees");
+
+        // Test 1: Recover full amount (should succeed)
+        vm.startPrank(infraredGovernance);
+        infrared.recoverERC20(address(456), address(ibgt), amount);
+        vm.stopPrank();
+
+        // Verify balances after recovery
+        assertEq(
+            ibgt.balanceOf(address(456)),
+            amount,
+            "Recipient should have received full amount"
+        );
+        assertEq(
+            ibgt.balanceOf(address(infrared)),
+            0,
+            "Infrared should have zero balance"
+        );
+    }
+
     /*//////////////////////////////////////////////////////////////
                 Incentives test
     //////////////////////////////////////////////////////////////*/
@@ -180,18 +275,24 @@ contract InfraredRewardsTest is Helper {
 
     function testAddRewardFailsWithNonWhitelistedReward() public {
         vm.expectRevert(abi.encodeWithSignature("RewardTokenNotWhitelisted()"));
+        vm.prank(infraredGovernance);
         infrared.addReward(address(wbera), address(red), 7 days);
     }
 
     function testAddRewardFailsWithZeroDuration() public {
+        vm.startPrank(infraredGovernance);
+        infrared.updateWhiteListedRewardTokens(address(red), true);
         vm.expectRevert(abi.encodeWithSignature("ZeroAmount()"));
         infrared.addReward(address(wbera), address(red), 0);
+        vm.stopPrank();
     }
 
     function testAddRewardFailsWithNoVault() public {
+        vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(red), true);
         vm.expectRevert(abi.encodeWithSignature("NoRewardsVault()"));
         infrared.addReward(address(1), address(red), 7 days);
+        vm.stopPrank();
     }
 
     function testAddRewardFailsWithNotAuthorized() public {
@@ -653,6 +754,76 @@ contract InfraredRewardsTest is Helper {
             (vaultIbgtAfter - vaultIbgtBefore) * 1_500_000,
             1e16, // 1% tolerance
             "RED:InfraredBGT ratio mismatch"
+        );
+    }
+
+    function testHarvestVaultWithDoesNotFailWithPausedRedMinting() public {
+        // Setup: Configure RED token and mint rate
+        vm.startPrank(infraredGovernance);
+        infrared.updateWhiteListedRewardTokens(address(wbera), true);
+        infrared.setRed(address(red));
+        infrared.updateRedMintRate(1_500_000); // 1.5x RED per InfraredBGT
+        red.pause();
+        vm.stopPrank();
+
+        // Setup vault and user stake
+        address user = address(10);
+        vm.deal(user, 1000 ether);
+        uint256 stakeAmount = 1000 ether;
+        vm.startPrank(user);
+        wbera.deposit{value: stakeAmount}();
+        wbera.approve(address(infraredVault), stakeAmount);
+        infraredVault.stake(stakeAmount);
+        vm.stopPrank();
+
+        // Setup rewards in BerachainRewardsVault
+        address vaultWbera = factory.getVault(address(wbera));
+        vm.startPrank(address(blockRewardController));
+        bgt.mint(address(distributor), 100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(address(distributor));
+        bgt.approve(address(vaultWbera), 100 ether);
+        IBerachainRewardsVault(vaultWbera).notifyRewardAmount(
+            abi.encodePacked(bytes32("v0"), bytes16("")), 100 ether
+        );
+        vm.stopPrank();
+
+        // Advance time to accrue rewards
+        vm.warp(block.timestamp + 10 days);
+
+        // Store balances before harvest
+        uint256 vaultIbgtBefore = ibgt.balanceOf(address(infraredVault));
+        uint256 vaultRedBefore = red.balanceOf(address(infraredVault));
+
+        // Perform harvest
+        vm.startPrank(address(infraredVault));
+        infraredVault.rewardsVault().setOperator(address(infrared));
+        vm.startPrank(keeper);
+        infrared.harvestVault(address(wbera));
+        vm.stopPrank();
+
+        // Calculate expected amounts
+        uint256 harvestedAmount = 99999999999999999000; // From the emitted event
+        uint256 netIbgtAmount = harvestedAmount; // No fees applied
+        uint256 expectedRedAmount = 0; // paused
+
+        // Verify balances after harvest
+        uint256 vaultIbgtAfter = ibgt.balanceOf(address(infraredVault));
+        uint256 vaultRedAfter = red.balanceOf(address(infraredVault));
+
+        // Assert InfraredBGT increase matches expected amount
+        assertEq(
+            vaultIbgtAfter - vaultIbgtBefore,
+            netIbgtAmount,
+            "Incorrect InfraredBGT amount"
+        );
+
+        // Assert RED minting matches expected ratio
+        assertEq(
+            vaultRedAfter - vaultRedBefore,
+            expectedRedAmount,
+            "Incorrect RED minting amount"
         );
     }
 

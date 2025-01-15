@@ -86,6 +86,7 @@ library BalanceLogicLibrary {
 
     /// @notice Get the current voting power for `_tokenId`
     /// @dev Adheres to the ERC20 `balanceOf` interface for Aragon compatibility
+    ///      Although only true of curve, but not solidly and its forks.
     ///      Fetches last user point prior to a certain timestamp, then walks forward to timestamp.
     /// @param _userPointEpoch State of all user point epochs
     /// @param _userPointHistory State of all user point history

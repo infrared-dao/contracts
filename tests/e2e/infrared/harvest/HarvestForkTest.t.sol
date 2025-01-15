@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
@@ -6,6 +6,7 @@ import {IRewardVault} from "@berachain/pol/interfaces/IRewardVault.sol";
 import {IMultiRewards} from "src/interfaces/IMultiRewards.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {InfraredForkTest} from "../../InfraredForkTest.t.sol";
+import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 
 contract HarvestForkTest is InfraredForkTest {
     ValidatorTypes.Validator[] public infraredValidators;
@@ -17,18 +18,22 @@ contract HarvestForkTest is InfraredForkTest {
             .Validator({pubkey: _create48Byte(), addr: address(infrared)});
         infraredValidators.push(infraredValidator);
 
+        vm.prank(infraredGovernance);
         infrared.addValidators(infraredValidators);
 
         // deposit to ibera
-        vm.deal(address(this), 32 ether);
-        ibera.mint{value: 32 ether}(address(this));
+        vm.deal(address(this), InfraredBERAConstants.INITIAL_DEPOSIT);
+        ibera.mint{value: InfraredBERAConstants.INITIAL_DEPOSIT}(address(this));
 
         // set deposit signature from admin account
+        vm.prank(infraredGovernance);
         ibera.setDepositSignature(infraredValidators[0].pubkey, _create96Byte());
 
         // keeper call to execute beacon deposit
         vm.prank(keeper);
-        depositor.execute(infraredValidators[0].pubkey, 32 ether);
+        depositor.execute(
+            infraredValidators[0].pubkey, InfraredBERAConstants.INITIAL_DEPOSIT
+        );
 
         // queue cutting board
         address lpRewardsVaultAddress = address(lpVault.rewardsVault());
@@ -43,7 +48,7 @@ contract HarvestForkTest is InfraredForkTest {
         vm.prank(beraChef.owner());
         beraChef.setVaultWhitelistedStatus(lpRewardsVaultAddress, true, "");
 
-        // vm.prank(infraredGovernance);
+        vm.prank(keeper);
         infrared.queueNewCuttingBoard(
             infraredValidators[0].pubkey, _startBlock, _weights
         );

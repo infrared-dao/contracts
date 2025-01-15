@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
 interface IInfraredBERAClaimor {
@@ -10,6 +10,7 @@ interface IInfraredBERAClaimor {
     function claims(address receiver) external view returns (uint256);
 
     /// @notice Queues a new BERA claim for a receiver
+    /// @dev Only callable by the InfraredBERAWithdrawor contract
     /// @param receiver The address of the claims receiver
     function queue(address receiver) external payable;
 

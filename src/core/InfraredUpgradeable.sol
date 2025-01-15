@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
 import {Errors, Upgradeable} from "src/utils/Upgradeable.sol";
@@ -24,22 +24,6 @@ abstract contract InfraredUpgradeable is Upgradeable {
         infrared = IInfrared(_infrared);
         // prevents implementation contracts from being used
         _disableInitializers();
-    }
-
-    /// @dev Overrides to check role on infrared contract
-    function _checkRole(bytes32 role, address account)
-        internal
-        view
-        virtual
-        override
-    {
-        if (address(infrared) == address(0)) {
-            super._checkRole(role, account);
-        } else if (
-            !IInfraredUpgradeable(address(infrared)).hasRole(role, account)
-        ) {
-            revert AccessControlUnauthorizedAccount(account, role);
-        }
     }
 
     function __InfraredUpgradeable_init() internal onlyInitializing {
