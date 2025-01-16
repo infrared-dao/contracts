@@ -11,6 +11,7 @@ import "@berachain/pol/rewards/RewardVaultFactory.sol";
 
 import "src/voting/VotingEscrow.sol";
 import "src/voting/Voter.sol";
+import "src/core/IR.sol";
 
 import "src/core/InfraredBGT.sol";
 import "src/core/Infrared.sol";
@@ -21,7 +22,7 @@ import "forge-std/Test.sol";
 /// @notice Base contract used for tests and deployment scripts
 abstract contract Base is Test {
     MockWbera public WBERA;
-    MockERC20 public ired;
+    IR public ir;
     MockERC20 public honey;
     address[] public stakingTokens;
     InfraredBGT public ibgt;
@@ -61,8 +62,6 @@ abstract contract Base is Test {
     address manager2 = address(0x5);
 
     function setUp() public {
-        // Governance and Lock token
-        ired = new MockERC20("IRED", "IRED", 18);
         // Mock non transferable token BGT token
         bgt = address(new MockERC20("BGT", "BGT", 18));
         // ibgt = new InfraredBGT(bgt);
@@ -75,13 +74,17 @@ abstract contract Base is Test {
         // initialize Infrared contracts
         infrared = Infrared(payable(setupProxy(address(new Infrared()))));
 
+         // Governance and Lock token
+        ibgt = new InfraredBGT(address(bgt), address(this), address(infrared), address(this));
+        ir = new IR(address(ibgt), address(infrared), address(this), address(this), address(this));
+
         address collector = address(new MockCollector(address(WBERA)));
         address distributor = address(new MockDistributor(address(ibera)));
 
         // IRED voting
         voter = Voter(setupProxy(address(new Voter(address(infrared)))));
         escrow = new VotingEscrow(
-            address(this), address(ired), address(voter), address(infrared)
+            address(this), address(ir), address(voter), address(infrared)
         );
 
         Infrared.InitializationData memory data = Infrared.InitializationData(
@@ -104,6 +107,10 @@ abstract contract Base is Test {
         escrow.setVoterAndDistributor(address(voter), keeper);
         escrow.setAllowedManager(keeper);
 
+        ir.grantRole(ir.MINTER_ROLE(), user1);
+        ir.grantRole(ir.MINTER_ROLE(), user2);
+        ir.grantRole(ir.MINTER_ROLE(), user3);
+
         address bribeRewardToken =
             address(new MockERC20("BribeRewardToken", "BRT", 18));
         address bribeRewardToken2 =
@@ -125,7 +132,7 @@ abstract contract Base is Test {
 
         deal(stakingTokens[0], address(this), TOKEN_10M);
         deal(stakingTokens[1], address(this), TOKEN_10M);
-        deal(address(ired), address(this), TOKEN_10M);
+        deal(address(ir), address(this), TOKEN_10M);
 
         vm.startPrank(keeper);
         voter.createBribeVault(_stakingTokens[0], _stakingTokens);
@@ -139,7 +146,7 @@ abstract contract Base is Test {
     function registerVaults(address[] memory _tokens) public {
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = address(ibgt);
-        rewardTokens[1] = address(ired);
+        rewardTokens[1] = address(ir);
 
         for (uint256 i = 0; i < _tokens.length; i++) {
             vm.startPrank(keeper);
@@ -164,9 +171,9 @@ abstract contract Base is Test {
     }
 
     function createLock(address _user) public returns (uint256 tokenId) {
-        deal(address(ired), _user, TOKEN_1);
+        deal(address(ir), _user, TOKEN_1);
         vm.startPrank(_user);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
     }

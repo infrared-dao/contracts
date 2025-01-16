@@ -8,7 +8,7 @@ import {IRewardVaultFactory as IBerachainRewardsVaultFactory} from
     "@berachain/pol/interfaces/IRewardVaultFactory.sol";
 import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
-import {IRED} from "src/interfaces/IRED.sol";
+import {IIR} from "src/interfaces/IIR.sol";
 
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
@@ -112,7 +112,7 @@ interface IInfrared {
     function distributor() external view returns (IInfraredDistributor);
 
     /**
-     * @notice IRED voter
+     * @notice IR voter
      * @return IVoter instance of the voter contract address
      */
     function voter() external view returns (IVoter);
@@ -124,10 +124,10 @@ interface IInfrared {
     function ibera() external view returns (IInfraredBERA);
 
     /**
-     * @notice The RED token
-     * @return IRED instance of the RED token contract address
+     * @notice The IR token
+     * @return IR instance of the IR token contract address
      */
-    function red() external view returns (IRED);
+    function ir() external view returns (IIR);
 
     /**
      * @notice The rewards duration
@@ -268,11 +268,11 @@ interface IInfrared {
     function updateFee(ConfigTypes.FeeType _t, uint256 _fee) external;
 
     /**
-     * @notice Sets the address of the RED contract
-     * @dev Infrared must be granted MINTER_ROLE on RED to set the address
-     * @param _red The address of the RED contract
+     * @notice Sets the address of the IR contract
+     * @dev Infrared must be granted MINTER_ROLE on IR to set the address
+     * @param _IR The address of the IR contract
      */
-    function setRed(address _red) external;
+    function setIR(address _IR) external;
 
     /**
      * @notice Sets the address of the iBGT contract
@@ -282,10 +282,10 @@ interface IInfrared {
     function setIBGT(address _ibgt) external;
 
     /**
-     * @notice Updates the mint rate for RED
-     * @param _redMintRate The new mint rate for RED
+     * @notice Updates the mint rate for IR
+     * @param _IRMintRate The new mint rate for IR
      */
-    function updateRedMintRate(uint256 _redMintRate) external;
+    function updateIRMintRate(uint256 _IRMintRate) external;
 
     /**
      * @notice Claims accumulated protocol fees in contract
@@ -473,9 +473,9 @@ interface IInfrared {
 
     /**
      * @notice Emitted when InfraredBGT tokens are supplied to a vault.
-     * @param _vault The address of the vault receiving the InfraredBGT and IRED tokens.
+     * @param _vault The address of the vault receiving the InfraredBGT and IR tokens.
      * @param _ibgtAmt The amount of InfraredBGT tokens supplied to vault.
-     * @param _iredAmt The amount of IRED tokens supplied to vault as additional reward from protocol.
+     * @param _iredAmt The amount of IR tokens supplied to vault as additional reward from protocol.
      */
     event InfraredBGTSupplied(
         address indexed _vault, uint256 _ibgtAmt, uint256 _iredAmt
@@ -557,16 +557,6 @@ interface IInfrared {
      */
     event RewardsDurationUpdated(
         address _sender, uint256 _oldDuration, uint256 _newDuration
-    );
-
-    /**
-     * @notice Emitted when the IRED mint rate per unit InfraredBGT is updated.
-     * @param _sender The address that initiated the update.
-     * @param _oldMintRate The previous IRED mint rate.
-     * @param _newMintRate The new IRED mint rate.
-     */
-    event IredMintRateUpdated(
-        address _sender, uint256 _oldMintRate, uint256 _newMintRate
     );
 
     /**
@@ -753,19 +743,19 @@ interface IInfrared {
     event Redelegated(address _sender, bytes _from, bytes _to, uint256 _amt);
 
     /**
-     * @notice Emitted when the RED token is set.
+     * @notice Emitted when the IR token is set.
      * @param _sender The address that initiated the update.
-     * @param _red The address of the RED token.
+     * @param _IR The address of the IRdd token.
      */
-    event RedSet(address _sender, address _red);
+    event IRSet(address _sender, address _IR);
 
     /**
      *
-     * @param oldMintRate The old mint rate for RED
-     * @param newMintRate The new mint rate for RED
+     * @param oldMintRate The old mint rate for IR
+     * @param newMintRate The new mint rate for IR
      * @param sender The address that initiated the update
      */
-    event UpdatedRedMintRate(
+    event UpdatedIRMintRate(
         uint256 oldMintRate, uint256 newMintRate, address sender
     );
 

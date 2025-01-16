@@ -28,7 +28,7 @@ import {BribeCollector} from "src/core/BribeCollector.sol";
 import {ERC20, Infrared} from "src/core/Infrared.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-import {RED} from "src/core/RED.sol";
+import {IR} from "src/core/IR.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
 
@@ -42,10 +42,10 @@ import {BeaconDepositMock, POLTest} from "@berachain/../test/pol/POL.t.sol";
 abstract contract Helper is POLTest {
     Infrared public infrared;
     InfraredBGT public ibgt;
-    RED public red;
+    IR public ir;
 
     Voter public voter;
-    VotingEscrow public ired;
+    VotingEscrow public sIR;
 
     InfraredBERA public ibera;
     InfraredBERADepositor public depositor;
@@ -176,16 +176,16 @@ abstract contract Helper is POLTest {
             address(receivor)
         );
 
-        red = new RED(
+        ir = new IR(
             address(ibgt), address(infrared), data._gov, data._gov, data._gov
         );
 
-        // ired voting
+        // ir voting
 
-        ired = new VotingEscrow(
-            address(this), address(red), address(voter), address(infrared)
+        sIR = new VotingEscrow(
+            address(this), address(ir), address(voter), address(infrared)
         );
-        voter.initialize(address(ired), infraredGovernance, keeper);
+        voter.initialize(address(ir), infraredGovernance, keeper);
 
         uint16 feeShareholders = 4; // 25% of fees
 

@@ -18,7 +18,6 @@ library Errors {
     error MaxNumberOfRewards();
     error Unauthorized(address sender);
     error IBGTNotRewardToken();
-    error IREDNotRewardToken();
     error IBGTNotStakingToken();
     error StakedInRewardsVault();
     error NoRewardsVault();

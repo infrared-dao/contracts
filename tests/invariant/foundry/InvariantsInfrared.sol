@@ -39,7 +39,7 @@ contract InvariantsInfrared is Test {
     InfraredDistributor public distributor;
 
     Voter public voter;
-    VotingEscrow public veIRED;
+    VotingEscrow public sIR;
 
     address public admin;
     address public keeper;
@@ -50,7 +50,7 @@ contract InvariantsInfrared is Test {
     User public userHandler;
 
     MockERC20 public bgt;
-    MockERC20 public ired;
+    MockERC20 public ir;
     MockERC20 public ibera;
     MockERC20 public honey;
     MockWbera public mockWbera;
@@ -72,7 +72,7 @@ contract InvariantsInfrared is Test {
         // Mock non transferable token BGT token
         bgt = new MockERC20("BGT", "BGT", 18);
         // Mock contract instantiations
-        ired = new MockERC20("IRED", "IRED", 18);
+        ir = new MockERC20("IRED", "IRED", 18);
         ibera = new MockERC20("WInfraredBERA", "WInfraredBERA", 18);
         honey = new MockERC20("HONEY", "HONEY", 18);
         mockWbera = new MockWbera();
@@ -100,8 +100,8 @@ contract InvariantsInfrared is Test {
 
         // IRED voting
         voter = Voter(setupProxy(address(new Voter(address(infrared)))));
-        veIRED = new VotingEscrow(
-            address(this), address(ired), address(voter), address(infrared)
+        sIR = new VotingEscrow(
+            address(this), address(ir), address(voter), address(infrared)
         );
 
         collector.initialize(address(this), address(mockWbera), 10 ether);
@@ -128,7 +128,7 @@ contract InvariantsInfrared is Test {
         infrared.setIBGT(address(ibgt));
 
         // @dev must initialize after infrared so address(this) has keeper role
-        voter.initialize(address(veIRED), governance, keeper);
+        voter.initialize(address(sIR), governance, keeper);
         /* Handler Setup */
 
         // deploy the handler contracts
@@ -253,11 +253,11 @@ contract InvariantsInfrared is Test {
     // function invariant_rewards_are_distributed_to_ibgt_vault() public {
     //     // MultiRewards ibgtVault = MultiRewards(address(infrared.ibgtVault()));
     //     // address ibgt = address(ibgtVaultHandler.ibgt());
-    //     // address ired = address(ibgtVaultHandler.ired());
+    //     // address ir = address(ibgtVaultHandler.ir());
     //     // address wbera = address(ibgtVaultHandler.wbera());
     //     // assert that the total rewards are distributed to the ibgt vault
     //     // assertTrue(ibgtVaultHandler.ibgtRewards() > 0 && ibgtVault.rewardPerToken(ibgt) > 0 , "Invariant: Rewards should be distributed to InfraredBGT vault");
-    //     // assertTrue(ibgtVaultHandler.iredRewards() > 0 && ibgtVault.rewardPerToken(ired) > 0 , "Invariant: Rewards should be distributed to InfraredBGT vault");
+    //     // assertTrue(ibgtVaultHandler.irRewards() > 0 && ibgtVault.rewardPerToken(ir) > 0 , "Invariant: Rewards should be distributed to InfraredBGT vault");
     //     // assertTrue(ibgtVaultHandler.wberaRewards() > 0 && ibgtVault.rewardPerToken(wbera) > 0 , "Invariant: Rewards should be distributed to InfraredBGT vault");
     // }
 

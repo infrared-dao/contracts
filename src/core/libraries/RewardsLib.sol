@@ -17,7 +17,7 @@ import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
-import {IRED} from "src/interfaces/IRED.sol";
+import {IIR} from "src/interfaces/IIR.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {Errors} from "src/utils/Errors.sol";
 
@@ -26,14 +26,14 @@ library RewardsLib {
 
     struct RewardsStorage {
         mapping(address => uint256) protocolFeeAmounts; // Tracks accumulated protocol fees per token
-        uint256 redMintRate; // Rate for minting IRED tokens
+        uint256 irMintRate; // Rate for minting IR tokens
         uint256 collectBribesWeight;
         mapping(uint256 => uint256) fees; // Fee configuration
     }
 
     /**
-     * @notice RED mint rate in hundredths of 1 bip
-     * @dev Used as the denominator when calculating IRED minting (1e6)
+     * @notice IR mint rate in hundredths of 1 bip
+     * @dev Used as the denominator when calculating IR minting (1e6)
      */
     uint256 internal constant RATE_UNIT = 1e6;
 
@@ -129,7 +129,7 @@ library RewardsLib {
         address bgt,
         address ibgt,
         address voter,
-        address red,
+        address IR,
         uint256 rewardsDuration
     ) external returns (uint256 bgtAmt) {
         // Ensure the vault is valid
@@ -170,36 +170,36 @@ library RewardsLib {
             vault.notifyRewardAmount(ibgt, _amt);
         }
 
-        uint256 mintRate = $.redMintRate;
+        uint256 mintRate = $.irMintRate;
 
-        // If RED token is set and mint rate is greater than zero, handle RED rewards
-        if (red != address(0) && mintRate > 0) {
-            // Calculate the amount of RED tokens to mint
-            uint256 redAmt = bgtAmt * mintRate / RATE_UNIT;
-            try IRED(red).mint(address(this), redAmt) {
+        // If IR token is set and mint rate is greater than zero, handle IR rewards
+        if (IR != address(0) && mintRate > 0) {
+            // Calculate the amount of IR tokens to mint
+            uint256 IRAmt = bgtAmt * mintRate / RATE_UNIT;
+            try IIR(IR).mint(address(this), IRAmt) {
                 {
-                    // Check if RED is already a reward token in the vault
-                    (, uint256 redRewardsDuration,,,,,) = vault.rewardData(red);
-                    if (redRewardsDuration == 0) {
-                        // Add RED as a reward token if not already added
-                        vault.addReward(red, rewardsDuration);
+                    // Check if IR is already a reward token in the vault
+                    (, uint256 IRRewardsDuration,,,,,) = vault.rewardData(IR);
+                    if (IRRewardsDuration == 0) {
+                        // Add IR as a reward token if not already added
+                        vault.addReward(IR, rewardsDuration);
                     }
                 }
 
-                // Calculate and distribute fees on the RED rewards
+                // Calculate and distribute fees on the IR rewards
                 (_amt, _amtVoter, _amtProtocol) =
-                    _chargedFeesOnRewards(redAmt, 0, 0);
+                    _chargedFeesOnRewards(IRAmt, 0, 0);
                 _distributeFeesOnRewards(
-                    $.protocolFeeAmounts, voter, red, _amtVoter, _amtProtocol
+                    $.protocolFeeAmounts, voter, IR, _amtVoter, _amtProtocol
                 );
 
-                // Send the remaining RED rewards to the vault
+                // Send the remaining IR rewards to the vault
                 if (_amt > 0) {
-                    ERC20(red).safeApprove(address(vault), _amt);
-                    vault.notifyRewardAmount(red, _amt);
+                    ERC20(IR).safeApprove(address(vault), _amt);
+                    vault.notifyRewardAmount(IR, _amt);
                 }
             } catch {
-                emit RedNotMinted(redAmt);
+                emit RedNotMinted(IRAmt);
             }
         }
     }
@@ -478,22 +478,22 @@ library RewardsLib {
         return IBerachainBGT(bgt).balanceOf(address(this));
     }
 
-    function updateRedMintRate(RewardsStorage storage $, uint256 _iredMintRate)
+    function updateIRMintRate(RewardsStorage storage $, uint256 _irMintRate)
         external
     {
-        // Update the RED minting rate
-        // This rate determines how many RED tokens are minted per IBGT
+        // Update the IR minting rate
+        // This rate determines how many IR tokens are minted per IBGT
 
         // @note The rate can be greater than RATE_UNIT (1e6)
-        // This allows for minting multiple RED tokens per IBGT if desired
+        // This allows for minting multiple IR tokens per IBGT if desired
 
         // For example:
-        // - If _iredMintRate = 500,000 (0.5 * RATE_UNIT), 0.5 RED is minted per IBGT
-        // - If _iredMintRate = 2,000,000 (2 * RATE_UNIT), 2 RED are minted per IBGT
+        // - If _irMintRate = 500,000 (0.5 * RATE_UNIT), 0.5 IR is minted per IBGT
+        // - If _irMintRate = 2,000,000 (2 * RATE_UNIT), 2 IR are minted per IBGT
 
         // The actual calculation is done in harvestVault
         // uint256 _redAmt = Math.mulDiv(_bgtAmt, $.redMintRate, RATE_UNIT);
 
-        $.redMintRate = _iredMintRate;
+        $.irMintRate = _irMintRate;
     }
 }
