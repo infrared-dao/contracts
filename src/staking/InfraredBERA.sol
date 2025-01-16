@@ -245,6 +245,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
     /// @inheritdoc IInfraredBERA
     function setFeeDivisorShareholders(uint16 to) external onlyGovernor {
+        compound();
         emit SetFeeShareholders(feeDivisorShareholders, to);
         feeDivisorShareholders = to;
     }
