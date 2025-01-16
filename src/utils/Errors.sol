@@ -63,4 +63,5 @@ library Errors {
     error InvalidReserves();
     error UnauthorizedOperator();
     error ValidatorForceExited();
+    error CanNotCompoundAccumuldatedBERA();
 }
