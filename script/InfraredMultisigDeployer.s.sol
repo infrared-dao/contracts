@@ -7,7 +7,7 @@ import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ERC20PresetMinterPauser} from
     "../src/vendors/ERC20PresetMinterPauser.sol";
-import {BatchScript} from "forge-safe/BatchScript.sol";
+import {BatchScript} from "@forge-safe/BatchScript.sol";
 
 import {RED} from "src/core/RED.sol";
 import {Voter} from "src/voting/Voter.sol";

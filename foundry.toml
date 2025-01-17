@@ -20,6 +20,7 @@ remappings = [
     'solady/test/=lib/solady/test/',
     '@berachain/=lib/contracts/src/',
     '@prb/=lib/prb-test/src/',
+    '@forge-safe/=lib/forge-safe/src/'
 ]
 fs_permissions = [{ access = "read", path = "./" }]
 
@@ -36,6 +37,7 @@ remappings = [
     'solady/test/=lib/solady/test/',
     '@berachain/=lib/contracts/src/',
     '@prb/=lib/prb-test/src/',
+    '@forge-safe/=lib/forge-safe/src'
 ]
 
 [profile.production]

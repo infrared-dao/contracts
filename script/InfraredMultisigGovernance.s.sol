@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Script.sol";
 
-import {BatchScript} from "forge-safe/BatchScript.sol";
+import {BatchScript} from "@forge-safe/BatchScript.sol";
 
 import {Infrared, ValidatorTypes} from "src/core/Infrared.sol";
 import {BribeCollector} from "src/core/BribeCollector.sol";
