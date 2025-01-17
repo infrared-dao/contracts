@@ -23,30 +23,8 @@ jobs:
     steps:
       - name: Clone main repository
         uses: actions/checkout@v4
-
-      - name: Add SSH private keys for submodule repositories
-        uses: webfactory/ssh-agent@v0.9.0
         with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
-
-      - name: Clone submodules
-        run: |
-          git submodule set-url lib/contracts-monorepo ssh://git@github.com/berachain/contracts-monorepo
-          git submodule update --init --recursive
-
-      # - uses: actions/cache@v3
-      #   with:
-      #     path: |
-      #       forge-cache
-      #       out
-      #     key: ${{ runner.OS }}-contracts-slither-${{ hashFiles('src/*.sol', 'src/**/*.sol') }}
-
-
-      # - name: Install Foundry
-      #   uses: foundry-rs/foundry-toolchain@v1
-
-      # - name: Compile
-      #   run: forge build --build-info
+          submodules: recursive
 
       - name: Run Slither
         uses: crytic/slither-action@v0.4.0

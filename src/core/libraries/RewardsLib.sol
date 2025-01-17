@@ -279,7 +279,8 @@ library RewardsLib {
         address voter,
         uint256 rewardsDuration
     ) external returns (address _vault, address _token, uint256 _amount) {
-        IBerachainBGTStaker _bgtStaker = IBerachainBGT(bgt).staker();
+        IBerachainBGTStaker _bgtStaker =
+            IBerachainBGTStaker(IBerachainBGT(bgt).staker());
         _token = address(_bgtStaker.rewardToken());
 
         // claim boost reward
