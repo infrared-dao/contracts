@@ -24,4 +24,5 @@
 	url = https://github.com/berachain/contracts
 [submodule "lib/forge-safe"]
 	path = lib/forge-safe
+	branch = main
 	url = https://github.com/sandybradley/forge-safe

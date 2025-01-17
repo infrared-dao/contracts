@@ -27,21 +27,6 @@ import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 
 contract InfraredDeployer is BatchScript {
-    InfraredBGT public ibgt;
-    ERC20PresetMinterPauser public red;
-
-    InfraredBERA public ibera;
-    InfraredBERADepositor public depositor;
-    InfraredBERAWithdraworLite public withdrawor;
-    InfraredBERAFeeReceivor public receivor;
-
-    BribeCollector public collector;
-    InfraredDistributor public distributor;
-    Infrared public infrared;
-
-    Voter public voter;
-    VotingEscrow public veIRED;
-
     function run(
         address _gov,
         address _keeper,

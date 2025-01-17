@@ -7,6 +7,7 @@ import {Infrared, ValidatorTypes} from "src/core/Infrared.sol";
 import {BribeCollector} from "src/core/BribeCollector.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {Voter} from "src/voting/Voter.sol";
+import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 
 contract InfraredGovernance is Script {
     // Validator Management
