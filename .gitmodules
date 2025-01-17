@@ -22,3 +22,6 @@
 [submodule "lib/contracts"]
 	path = lib/contracts
 	url = https://github.com/berachain/contracts
+[submodule "lib/forge-safe"]
+	path = lib/forge-safe
+	url = https://github.com/sandybradley/forge-safe
