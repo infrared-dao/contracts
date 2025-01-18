@@ -22,7 +22,7 @@ remappings = [
     '@prb/=lib/prb-test/src/',
     '@forge-safe/=lib/forge-safe/src/'
 ]
-fs_permissions = [{ access = "read", path = "./" }]
+fs_permissions = [{ access = "read-write", path = "./" }]
 
 [profile.ci]
 fuzz = { runs = 256 }
