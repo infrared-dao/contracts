@@ -28,6 +28,7 @@ forge script script/InfraredMultisigDeployer.s.sol:InfraredMultisigDeployer \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     --skip-simulation \
+    --ffi \
     --broadcast 
     # --verify \
     # --verifier-url $VERIFYER_URL \
