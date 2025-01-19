@@ -757,6 +757,76 @@ contract InfraredRewardsTest is Helper {
         );
     }
 
+    function testHarvestVaultWithDoesNotFailWithPausedRedMinting() public {
+        // Setup: Configure RED token and mint rate
+        vm.startPrank(infraredGovernance);
+        infrared.updateWhiteListedRewardTokens(address(wbera), true);
+        infrared.setRed(address(red));
+        infrared.updateRedMintRate(1_500_000); // 1.5x RED per InfraredBGT
+        red.pause();
+        vm.stopPrank();
+
+        // Setup vault and user stake
+        address user = address(10);
+        vm.deal(user, 1000 ether);
+        uint256 stakeAmount = 1000 ether;
+        vm.startPrank(user);
+        wbera.deposit{value: stakeAmount}();
+        wbera.approve(address(infraredVault), stakeAmount);
+        infraredVault.stake(stakeAmount);
+        vm.stopPrank();
+
+        // Setup rewards in BerachainRewardsVault
+        address vaultWbera = factory.getVault(address(wbera));
+        vm.startPrank(address(blockRewardController));
+        bgt.mint(address(distributor), 100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(address(distributor));
+        bgt.approve(address(vaultWbera), 100 ether);
+        IBerachainRewardsVault(vaultWbera).notifyRewardAmount(
+            abi.encodePacked(bytes32("v0"), bytes16("")), 100 ether
+        );
+        vm.stopPrank();
+
+        // Advance time to accrue rewards
+        vm.warp(block.timestamp + 10 days);
+
+        // Store balances before harvest
+        uint256 vaultIbgtBefore = ibgt.balanceOf(address(infraredVault));
+        uint256 vaultRedBefore = red.balanceOf(address(infraredVault));
+
+        // Perform harvest
+        vm.startPrank(address(infraredVault));
+        infraredVault.rewardsVault().setOperator(address(infrared));
+        vm.startPrank(keeper);
+        infrared.harvestVault(address(wbera));
+        vm.stopPrank();
+
+        // Calculate expected amounts
+        uint256 harvestedAmount = 99999999999999999000; // From the emitted event
+        uint256 netIbgtAmount = harvestedAmount; // No fees applied
+        uint256 expectedRedAmount = 0; // paused
+
+        // Verify balances after harvest
+        uint256 vaultIbgtAfter = ibgt.balanceOf(address(infraredVault));
+        uint256 vaultRedAfter = red.balanceOf(address(infraredVault));
+
+        // Assert InfraredBGT increase matches expected amount
+        assertEq(
+            vaultIbgtAfter - vaultIbgtBefore,
+            netIbgtAmount,
+            "Incorrect InfraredBGT amount"
+        );
+
+        // Assert RED minting matches expected ratio
+        assertEq(
+            vaultRedAfter - vaultRedBefore,
+            expectedRedAmount,
+            "Incorrect RED minting amount"
+        );
+    }
+
     function testClaimLostRewardsOnVault() public {
         // Setup: Register vault and distribute rewards
         address stakingToken = address(wbera);

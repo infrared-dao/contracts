@@ -270,7 +270,7 @@ contract MultiRewardsTest is Test {
         skip(rewardDuration / 2);
 
         // Add second amount that will also create residual
-        uint256 secondAmount = 53; // Will create residual when combined with leftover
+        uint256 secondAmount = 53; // Will create residual when combined with leftover (50 + 53 + 4) % D = 7
         multiRewards.notifyRewardAmount(address(rewardToken), secondAmount);
         vm.stopPrank();
 
@@ -279,8 +279,8 @@ contract MultiRewardsTest is Test {
             multiRewards.rewardData(address(rewardToken));
 
         // Verify final residual exists
-        assertGt(
-            finalResidual, 0, "Should track residual after second notification"
+        assertEq(
+            finalResidual, 7, "Should track residual after second notification"
         );
     }
 }

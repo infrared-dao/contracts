@@ -475,7 +475,7 @@ contract InfraredTest is Helper {
         vm.deal(address(feeCollector), 100 ether);
         wbera.deposit{value: 100 ether}();
         wbera.transfer(address(bgt.staker()), 100 ether);
-        bgt.staker().notifyRewardAmount(100 ether);
+        BGTStaker(bgt.staker()).notifyRewardAmount(100 ether);
         vm.stopPrank();
 
         vm.warp(block.timestamp + 30 days); // Simulate passage of time for reward distribution

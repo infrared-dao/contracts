@@ -258,6 +258,6 @@ library ValidatorManagerLib {
         address distributor,
         bytes memory pubkey
     ) internal view returns (address) {
-        return IInfraredDistributor(distributor).validators(pubkey);
+        return IInfraredDistributor(distributor).getValidator(pubkey);
     }
 }

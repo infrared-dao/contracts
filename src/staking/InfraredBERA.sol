@@ -209,6 +209,9 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         // withdraw bera request
         // @dev pay withdraw precompile fee via funds sent in on payable call
         uint256 fee = msg.value;
+        if (fee < InfraredBERAConstants.MINIMUM_WITHDRAW_FEE) {
+            revert Errors.InvalidFee();
+        }
         nonce = _withdraw(receiver, amount, fee);
 
         emit Burn(receiver, nonce, amount, shares, fee);

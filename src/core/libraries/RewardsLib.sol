@@ -49,6 +49,9 @@ library RewardsLib {
      */
     uint256 internal constant FEE_UNIT = 1e6;
 
+    /// @notice Emitted when Red cannot be minted during a harvest because of pause
+    event RedNotMinted(uint256 amount);
+
     /// @notice Calculates how fees are split between protocol, voters, and the recipient.
     function chargedFeesOnRewards(
         RewardsStorage storage,
@@ -103,12 +106,10 @@ library RewardsLib {
         emit IInfrared.ProtocolFees(_token, _amtProtocol, _amtVoter);
     }
 
-    function harvestBase(
-        RewardsStorage storage,
-        address bgt,
-        address ibgt,
-        address ibera
-    ) external returns (uint256 bgtAmt) {
+    function harvestBase(address bgt, address ibgt, address ibera)
+        external
+        returns (uint256 bgtAmt)
+    {
         uint256 minted = IInfraredBGT(ibgt).totalSupply();
         uint256 bgtBalance = _getBGTBalance(bgt);
         // @dev should never happen but check in case
@@ -176,28 +177,30 @@ library RewardsLib {
         if (red != address(0) && mintRate > 0) {
             // Calculate the amount of RED tokens to mint
             uint256 redAmt = bgtAmt * mintRate / RATE_UNIT;
-            IRED(red).mint(address(this), redAmt);
-
-            {
-                // Check if RED is already a reward token in the vault
-                (, uint256 redRewardsDuration,,,,,) = vault.rewardData(red);
-                if (redRewardsDuration == 0) {
-                    // Add RED as a reward token if not already added
-                    vault.addReward(red, rewardsDuration);
+            try IRED(red).mint(address(this), redAmt) {
+                {
+                    // Check if RED is already a reward token in the vault
+                    (, uint256 redRewardsDuration,,,,,) = vault.rewardData(red);
+                    if (redRewardsDuration == 0) {
+                        // Add RED as a reward token if not already added
+                        vault.addReward(red, rewardsDuration);
+                    }
                 }
-            }
 
-            // Calculate and distribute fees on the RED rewards
-            (_amt, _amtVoter, _amtProtocol) =
-                _chargedFeesOnRewards(redAmt, 0, 0);
-            _distributeFeesOnRewards(
-                $.protocolFeeAmounts, voter, red, _amtVoter, _amtProtocol
-            );
+                // Calculate and distribute fees on the RED rewards
+                (_amt, _amtVoter, _amtProtocol) =
+                    _chargedFeesOnRewards(redAmt, 0, 0);
+                _distributeFeesOnRewards(
+                    $.protocolFeeAmounts, voter, red, _amtVoter, _amtProtocol
+                );
 
-            // Send the remaining RED rewards to the vault
-            if (_amt > 0) {
-                ERC20(red).safeApprove(address(vault), _amt);
-                vault.notifyRewardAmount(red, _amt);
+                // Send the remaining RED rewards to the vault
+                if (_amt > 0) {
+                    ERC20(red).safeApprove(address(vault), _amt);
+                    vault.notifyRewardAmount(red, _amt);
+                }
+            } catch {
+                emit RedNotMinted(redAmt);
             }
         }
     }
@@ -276,7 +279,8 @@ library RewardsLib {
         address voter,
         uint256 rewardsDuration
     ) external returns (address _vault, address _token, uint256 _amount) {
-        IBerachainBGTStaker _bgtStaker = IBerachainBGT(bgt).staker();
+        IBerachainBGTStaker _bgtStaker =
+            IBerachainBGTStaker(IBerachainBGT(bgt).staker());
         _token = address(_bgtStaker.rewardToken());
 
         // claim boost reward

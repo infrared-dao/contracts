@@ -22,7 +22,6 @@ library VaultManagerLib {
 
     /**
      * @dev Ensures that new vaults can only be registered while the register vaults are not paused
-     * Reverts if the caller is not the collector
      */
     modifier notPaused(VaultStorage storage $) {
         if ($.pausedVaultRegistration) {
@@ -31,7 +30,7 @@ library VaultManagerLib {
         _;
     }
 
-    /// @notice Registers a new vault for a specific asset with specified reward tokens.
+    /// @notice Registers a new vault for a specific asset.
     function registerVault(VaultStorage storage $, address asset)
         external
         notPaused($)
@@ -123,7 +122,7 @@ library VaultManagerLib {
         vault.notifyRewardAmount(_rewardsToken, _amount);
     }
 
-    /// @notice Updates the rewards duration for vaults.
+    /// @notice Updates the global rewards duration for new vaults.
     function updateRewardsDuration(VaultStorage storage $, uint256 newDuration)
         external
     {
@@ -150,9 +149,6 @@ library VaultManagerLib {
         if (address($.vaultRegistry[_asset]) == address(0)) {
             revert Errors.NoRewardsVault();
         }
-        if (!isWhitelisted($, _token)) {
-            revert Errors.RewardTokenNotWhitelisted();
-        }
 
         IInfraredVault vault = $.vaultRegistry[_asset];
         vault.recoverERC20(_to, _token, _amount);
@@ -165,7 +161,7 @@ library VaultManagerLib {
         uint256 _rewardsDuration
     ) external {
         if ($.vaultRegistry[_stakingToken] == IInfraredVault(address(0))) {
-            revert Errors.VaultNotSupported();
+            revert Errors.NoRewardsVault();
         }
         IInfraredVault vault = $.vaultRegistry[_stakingToken];
         (, uint256 rewardsDuration,,,,,) = vault.rewardData(_rewardsToken);
@@ -180,7 +176,7 @@ library VaultManagerLib {
     {
         IInfraredVault vault = $.vaultRegistry[_asset];
         if (address(vault) == address(0)) {
-            revert Errors.VaultNotSupported();
+            revert Errors.NoRewardsVault();
         }
         // unclaimed rewards will end up split between IBERA shareholders
         vault.getReward();

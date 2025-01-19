@@ -106,7 +106,7 @@ contract InfraredDistributorTest is Test {
         vm.prank(address(infrared));
         distributor.add(pubkey1, validator1);
 
-        (uint256 last1, uint256 fin1) = distributor.snapshots(pubkey1);
+        (uint256 last1, uint256 fin1) = distributor.getSnapshot(pubkey1);
         assertEq(last1, 1);
         assertEq(fin1, 0);
 
@@ -127,7 +127,7 @@ contract InfraredDistributorTest is Test {
         // @dev need this for infrared.numInfraredValidators to be correct
         infrared.addValidator(validator2);
 
-        (uint256 last2, uint256 fin2) = distributor.snapshots(pubkey2);
+        (uint256 last2, uint256 fin2) = distributor.getSnapshot(pubkey2);
         assertEq(last2, 10 ether + 1);
         assertEq(fin2, 0);
     }
@@ -154,7 +154,7 @@ contract InfraredDistributorTest is Test {
         // @dev need this for infrared.numInfraredValidators to be correct
         infrared.removeValidator(validator1);
 
-        (uint256 last1, uint256 fin1) = distributor.snapshots(pubkey1);
+        (uint256 last1, uint256 fin1) = distributor.getSnapshot(pubkey1);
         assertEq(last1, 1);
         assertEq(fin1, 20 ether + 1);
     }
@@ -176,7 +176,7 @@ contract InfraredDistributorTest is Test {
 
         // Get snapshot after first removal
         (uint256 lastAfterRemoval, uint256 finalAfterRemoval) =
-            distributor.snapshots(pubkey1);
+            distributor.getSnapshot(pubkey1);
 
         // Attempt to remove again - should revert
         vm.expectRevert(Errors.ValidatorAlreadyRemoved.selector);
@@ -185,7 +185,7 @@ contract InfraredDistributorTest is Test {
 
         // Verify snapshot hasn't changed
         (uint256 lastAfterAttempt, uint256 finalAfterAttempt) =
-            distributor.snapshots(pubkey1);
+            distributor.getSnapshot(pubkey1);
         assertEq(
             lastAfterAttempt, lastAfterRemoval, "Last amount should not change"
         );
@@ -261,7 +261,7 @@ contract InfraredDistributorTest is Test {
         vm.prank(validator1);
         distributor.claim(pubkey1, validator1);
 
-        (uint256 last1, uint256 fin1) = distributor.snapshots(pubkey1);
+        (uint256 last1, uint256 fin1) = distributor.getSnapshot(pubkey1);
         assertEq(last1, 20 ether + 1);
         assertEq(fin1, 20 ether + 1);
 
@@ -275,7 +275,7 @@ contract InfraredDistributorTest is Test {
         vm.prank(validator2);
         distributor.claim(pubkey2, validator2);
 
-        (uint256 last2, uint256 fin2) = distributor.snapshots(pubkey2);
+        (uint256 last2, uint256 fin2) = distributor.getSnapshot(pubkey2);
         assertEq(last2, 50 ether + 1);
         assertEq(fin2, 0);
 
@@ -290,7 +290,7 @@ contract InfraredDistributorTest is Test {
         infrared.addValidator(validator1);
 
         // Initial state - validator was just added, no rewards yet distributed
-        (uint256 last1,) = distributor.snapshots(pubkey1);
+        (uint256 last1,) = distributor.getSnapshot(pubkey1);
         assertEq(last1, distributor.amountsCumulative());
 
         // Should revert since no new rewards to claim (amountCumulativeLast == fin)

@@ -183,7 +183,7 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
             ETH1_ADDRESS_WITHDRAWAL_PREFIX,
             uint88(0), // 11 zero bytes
             withdrawor
-        ); // TODO: check correct
+        );
         // if operator already exists on BeaconDeposit, it must be set to zero for new deposits
         if (currentOperator == operator) {
             operator = address(0);

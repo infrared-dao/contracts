@@ -431,7 +431,10 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @inheritdoc IInfrared
     function updateRedMintRate(uint256 _redMintRate) external onlyGovernor {
+        uint256 oldRate = _rewardsStorage().redMintRate;
         _rewardsStorage().updateRedMintRate(_redMintRate);
+
+        emit UpdatedRedMintRate(oldRate, _redMintRate, msg.sender);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -447,6 +450,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         view
         returns (uint256 amtRecipient, uint256 amtVoter, uint256 amtProtocol)
     {
+        if (_feeTotal > RewardsLib.FEE_UNIT) revert Errors.InvalidFee();
         return _rewardsStorage().chargedFeesOnRewards(
             _amt, _feeTotal, _feeProtocol
         );
@@ -454,9 +458,8 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @inheritdoc IInfrared
     function harvestBase() public {
-        uint256 bgtAmt = _rewardsStorage().harvestBase(
-            address(_bgt), address(ibgt), address(ibera)
-        );
+        uint256 bgtAmt =
+            RewardsLib.harvestBase(address(_bgt), address(ibgt), address(ibera));
         emit BaseHarvested(msg.sender, bgtAmt);
     }
 
@@ -519,6 +522,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         emit BribesCollected(msg.sender, _token, amtInfraredBERA, amtIbgtVault);
     }
 
+    /// @inheritdoc IInfrared
     function harvestOperatorRewards() public {
         uint256 _amt = _rewardsStorage().harvestOperatorRewards(
             address(ibera), address(voter), address(distributor)

@@ -33,6 +33,7 @@ library Errors {
 
     // Infrared errors.
     error VaultNotSupported();
+    error InvalidNonce();
     error VaultNotStaked();
     error ClaimDistrRewardsFailed();
     error ClaimableRewardsExist();

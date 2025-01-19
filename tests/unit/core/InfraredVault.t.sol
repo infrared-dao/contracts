@@ -286,21 +286,12 @@ contract InfraredVaultTest is Helper {
         vm.stopPrank();
     }
 
-    function testRevertWithTokenStakingTokenRecoverERC20() public {
+    function testWithTokenStakingTokenRecoverERC20() public {
         uint256 stakeAmount = 100 ether;
-        deal(address(wbera), user, stakeAmount);
-
-        // User approves the infraredVault to spend their tokens
-        vm.startPrank(user);
-        wbera.approve(address(infraredVault), stakeAmount);
-
-        // User stakes tokens into the infraredVault
-        infraredVault.stake(stakeAmount);
-        vm.stopPrank();
+        deal(address(wbera), address(infraredVault), stakeAmount);
 
         // check cannot recover staking token
         vm.startPrank(address(infrared));
-        vm.expectRevert("Cannot withdraw staking token");
         infraredVault.recoverERC20(user2, address(wbera), stakeAmount);
         vm.stopPrank();
     }

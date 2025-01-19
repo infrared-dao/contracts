@@ -209,7 +209,7 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         _totalSupply = _totalSupply - amount;
         _balances[msg.sender] = _balances[msg.sender] - amount;
 
-        // hook withdraw then transfer staking token out, in case hook needs to bring in collateral
+        // hook withdraw then transfer staking token out
         onWithdraw(amount);
         stakingToken.safeTransfer(msg.sender, amount);
         emit Withdrawn(msg.sender, amount);
@@ -293,6 +293,7 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
      */
     function _notifyRewardAmount(address _rewardsToken, uint256 reward)
         internal
+        whenNotPaused
         updateReward(address(0))
     {
         // handle the transfer of reward tokens via `transferFrom` to reduce the number
@@ -314,7 +315,8 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
             uint256 leftover = remaining * rewardData[_rewardsToken].rewardRate;
 
             // Calculate total and its residual
-            uint256 totalAmount = reward + leftover;
+            uint256 totalAmount =
+                reward + leftover + rewardData[_rewardsToken].rewardResidual;
             rewardData[_rewardsToken].rewardResidual =
                 totalAmount % rewardData[_rewardsToken].rewardsDuration;
 
@@ -343,10 +345,6 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         uint256 tokenAmount
     ) internal {
         require(
-            tokenAddress != address(stakingToken),
-            "Cannot withdraw staking token"
-        );
-        require(
             rewardData[tokenAddress].lastUpdateTime == 0,
             "Cannot withdraw reward token"
         );
@@ -371,8 +369,6 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         require(_rewardsDuration > 0, "Reward duration must be non-zero");
 
         rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
-        emit RewardsDurationUpdated(
-            _rewardsToken, rewardData[_rewardsToken].rewardsDuration
-        );
+        emit RewardsDurationUpdated(_rewardsToken, _rewardsDuration);
     }
 }

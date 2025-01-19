@@ -260,6 +260,7 @@ interface IInfrared {
 
     /**
      * @notice Updates the fee rate charged on different harvest functions
+     * @notice Please harvest all assosiated rewards for a given type before updating
      * @dev Fee rate in units of 1e6 or hundredths of 1 bip
      * @param _t   FeeType The fee type
      * @param _fee uint256 The fee rate to update to
@@ -299,6 +300,11 @@ interface IInfrared {
      * @notice Claims all the BGT base and commission rewards minted to this contract for validators.
      */
     function harvestBase() external;
+
+    /**
+     * @notice Credits all accumulated rewards to the operator
+     */
+    function harvestOperatorRewards() external;
 
     /**
      * @notice Claims all the BGT rewards for the vault associated with the given staking token.
@@ -752,6 +758,16 @@ interface IInfrared {
      * @param _red The address of the RED token.
      */
     event RedSet(address _sender, address _red);
+
+    /**
+     *
+     * @param oldMintRate The old mint rate for RED
+     * @param newMintRate The new mint rate for RED
+     * @param sender The address that initiated the update
+     */
+    event UpdatedRedMintRate(
+        uint256 oldMintRate, uint256 newMintRate, address sender
+    );
 
     /**
      * @notice Emitted when the iBGT token is set.

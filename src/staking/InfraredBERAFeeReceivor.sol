@@ -26,6 +26,8 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
     /// @notice Initializer function (replaces constructor)
     /// @param _gov Address for admin / gov to upgrade
     /// @param _keeper Address for keeper
+    /// @param ibera Address for InfraredBERA
+    /// @param _infrared Address for Infrared
     function initialize(
         address _gov,
         address _keeper,

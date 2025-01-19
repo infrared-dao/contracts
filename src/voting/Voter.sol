@@ -254,7 +254,7 @@ contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
      *    - Update token-specific accounting
      *    - Deposit into bribe vault
      * 4. Update global vote accounting if votes were cast
-     * 5. If _isPoke is true, deposit in fees reward vault in addition to marking tokenId as voted
+     * 5. If _isPoke is true, skip processing for tokens with killed bribe vaults
      */
     function _vote(
         uint256 _tokenId,

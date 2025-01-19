@@ -143,7 +143,7 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
     }
 
     /// @inheritdoc IInfraredDistributor
-    function snapshots(bytes calldata pubkey)
+    function getSnapshot(bytes calldata pubkey)
         external
         view
         returns (uint256 amountCumulativeLast, uint256 amountCumulativeFinal)
@@ -153,7 +153,7 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
     }
 
     /// @inheritdoc IInfraredDistributor
-    function validators(bytes calldata pubkey)
+    function getValidator(bytes calldata pubkey)
         external
         view
         returns (address)

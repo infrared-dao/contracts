@@ -194,7 +194,7 @@ contract InfraredInitializationTest is Helper {
 
         // Test for unsupported vault
         address unsupportedStakingToken = address(0x123);
-        vm.expectRevert(Errors.VaultNotSupported.selector);
+        vm.expectRevert(Errors.NoRewardsVault.selector);
         vm.prank(infraredGovernance);
         infrared.updateRewardsDurationForVault(
             unsupportedStakingToken, rewardsToken, newRewardsDuration
