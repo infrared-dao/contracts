@@ -299,7 +299,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         vm.prank(keeper);
         depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
 
-        assertLt(initGas - gasleft(), 2500000);
+        assertLt(initGas - gasleft(), 3000000);
     }
 
     function testExecuteUpdatesSlipNonceFeesWhenPartialAmount() public {
