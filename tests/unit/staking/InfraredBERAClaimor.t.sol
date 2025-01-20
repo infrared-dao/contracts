@@ -7,7 +7,7 @@ import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {Errors} from "src/utils/Errors.sol";
 
 contract InfraredBERAClaimorTest is InfraredBERABaseTest {
-    function testInitialize() public {
+    function testInitialize() view public {
         assertEq(
             address(claimor.ibera()),
             address(ibera),
