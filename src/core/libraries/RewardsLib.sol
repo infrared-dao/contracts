@@ -54,7 +54,6 @@ library RewardsLib {
 
     /// @notice Calculates how fees are split between protocol, voters, and the recipient.
     function chargedFeesOnRewards(
-        RewardsStorage storage,
         uint256 _amt,
         uint256 _feeTotal,
         uint256 _feeProtocol
