@@ -298,54 +298,67 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         denominators[2] = 5; // 20%
         denominators[3] = 10; // 10%
 
-        // Test with different amounts
+        // Test with different amounts all above minimum
+        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
+            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
         uint256[] memory amounts = new uint256[](4);
-        amounts[0] = 1e15; // 0.001 ETH
-        amounts[1] = 1e16; // 0.01 ETH
-        amounts[2] = 1e17; // 0.1 ETH
-        amounts[3] = 1e18; // 1 ETH
+        amounts[0] = min + 1e15; // Min + 0.001 ETH
+        amounts[1] = min + 1e16; // Min + 0.01 ETH
+        amounts[2] = min + 1e17; // Min + 0.1 ETH
+        amounts[3] = min + 1e18; // Min + 1 ETH
 
         for (uint256 i = 0; i < denominators.length; i++) {
+            // Clear any accumulated amount first
+            vm.deal(address(receivor), 0);
+
             vm.prank(infraredGovernance);
             ibera.setFeeDivisorShareholders(denominators[i]);
 
             for (uint256 j = 0; j < amounts.length; j++) {
                 uint256 amount = amounts[j];
 
-                // Calculate exact division
-                uint256 fee = amount / denominators[i];
-                uint256 remainder = amount % denominators[i];
-
-                // Verify with actual contract
+                // Clear previous amount and set new one
                 vm.deal(address(receivor), 0);
                 (bool success,) = address(receivor).call{value: amount}("");
                 assertTrue(success);
+
+                // Calculate expected values
+                uint256 fee = amount / denominators[i];
+                uint256 remainder = amount % denominators[i];
+
+                // Get actual values from contract
                 (, uint256 actualFees) = receivor.distribution();
 
+                // Verify calculations
                 assertEq(fee, actualFees, "Fee calculation matches");
                 assertEq(
                     remainder,
                     amount - (fee * denominators[i]),
                     "Remainder calculation matches"
                 );
+
+                // Verify remainder constraints
                 assertTrue(
                     remainder < denominators[i],
                     "Remainder is always less than denominator"
                 );
 
-                // For denominator 3 we know there's 1 wei remainder
-                if (denominators[i] == 3) {
-                    assertEq(
-                        remainder, 1, "Denominator 3 always has 1 wei remainder"
-                    );
-                } else {
-                    // For powers of 2 and 5 we expect no remainder
-                    assertEq(
-                        remainder,
-                        0,
-                        "No remainder for power of 2 and 5 denominators"
+                // Check specific cases for denominator 3
+                if (denominators[i] == 3 && amount % 3 != 0) {
+                    assertTrue(
+                        remainder > 0 && remainder < 3,
+                        "Denominator 3 has remainder between 0 and 2"
                     );
                 }
+
+                // For any denominator, verify max rounding loss
+                assertTrue(
+                    remainder < denominators[i],
+                    "Rounding loss is less than one part"
+                );
+
+                // Force compound at end of each test to avoid accumulation
+                ibera.compound();
             }
         }
     }

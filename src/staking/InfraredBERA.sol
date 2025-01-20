@@ -245,6 +245,16 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
     /// @inheritdoc IInfraredBERA
     function setFeeDivisorShareholders(uint16 to) external onlyGovernor {
+        // Get current distributable amount
+        (uint256 amount,) = IInfraredBERAFeeReceivor(receivor).distribution();
+
+        // If there are significant accumulated rewards, force processing them first
+        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
+            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
+        if (amount > 0 && amount < min) {
+            revert Errors.CanNotCompoundAccumuldatedBERA();
+        }
+        compound();
         emit SetFeeShareholders(feeDivisorShareholders, to);
         feeDivisorShareholders = to;
     }
