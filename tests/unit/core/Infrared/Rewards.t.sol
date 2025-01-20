@@ -149,10 +149,6 @@ contract InfraredRewardsTest is Helper {
         // First run harvestVault to accumulate protocol fees
         testHarvestVaultWithProtocolFees();
 
-        // Get initial state
-        uint256 initialProtocolFees = infrared.protocolFeeAmounts(address(ibgt));
-        uint256 initialBalance = ibgt.balanceOf(address(infrared));
-
         // Mint extra "unaccounted" tokens to the contract
         // Make sure we mint enough to have some available after protocol fees
         uint256 extraTokens = 100 ether; // Increased amount

@@ -180,7 +180,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         (nonce, amount, fee) = _deposit(msg.value);
 
         // mint shares to receiver of ibera
-        shares = (d != 0 && ts != 0) ? ts * amount / d : amount;
+        shares = (d != 0 && ts != 0) ? (ts * amount) / d : amount;
         if (shares == 0) revert Errors.InvalidShares();
         _mint(receiver, shares);
 
@@ -200,7 +200,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         uint256 ts = totalSupply();
         if (shares == 0 || ts == 0) revert Errors.InvalidShares();
 
-        amount = deposits * shares / ts;
+        amount = (deposits * shares) / ts;
         if (amount == 0) revert Errors.InvalidAmount();
 
         // burn shares from sender of ibera
@@ -310,7 +310,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         if (depositsAfterCompound == 0 || ts == 0) {
             shares = amount;
         } else {
-            shares = ts * amount / depositsAfterCompound;
+            shares = (ts * amount) / depositsAfterCompound;
         }
 
         if (shares == 0) {
@@ -347,7 +347,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
             }
         }
 
-        beraAmount = depositsAfterCompound * shareAmount / ts;
+        beraAmount = (depositsAfterCompound * shareAmount) / ts;
         fee = InfraredBERAConstants.MINIMUM_WITHDRAW_FEE;
 
         if (beraAmount == 0) {
@@ -369,8 +369,8 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
     function hasExited(bytes calldata pubkey) external view returns (bool) {
         return _exited[keccak256(pubkey)];
     }
-    /// @inheritdoc IInfraredBERA
 
+    /// @inheritdoc IInfraredBERA
     function signatures(bytes calldata pubkey)
         external
         view

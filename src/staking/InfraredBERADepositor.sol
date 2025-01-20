@@ -107,32 +107,40 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
 
     /// @inheritdoc IInfraredBERADepositor
     function execute(bytes calldata pubkey, uint256 amount) external {
+        // only keeper can execute, unless _enoughtime() has passed to force deposits
+        // if the keeper is offline for a long time.
         bool kpr = IInfraredBERA(InfraredBERA).keeper(msg.sender);
-        // check if in *current* validator set on Infrared
+
+        // check if pubkey is a valid validator being tracked by InfraredBERA
         if (!IInfraredBERA(InfraredBERA).validator(pubkey)) {
             revert Errors.InvalidValidator();
         }
 
+        // The amount must be a multiple of 1 gwei as per the deposit contract
         if (amount == 0 || (amount % 1 gwei) != 0) {
             revert Errors.InvalidAmount();
         }
 
-        address operator = IInfraredBERA(InfraredBERA).infrared(); // infrared operator for validator
+        // all operator addresses must be the `Infrared.sol` contract address
+        address operator = IInfraredBERA(InfraredBERA).infrared();
         address currentOperator =
             IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(pubkey);
-        // Add first deposit validation
+
+        // if the operator is not set, this is the first deposit for the validator.
+        // set the amount to the initial deposit amount to avoid any issues and limit risk until validator is fully operational.
         if (currentOperator == address(0)) {
             if (amount != InfraredBERAConstants.INITIAL_DEPOSIT) {
                 revert Errors.InvalidAmount();
             }
         } else {
-            // Verify subsequent deposit requirements
+            // do not stake into a validator that does not have infrared as operator.
+            // if accidental addValidator() call is made, it will be caught here.
             if (currentOperator != operator) {
                 revert Errors.UnauthorizedOperator();
             }
         }
 
-        // check if governor has added a valid deposit signature to avoid keeper mistakenly burning
+        // sanity check the signature.
         bytes memory signature = IInfraredBERA(InfraredBERA).signatures(pubkey);
         if (signature.length == 0) revert Errors.InvalidSignature();
 
@@ -151,7 +159,6 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
             if (s.amount == 0) revert Errors.InvalidAmount();
 
             // @dev allow user to force stake into infrared validator if enough time has passed
-            // TODO: check signature not needed (ignored) on second deposit to pubkey (think so)
             if (!kpr && !_enoughtime(s.timestamp, uint96(block.timestamp))) {
                 revert Errors.Unauthorized(msg.sender);
             }
@@ -179,6 +186,8 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
         fees -= fee;
 
         // @dev ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#eth1_address_withdrawal_prefix
+        // @dev only important on the first deposit, signatures are ignored on subsequent deposits:
+        // https://github.com/berachain/beacon-kit/blob/395085d18667e48395503a20cd1b367309fe3d11/state-transition/core/state_processor_staking.go#L101
         bytes memory credentials = abi.encodePacked(
             ETH1_ADDRESS_WITHDRAWAL_PREFIX,
             uint88(0), // 11 zero bytes

@@ -993,7 +993,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         // Setup initial deposits
         uint256 initialDeposit = 100 ether;
         vm.deal(address(this), initialDeposit);
-        (uint256 nonce,) = ibera.mint{value: initialDeposit}(address(this));
+        ibera.mint{value: initialDeposit}(address(this));
 
         // Get current deposits
         uint256 currentDeposits = ibera.deposits();
@@ -1025,7 +1025,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         assertTrue(amount <= confirmed);
 
         vm.deal(address(ibera), 2 * fee);
-        uint256 nonce = withdrawor.nonceRequest();
+        withdrawor.nonceRequest();
 
         vm.deal(address(depositor), 201 ether); // DONATION
 

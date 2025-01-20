@@ -96,21 +96,17 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
     }
 
     /// @inheritdoc IInfraredBERAWithdrawor
-    function queue(address receiver, uint256 amount)
-        external
-        payable
-        returns (uint256 nonce)
-    {
+    function queue(address, uint256) external payable returns (uint256) {
         revert Errors.WithdrawalsNotEnabled();
     }
 
     /// @inheritdoc IInfraredBERAWithdrawor
-    function execute(bytes calldata pubkey, uint256 amount) external payable {
+    function execute(bytes calldata, uint256) external payable {
         revert Errors.WithdrawalsNotEnabled();
     }
 
     /// @inheritdoc IInfraredBERAWithdrawor
-    function process() external {
+    function process() external pure {
         revert Errors.WithdrawalsNotEnabled();
     }
 
