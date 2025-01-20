@@ -22,7 +22,7 @@ library Errors {
     error IBGTNotStakingToken();
     error StakedInRewardsVault();
     error NoRewardsVault();
-    error RewardRateDecreased(); 
+    error RewardRateDecreased();
     error RegistrationPaused();
     error RewardTokenNotWhitelisted();
 

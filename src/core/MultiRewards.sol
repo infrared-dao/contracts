@@ -8,7 +8,7 @@ import {ReentrancyGuard} from
     "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
-import {Errors} from "src/utils/Errors.sol"; 
+import {Errors} from "src/utils/Errors.sol";
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
@@ -326,9 +326,10 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
             totalAmount = totalAmount - rewardData[_rewardsToken].rewardResidual;
 
             uint256 oldRewardRate = rewardData[_rewardsToken].rewardRate;
-            uint256 newRewardRate = totalAmount / rewardData[_rewardsToken].rewardsDuration;
+            uint256 newRewardRate =
+                totalAmount / rewardData[_rewardsToken].rewardsDuration;
             if (newRewardRate < oldRewardRate) {
-                revert Errors.RewardRateDecreased(); 
+                revert Errors.RewardRateDecreased();
             } else {
                 rewardData[_rewardsToken].rewardRate = newRewardRate;
             }

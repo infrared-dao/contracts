@@ -192,12 +192,12 @@ contract InfraredVaultTest is Helper {
         );
 
         console.log("----- Output the state before the attack -----");
-        (,,uint256 periodFinish, uint256 rewardRate,,,) =
+        (,, uint256 periodFinish, uint256 rewardRate,,,) =
             infraredVault.rewardData(address(newRewardToken));
         assertTrue(rewardRate > 0, "Reward rate should be set");
-        console.log("rewardRate before the attack:",rewardRate);
-        console.log("periodFinish before the attack:",periodFinish);
-        
+        console.log("rewardRate before the attack:", rewardRate);
+        console.log("periodFinish before the attack:", periodFinish);
+
         //////////////////////////////////////////////
         //  Malicious user calls `addIncentives()`  //
         //////////////////////////////////////////////
@@ -206,12 +206,10 @@ contract InfraredVaultTest is Helper {
         address maliciousUser = makeAddr("maliciousUser");
         deal(address(newRewardToken), maliciousUser, rewardAmount);
         vm.startPrank(maliciousUser);
-        newRewardToken.approve(address(infrared),1000);
+        newRewardToken.approve(address(infrared), 1000);
 
         vm.expectRevert(Errors.RewardRateDecreased.selector);
-        infrared.addIncentives(
-            address(wbera), address(newRewardToken), 1
-        );
+        infrared.addIncentives(address(wbera), address(newRewardToken), 1);
     }
 
     function testRevertWithZeroAddressForToken() public {
