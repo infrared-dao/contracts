@@ -187,17 +187,10 @@ library RewardsLib {
                     }
                 }
 
-                // Calculate and distribute fees on the IR rewards
-                (_amt, _amtVoter, _amtProtocol) =
-                    _chargedFeesOnRewards(irAmt, 0, 0);
-                _distributeFeesOnRewards(
-                    $.protocolFeeAmounts, voter, ir, _amtVoter, _amtProtocol
-                );
-
                 // Send the remaining IR rewards to the vault
-                if (_amt > 0) {
-                    ERC20(ir).safeApprove(address(vault), _amt);
-                    vault.notifyRewardAmount(ir, _amt);
+                if (irAmt > 0) {
+                    ERC20(ir).safeApprove(address(vault), irAmt);
+                    vault.notifyRewardAmount(ir, irAmt);
                 }
             } catch {
                 emit RedNotMinted(irAmt);
