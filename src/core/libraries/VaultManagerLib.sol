@@ -124,6 +124,10 @@ library VaultManagerLib {
 
         if (block.timestamp < periodFinish) {
             // enforce externally added incentives cannot reduce current rate
+            // calc new reward residual
+            _amount = _amount + rewardResidual;
+            rewardResidual = _amount % _vaultRewardsDuration;
+            _amount = _amount - rewardResidual;
             uint256 remaining = periodFinish - block.timestamp;
             uint256 leftover = remaining * rewardRate;
             // Calculate total and its residual
