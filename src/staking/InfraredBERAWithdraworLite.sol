@@ -111,7 +111,7 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
     }
 
     /// @inheritdoc IInfraredBERAWithdrawor
-    function sweep(bytes calldata pubkey) external {
+    function sweep(bytes calldata pubkey) external onlyGovernor {
         // only callable when withdrawals are not enabled
         if (IInfraredBERA(InfraredBERA).withdrawalsEnabled()) {
             revert Errors.Unauthorized(msg.sender);

@@ -106,11 +106,10 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
     }
 
     /// @inheritdoc IInfraredBERADepositor
-    function execute(bytes calldata pubkey, uint256 amount) external {
-        // only keeper can execute, unless _enoughtime() has passed to force deposits
-        // if the keeper is offline for a long time.
-        bool kpr = IInfraredBERA(InfraredBERA).keeper(msg.sender);
-
+    function execute(bytes calldata pubkey, uint256 amount)
+        external
+        onlyKeeper
+    {
         // check if pubkey is a valid validator being tracked by InfraredBERA
         if (!IInfraredBERA(InfraredBERA).validator(pubkey)) {
             revert Errors.InvalidValidator();
@@ -157,11 +156,6 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
             nonce = nonceSubmit;
             Slip memory s = slips[nonce];
             if (s.amount == 0) revert Errors.InvalidAmount();
-
-            // @dev allow user to force stake into infrared validator if enough time has passed
-            if (!kpr && !_enoughtime(s.timestamp, uint96(block.timestamp))) {
-                revert Errors.Unauthorized(msg.sender);
-            }
 
             // first time loop ever hits slip dedicate fee to this call
             // @dev for large slip requiring multiple separate calls to execute, keeper must front fee in subsequent calls

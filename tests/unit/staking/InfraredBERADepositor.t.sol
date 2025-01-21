@@ -489,30 +489,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         depositor.execute(pubkey0, amount);
     }
 
-    function testExecuteRevertsWhenNotEnoughTime() public {
-        testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
-
-        uint256 nonce = depositor.nonceSubmit();
-
-        (,, uint256 amountFirst) = depositor.slips(nonce);
-        (uint256 timestampSecond,, uint256 amountSecond) =
-            depositor.slips(nonce + 1);
-
-        assertEq(ibera.signatures(pubkey0), signature0);
-
-        uint256 amount = ((amountFirst + amountSecond / 4) / 1 gwei) * 1 gwei;
-        assertTrue(amount > InfraredBERAConstants.INITIAL_DEPOSIT);
-        assertTrue(amount % 1 gwei == 0);
-
-        vm.expectRevert();
-        depositor.execute(pubkey0, amount);
-
-        // check can push it through once enough time has passed
-        vm.warp(timestampSecond + InfraredBERAConstants.FORCED_MIN_DELAY + 10);
-        vm.prank(alice);
-        depositor.execute(pubkey0, amount);
-    }
-
     function testExecuteRevertsWhenInvalidValidator() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
 
