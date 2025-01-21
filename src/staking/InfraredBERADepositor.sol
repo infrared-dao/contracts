@@ -63,20 +63,6 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
         DEPOSIT_CONTRACT = _depositContract;
     }
 
-    /// @notice Checks whether enough time has passed beyond min delay
-    /// @param then The block timestamp in past
-    /// @param current The current block timestamp now
-    /// @return has Whether time between then and now exceeds forced min delay
-    function _enoughtime(uint96 then, uint96 current)
-        private
-        pure
-        returns (bool has)
-    {
-        unchecked {
-            has = (current - then) >= InfraredBERAConstants.FORCED_MIN_DELAY;
-        }
-    }
-
     /// @inheritdoc IInfraredBERADepositor
     function reserves() public view returns (uint256) {
         return address(this).balance - fees;
@@ -106,11 +92,10 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
     }
 
     /// @inheritdoc IInfraredBERADepositor
-    function execute(bytes calldata pubkey, uint256 amount) external {
-        // only keeper can execute, unless _enoughtime() has passed to force deposits
-        // if the keeper is offline for a long time.
-        bool kpr = IInfraredBERA(InfraredBERA).keeper(msg.sender);
-
+    function execute(bytes calldata pubkey, uint256 amount)
+        external
+        onlyKeeper
+    {
         // check if pubkey is a valid validator being tracked by InfraredBERA
         if (!IInfraredBERA(InfraredBERA).validator(pubkey)) {
             revert Errors.InvalidValidator();
@@ -157,11 +142,6 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
             nonce = nonceSubmit;
             Slip memory s = slips[nonce];
             if (s.amount == 0) revert Errors.InvalidAmount();
-
-            // @dev allow user to force stake into infrared validator if enough time has passed
-            if (!kpr && !_enoughtime(s.timestamp, uint96(block.timestamp))) {
-                revert Errors.Unauthorized(msg.sender);
-            }
 
             // first time loop ever hits slip dedicate fee to this call
             // @dev for large slip requiring multiple separate calls to execute, keeper must front fee in subsequent calls
