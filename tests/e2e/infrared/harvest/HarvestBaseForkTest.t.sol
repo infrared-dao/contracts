@@ -25,7 +25,7 @@ contract HarvestBaseForkTest is HarvestForkTest {
         // uint256 bgtBalance = bgt.balanceOf(address(infrared));
         // uint256 protocolFeeAmount = infrared.protocolFeeAmounts(address(ibgt));
 
-        // assertTrue(ibgtTotalSupply == 0);
+        // // assertTrue(ibgtTotalSupply == 0);
         // assertTrue(bgtBalance > 0);
 
         // uint256 amount = bgtBalance - ibgtTotalSupply;
@@ -48,9 +48,15 @@ contract HarvestBaseForkTest is HarvestForkTest {
         //     infrared.protocolFeeAmounts(address(ibgt)), protocolFeeAmount + fees
         // );
 
-        // check reward notified in vault
-        // (, uint256 rewardDuration,, uint256 rewardRate, uint256 lastUpdateTime,)
-        // = IMultiRewards(address(wiberaVault)).rewardData(address(ibgt));
+        // // check reward notified in vault
+        // (
+        //     ,
+        //     uint256 rewardDuration,
+        //     ,
+        //     uint256 rewardRate,
+        //     uint256 lastUpdateTime,
+        //     ,
+        // ) = IMultiRewards(address(wiberaVault)).rewardData(address(ibgt));
         // assertEq(rewardRate, (amount - fees) / rewardDuration);
         // assertEq(lastUpdateTime, block.timestamp);
 

@@ -209,7 +209,7 @@ library RewardsLib {
         _amounts = new uint256[](len);
         tokens = new address[](len);
 
-        for (uint256 i = 0; i < _tokens.length; i++) {
+        for (uint256 i = 0; i < len; i++) {
             if (!whitelisted[i]) continue;
             address _token = _tokens[i];
             if (_token == DataTypes.NATIVE_ASSET) {
