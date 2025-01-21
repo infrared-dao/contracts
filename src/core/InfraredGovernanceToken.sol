@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {ERC20PresetMinterPauser} from "../vendors/ERC20PresetMinterPauser.sol";
 
 /**
- * @title Infared Governance Token
+ * @title Infrared Governance Token
  * @notice This contract is the IR token.
  */
 contract InfraredGovernanceToken is ERC20PresetMinterPauser {
