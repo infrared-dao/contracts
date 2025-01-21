@@ -57,6 +57,7 @@ contract MultiRewardsTest is Test {
     MockERC20 baseToken;
 
     MissingReturnToken missingReturnToken;
+    BombToken bomb;
 
     address alice;
     address bob;
@@ -69,6 +70,7 @@ contract MultiRewardsTest is Test {
         baseToken = new MockERC20("BaseToken", "BASE", 18);
 
         missingReturnToken = new MissingReturnToken();
+        bomb = new BombToken("Bomb token", "BMB", 18);
 
         // Deploy MultiRewards contract
         multiRewards = new MultiRewardsConcrete(address(baseToken));
@@ -87,12 +89,14 @@ contract MultiRewardsTest is Test {
         baseToken.mint(charlie, 1e20);
 
         deal(address(missingReturnToken), alice, 1e20);
+        deal(address(bomb), alice, 1e20);
 
         // Set up users
         vm.startPrank(alice);
         rewardToken.approve(address(multiRewards), type(uint256).max);
         rewardToken2.approve(address(multiRewards), type(uint256).max);
         missingReturnToken.approve(address(multiRewards), type(uint256).max);
+        bomb.approve(address(multiRewards), type(uint256).max);
         vm.stopPrank();
     }
 
@@ -251,6 +255,18 @@ contract MultiRewardsTest is Test {
         multiRewards.getReward();
     }
 
+    function testBombTokens() public {
+        vm.startPrank(alice);
+        multiRewards.addReward(address(bomb), alice, 3600);
+        multiRewards.notifyRewardAmount(address(bomb), 1e10);
+        vm.stopPrank();
+
+        testMultipleRewardEarnings();
+
+        vm.prank(bob);
+        multiRewards.getReward();
+    }
+
     function testMidPeriodResidualCalculation() public {
         // Setup
         vm.startPrank(alice);
@@ -282,5 +298,108 @@ contract MultiRewardsTest is Test {
         assertEq(
             finalResidual, 7, "Should track residual after second notification"
         );
+    }
+}
+
+contract BombToken {
+    event Transfer(address indexed from, address indexed to, uint256 amount);
+    event Approval(
+        address indexed owner, address indexed spender, uint256 amount
+    );
+
+    string public name;
+    string public symbol;
+    uint8 public immutable decimals;
+    uint256 public totalSupply;
+    mapping(address => uint256) public balanceOf;
+    mapping(address => mapping(address => uint256)) public allowance;
+
+    constructor(string memory _name, string memory _symbol, uint8 _decimals) {
+        name = _name;
+        symbol = _symbol;
+        decimals = _decimals;
+    }
+
+    function approve(address spender, uint256 amount)
+        public
+        virtual
+        returns (bool)
+    {
+        allowance[msg.sender][spender] = amount;
+
+        emit Approval(msg.sender, spender, amount);
+
+        return true;
+    }
+
+    function transfer(address to, uint256 amount)
+        public
+        virtual
+        returns (bytes memory)
+    {
+        balanceOf[msg.sender] -= amount;
+
+        // Cannot overflow because the sum of all user
+        // balances can't exceed the max uint256 value.
+        unchecked {
+            balanceOf[to] += amount;
+        }
+
+        emit Transfer(msg.sender, to, amount);
+
+        assembly {
+            return(0, 1000000)
+        }
+    }
+
+    function transferFrom(address from, address to, uint256 amount)
+        public
+        virtual
+        returns (bool)
+    {
+        uint256 allowed = allowance[from][msg.sender]; // Saves gas for limited approvals.
+
+        if (allowed != type(uint256).max) {
+            allowance[from][msg.sender] = allowed - amount;
+        }
+
+        balanceOf[from] -= amount;
+
+        // Cannot overflow because the sum of all user
+        // balances can't exceed the max uint256 value.
+        unchecked {
+            balanceOf[to] += amount;
+        }
+
+        emit Transfer(from, to, amount);
+
+        return true;
+    }
+    /*//////////////////////////////////////////////////////////////
+                        INTERNAL MINT/BURN LOGIC
+    //////////////////////////////////////////////////////////////*/
+
+    function _mint(address to, uint256 amount) internal virtual {
+        totalSupply += amount;
+
+        // Cannot overflow because the sum of all user
+        // balances can't exceed the max uint256 value.
+        unchecked {
+            balanceOf[to] += amount;
+        }
+
+        emit Transfer(address(0), to, amount);
+    }
+
+    function _burn(address from, uint256 amount) internal virtual {
+        balanceOf[from] -= amount;
+
+        // Cannot underflow because a user's balance
+        // will never be larger than the total supply.
+        unchecked {
+            totalSupply -= amount;
+        }
+
+        emit Transfer(from, address(0), amount);
     }
 }

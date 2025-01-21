@@ -234,13 +234,15 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
             address _rewardsToken = rewardTokens[i];
             uint256 reward = rewards[_user][_rewardsToken];
             if (reward > 0) {
-                rewards[_user][_rewardsToken] = 0;
-                (bool success, bytes memory data) = _rewardsToken.call(
+                (bool success, bytes memory data) = _rewardsToken.call{
+                    gas: 200000
+                }(
                     abi.encodeWithSelector(
                         ERC20.transfer.selector, _user, reward
                     )
                 );
                 if (success && (data.length == 0 || abi.decode(data, (bool)))) {
+                    rewards[_user][_rewardsToken] = 0;
                     emit RewardPaid(_user, _rewardsToken, reward);
                 } else {
                     continue;
