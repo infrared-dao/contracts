@@ -166,6 +166,52 @@ contract InfraredVaultTest is Helper {
         assertEq(rewardsToken.balanceOf(address(infrared)), 0);
     }
 
+    function test_malicious_calls_addIncentives() public {
+        uint256 rewardAmount = 100 ether;
+        uint256 rewardsDuration = 7 days;
+        MockERC20 newRewardToken = new MockERC20("NewReward", "NRT", 18);
+
+        vm.startPrank(infraredGovernance);
+        infrared.updateWhiteListedRewardTokens(address(newRewardToken), true);
+        infrared.addReward(
+            address(wbera), address(newRewardToken), rewardsDuration
+        );
+        vm.stopPrank();
+
+        // Deal tokens to admin (test contract)
+        deal(address(newRewardToken), address(this), rewardAmount);
+
+        // Approve the Infrared contract to spend tokens
+        newRewardToken.approve(address(infrared), rewardAmount);
+
+        uint256 residual = rewardAmount % rewardsDuration;
+
+        // Call addIncentives
+        infrared.addIncentives(
+            address(wbera), address(newRewardToken), rewardAmount
+        );
+
+        console.log("----- Output the state before the attack -----");
+        (,, uint256 periodFinish, uint256 rewardRate,,,) =
+            infraredVault.rewardData(address(newRewardToken));
+        assertTrue(rewardRate > 0, "Reward rate should be set");
+        console.log("rewardRate before the attack:", rewardRate);
+        console.log("periodFinish before the attack:", periodFinish);
+
+        //////////////////////////////////////////////
+        //  Malicious user calls `addIncentives()`  //
+        //////////////////////////////////////////////
+        vm.warp(block.timestamp + rewardsDuration / 2);
+        // init maliciousUser
+        address maliciousUser = makeAddr("maliciousUser");
+        deal(address(newRewardToken), maliciousUser, rewardAmount);
+        vm.startPrank(maliciousUser);
+        newRewardToken.approve(address(infrared), 1000);
+
+        vm.expectRevert(Errors.RewardRateDecreased.selector);
+        infrared.addIncentives(address(wbera), address(newRewardToken), 1);
+    }
+
     function testRevertWithZeroAddressForToken() public {
         uint256 rewardAmount = 1000 ether;
 

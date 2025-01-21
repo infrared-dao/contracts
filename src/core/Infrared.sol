@@ -282,6 +282,12 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         address _rewardsToken,
         uint256 _amount
     ) external {
+        bool whitelistStatus = whitelistedRewardTokens(_rewardsToken);
+
+        if (!whitelistStatus) {
+            revert Errors.RewardTokenNotWhitelisted();
+        }
+
         _vaultStorage().addIncentives(_stakingToken, _rewardsToken, _amount);
     }
 
@@ -447,13 +453,11 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         uint256 _feeProtocol
     )
         public
-        view
+        pure
         returns (uint256 amtRecipient, uint256 amtVoter, uint256 amtProtocol)
     {
         if (_feeTotal > RewardsLib.FEE_UNIT) revert Errors.InvalidFee();
-        return _rewardsStorage().chargedFeesOnRewards(
-            _amt, _feeTotal, _feeProtocol
-        );
+        return RewardsLib.chargedFeesOnRewards(_amt, _feeTotal, _feeProtocol);
     }
 
     /// @inheritdoc IInfrared

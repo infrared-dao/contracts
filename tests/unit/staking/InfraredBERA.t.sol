@@ -974,6 +974,66 @@ contract InfraredBERATest is InfraredBERABaseTest {
         ibera.setFeeDivisorShareholders(feeShareholders);
     }
 
+    function testSetFeeDivisorShareholdersComoundsFirst() public {
+        // Setup: Add some rewards that are above minimum to receivor
+        uint256 rewardsAmount = 12 ether; // > MINIMUM_DEPOSIT + MINIMUM_DEPOSIT_FEE (11 ether)
+        (bool success,) = address(receivor).call{value: rewardsAmount}("");
+        assertTrue(success);
+
+        // Verify we have enough to compound
+        (uint256 amount,) = receivor.distribution();
+        assertTrue(
+            amount
+                >= InfraredBERAConstants.MINIMUM_DEPOSIT
+                    + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
+        );
+
+        uint256 oldFee = ibera.feeDivisorShareholders();
+        uint16 newFee = 4; // 25% fee
+
+        // Track initial states
+        uint256 initialDeposits = ibera.deposits();
+        uint256 initialReceivorBalance = address(receivor).balance;
+
+        vm.prank(infraredGovernance);
+        ibera.setFeeDivisorShareholders(newFee);
+
+        // Verify fee was updated
+        assertEq(ibera.feeDivisorShareholders(), newFee);
+
+        // Verify compounding occurred
+        assertGt(ibera.deposits(), initialDeposits);
+        assertLt(address(receivor).balance, initialReceivorBalance);
+    }
+
+    function testSetFeeDivisorShareholdersRevertsWithUncompoundableAmount()
+        public
+    {
+        // Setup: Add some rewards but less than minimum to receivor
+        uint256 rewardsAmount = 5 ether; // < MINIMUM_DEPOSIT + MINIMUM_DEPOSIT_FEE (11 ether)
+        (bool success,) = address(receivor).call{value: rewardsAmount}("");
+        assertTrue(success);
+
+        // Verify amount is non-zero but below minimum
+        (uint256 amount,) = receivor.distribution();
+        assertTrue(amount > 0);
+        assertTrue(
+            amount
+                < InfraredBERAConstants.MINIMUM_DEPOSIT
+                    + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
+        );
+
+        uint16 newFee = 4; // 25% fee
+
+        // Should revert when trying to set new fee with uncompoundable amount
+        vm.prank(infraredGovernance);
+        vm.expectRevert(Errors.CanNotCompoundAccumuldatedBERA.selector);
+        ibera.setFeeDivisorShareholders(newFee);
+
+        // Verify fee wasn't changed
+        assertEq(ibera.feeDivisorShareholders(), 0);
+    }
+
     function testSetDepositSignatureUpdatesSignature() public {
         assertEq(ibera.signatures(pubkey0).length, 0);
         vm.prank(infraredGovernance);
@@ -993,7 +1053,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         // Setup initial deposits
         uint256 initialDeposit = 100 ether;
         vm.deal(address(this), initialDeposit);
-        (uint256 nonce,) = ibera.mint{value: initialDeposit}(address(this));
+        ibera.mint{value: initialDeposit}(address(this));
 
         // Get current deposits
         uint256 currentDeposits = ibera.deposits();
@@ -1025,7 +1085,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         assertTrue(amount <= confirmed);
 
         vm.deal(address(ibera), 2 * fee);
-        uint256 nonce = withdrawor.nonceRequest();
+        withdrawor.nonceRequest();
 
         vm.deal(address(depositor), 201 ether); // DONATION
 

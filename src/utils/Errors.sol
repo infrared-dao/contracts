@@ -22,6 +22,7 @@ library Errors {
     error IBGTNotStakingToken();
     error StakedInRewardsVault();
     error NoRewardsVault();
+    error RewardRateDecreased();
     error RegistrationPaused();
     error RewardTokenNotWhitelisted();
 
@@ -63,4 +64,5 @@ library Errors {
     error InvalidReserves();
     error UnauthorizedOperator();
     error ValidatorForceExited();
+    error CanNotCompoundAccumuldatedBERA();
 }
