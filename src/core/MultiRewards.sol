@@ -6,7 +6,6 @@ import {IMultiRewards} from "../interfaces/IMultiRewards.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from
     "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import {Errors} from "src/utils/Errors.sol";
 
