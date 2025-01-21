@@ -24,6 +24,7 @@
         "@vesting/=src/vesting/",
         "@mocks/=tests/unit/mocks",
         "@voting/=src/voting/",
-        "@staking/=src/staking/"
+        "@staking/=src/staking/",
+        "@forge-safe/=lib/forge-safe/src/"
     ]
 }
