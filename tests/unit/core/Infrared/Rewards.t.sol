@@ -18,7 +18,7 @@ contract InfraredRewardsTest is Helper {
     function testharvestVaultSuccess() public {
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = address(ibgt);
-        rewardTokens[1] = address(red);
+        rewardTokens[1] = address(ir);
 
         // InfraredVault vault = InfraredVault(
         //     address(infrared.registerVault(address(wbera), rewardTokens))
@@ -272,22 +272,22 @@ contract InfraredRewardsTest is Helper {
     function testAddRewardFailsWithNonWhitelistedReward() public {
         vm.expectRevert(abi.encodeWithSignature("RewardTokenNotWhitelisted()"));
         vm.prank(infraredGovernance);
-        infrared.addReward(address(wbera), address(red), 7 days);
+        infrared.addReward(address(wbera), address(ir), 7 days);
     }
 
     function testAddRewardFailsWithZeroDuration() public {
         vm.startPrank(infraredGovernance);
-        infrared.updateWhiteListedRewardTokens(address(red), true);
+        infrared.updateWhiteListedRewardTokens(address(ir), true);
         vm.expectRevert(abi.encodeWithSignature("ZeroAmount()"));
-        infrared.addReward(address(wbera), address(red), 0);
+        infrared.addReward(address(wbera), address(ir), 0);
         vm.stopPrank();
     }
 
     function testAddRewardFailsWithNoVault() public {
         vm.startPrank(infraredGovernance);
-        infrared.updateWhiteListedRewardTokens(address(red), true);
+        infrared.updateWhiteListedRewardTokens(address(ir), true);
         vm.expectRevert(abi.encodeWithSignature("NoRewardsVault()"));
-        infrared.addReward(address(1), address(red), 7 days);
+        infrared.addReward(address(1), address(ir), 7 days);
         vm.stopPrank();
     }
 
@@ -300,7 +300,7 @@ contract InfraredRewardsTest is Helper {
                 infrared.GOVERNANCE_ROLE()
             )
         );
-        infrared.addReward(address(wbera), address(red), 7 days);
+        infrared.addReward(address(wbera), address(ir), 7 days);
     }
 
     function testAddIncentivesSuccess() public {
@@ -534,14 +534,14 @@ contract InfraredRewardsTest is Helper {
 
     /* TODO: fix
     function testAddingNewRewardToken() public {
-        deal(address(red), address(infrared), 100 ether);
+        deal(address(ir), address(infrared), 100 ether);
         vm.startPrank(keeper);
         address[] memory rewardTokens = new address[](1);
-        rewardTokens[0] = address(red);
+        rewardTokens[0] = address(ir);
 
         address vault = address(infrared.ibgtVault());
         vm.expectEmit();
-        emit IInfrared.RewardSupplied(vault, address(red), 100 ether);
+        emit IInfrared.RewardSupplied(vault, address(ir), 100 ether);
         infrared.harvestTokenRewards(rewardTokens);
         vm.stopPrank();
 
@@ -680,8 +680,8 @@ contract InfraredRewardsTest is Helper {
         // Setup: Configure RED token and mint rate
         vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(wbera), true);
-        infrared.setRed(address(red));
-        infrared.updateRedMintRate(1_500_000); // 1.5x RED per InfraredBGT
+        infrared.setIR(address(ir));
+        infrared.updateIRMintRate(1_500_000); // 1.5x RED per InfraredBGT
         vm.stopPrank();
 
         // Setup vault and user stake
@@ -712,7 +712,7 @@ contract InfraredRewardsTest is Helper {
 
         // Store balances before harvest
         uint256 vaultIbgtBefore = ibgt.balanceOf(address(infraredVault));
-        uint256 vaultRedBefore = red.balanceOf(address(infraredVault));
+        uint256 vaultRedBefore = ir.balanceOf(address(infraredVault));
 
         // Perform harvest
         vm.startPrank(address(infraredVault));
@@ -724,11 +724,11 @@ contract InfraredRewardsTest is Helper {
         // Calculate expected amounts
         uint256 harvestedAmount = 99999999999999999000; // From the emitted event
         uint256 netIbgtAmount = harvestedAmount; // No fees applied
-        uint256 expectedRedAmount = (netIbgtAmount * 1_500_000) / 1e6; // 1.5x RED per net InfraredBGT
+        uint256 expectedRedAmount = (netIbgtAmount * 1_500_000) / 1e6; // 1.5x IR per net InfraredBGT
 
         // Verify balances after harvest
         uint256 vaultIbgtAfter = ibgt.balanceOf(address(infraredVault));
-        uint256 vaultRedAfter = red.balanceOf(address(infraredVault));
+        uint256 vaultRedAfter = ir.balanceOf(address(infraredVault));
 
         // Assert InfraredBGT increase matches expected amount
         assertEq(
@@ -757,9 +757,9 @@ contract InfraredRewardsTest is Helper {
         // Setup: Configure RED token and mint rate
         vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(wbera), true);
-        infrared.setRed(address(red));
-        infrared.updateRedMintRate(1_500_000); // 1.5x RED per InfraredBGT
-        red.pause();
+        infrared.setIR(address(ir));
+        infrared.updateIRMintRate(1_500_000); // 1.5x RED per InfraredBGT
+        ir.pause();
         vm.stopPrank();
 
         // Setup vault and user stake
@@ -790,7 +790,7 @@ contract InfraredRewardsTest is Helper {
 
         // Store balances before harvest
         uint256 vaultIbgtBefore = ibgt.balanceOf(address(infraredVault));
-        uint256 vaultRedBefore = red.balanceOf(address(infraredVault));
+        uint256 vaultRedBefore = ir.balanceOf(address(infraredVault));
 
         // Perform harvest
         vm.startPrank(address(infraredVault));
@@ -806,7 +806,7 @@ contract InfraredRewardsTest is Helper {
 
         // Verify balances after harvest
         uint256 vaultIbgtAfter = ibgt.balanceOf(address(infraredVault));
-        uint256 vaultRedAfter = red.balanceOf(address(infraredVault));
+        uint256 vaultRedAfter = ir.balanceOf(address(infraredVault));
 
         // Assert InfraredBGT increase matches expected amount
         assertEq(

@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {Helper, IInfrared, InfraredVault, RED} from "./Helper.sol";
+import {
+    Helper,
+    IInfrared,
+    InfraredVault,
+    InfraredGovernanceToken
+} from "./Helper.sol";
 import "tests/unit/mocks/MockERC20.sol";
 import {BGTStaker} from "@berachain/pol/BGTStaker.sol";
 import "@berachain/pol/rewards/RewardVaultFactory.sol";
@@ -51,7 +56,7 @@ contract InfraredTest is Helper {
     function testEndToEndFlow() public {
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = address(ibgt);
-        rewardTokens[1] = address(red);
+        rewardTokens[1] = address(ir);
 
         // Step 1: Vault Registration
         // InfraredVault vault = InfraredVault(
@@ -379,7 +384,7 @@ contract InfraredTest is Helper {
 
         address[] memory rewardTokens = new address[](2);
         rewardTokens[0] = address(ibgt);
-        rewardTokens[1] = address(red);
+        rewardTokens[1] = address(ir);
         // InfraredVault vault = InfraredVault(
         //     address(infrared.registerVault(address(wbera), rewardTokens))
         // );
@@ -507,8 +512,8 @@ contract InfraredTest is Helper {
     }
 
     function testSetRedSuccess() public {
-        // Create new RED token mock
-        RED newRed = new RED(
+        // Create new IR token mock
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
@@ -517,54 +522,54 @@ contract InfraredTest is Helper {
         );
 
         // Grant MINTER_ROLE to infrared contract
-        // newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
+        // newIR.grantRole(newIR.MINTER_ROLE(), address(infrared));
 
         // Start recording storage access
         vm.record();
 
-        // Set RED token
+        // Set IR token
         vm.prank(infraredGovernance);
-        infrared.setRed(address(newRed));
+        infrared.setIR(address(newIR));
 
-        assertEq(address(infrared.red()), address(newRed));
+        assertEq(address(infrared.ir()), address(newIR));
     }
 
     function testSetRedFailsZeroAddress() public {
         vm.prank(infraredGovernance);
         vm.expectRevert(Errors.ZeroAddress.selector);
-        infrared.setRed(address(0));
+        infrared.setIR(address(0));
     }
 
     function testSetRedFailsAlreadySet() public {
         // First set
-        RED newRed = new RED(
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,
             infraredGovernance
         );
-        // newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
+        // newIR.grantRole(newIR.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
-        infrared.setRed(address(newRed));
+        infrared.setIR(address(newIR));
 
         // Try to set again
-        RED anotherRed = new RED(
+        InfraredGovernanceToken anotherIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,
             infraredGovernance
         );
-        // anotherRed.grantRole(anotherRed.MINTER_ROLE(), address(infrared));
+        // anotherIR.grantRole(anotherIR.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
         vm.expectRevert(Errors.AlreadySet.selector);
-        infrared.setRed(address(anotherRed));
+        infrared.setIR(address(anotherIR));
     }
 
     function testSetRedFailsAccessControll() public {
-        // Create RED token without granting MINTER_ROLE
-        RED newRed = new RED(
+        // Create IR token without granting MINTER_ROLE
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(12),
             infraredGovernance,
@@ -574,12 +579,12 @@ contract InfraredTest is Helper {
 
         vm.startPrank(address(123));
         vm.expectRevert();
-        infrared.setRed(address(newRed));
+        infrared.setIR(address(newIR));
     }
 
     function testSetRedFailsMinterUnauthorized() public {
-        // Create RED token without granting MINTER_ROLE
-        RED newRed = new RED(
+        // Create IR token without granting MINTER_ROLE
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(12),
             infraredGovernance,
@@ -590,61 +595,61 @@ contract InfraredTest is Helper {
         vm.expectRevert(
             abi.encodeWithSignature("Unauthorized(address)", address(infrared))
         );
-        infrared.setRed(address(newRed));
+        infrared.setIR(address(newIR));
     }
 
-    function testUpdateRedMintRateSuccess() public {
-        // Setup: First set RED token
-        RED newRed = new RED(
+    function testUpdateirMintRateSuccess() public {
+        // Setup: First set IR token
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,
             infraredGovernance
         );
-        // newRed.grantRole(newRed.MINTER_ROLE(), address(infrared));
+        // newIR.grantRole(newIR.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
-        infrared.setRed(address(newRed));
+        infrared.setIR(address(newIR));
 
         // Get the base slot from the public constant
         bytes32 baseSlot = infrared.REWARDS_STORAGE_LOCATION();
 
-        // redMintRate is after 9 addresses and 1 mapping in the struct
-        bytes32 redMintRateSlot = bytes32(uint256(baseSlot) + 1);
+        // IRMintRate is after 9 addresses and 1 mapping in the struct
+        bytes32 irMintRateSlot = bytes32(uint256(baseSlot) + 1);
 
         // Start recording storage access for debugging
         vm.record();
 
-        // Test case 1: Set rate to 0.5 RED per InfraredBGT
+        // Test case 1: Set rate to 0.5 IR per InfraredBGT
         uint256 halfRate = 500_000; // 0.5 * 1e6
         vm.prank(infraredGovernance);
-        infrared.updateRedMintRate(halfRate);
+        infrared.updateIRMintRate(halfRate);
 
-        // Verify redMintRate in internal storage
-        bytes32 storedValue = vm.load(address(infrared), redMintRateSlot);
-        uint256 redMintRate = uint256(storedValue);
+        // Verify irMintRate in internal storage
+        bytes32 storedValue = vm.load(address(infrared), irMintRateSlot);
+        uint256 irMintRate = uint256(storedValue);
 
         assertEq(
-            redMintRate, halfRate, "Internal storage mismatch for half rate"
+            irMintRate, halfRate, "Internal storage mismatch for half rate"
         );
 
-        // Test case 2: Set rate to 2 RED per InfraredBGT
+        // Test case 2: Set rate to 2 IR per InfraredBGT
         uint256 doubleRate = 2_000_000; // 2 * 1e6
         vm.prank(infraredGovernance);
-        infrared.updateRedMintRate(doubleRate);
+        infrared.updateIRMintRate(doubleRate);
 
-        // Verify redMintRate in internal storage again
-        storedValue = vm.load(address(infrared), redMintRateSlot);
-        redMintRate = uint256(storedValue);
+        // Verify irMintRate in internal storage again
+        storedValue = vm.load(address(infrared), irMintRateSlot);
+        irMintRate = uint256(storedValue);
 
         assertEq(
-            redMintRate, doubleRate, "Internal storage mismatch for double rate"
+            irMintRate, doubleRate, "Internal storage mismatch for double rate"
         );
     }
 
     function testRedMintingRatioHalf() public {
-        // Setup: Set RED token and mint rate to 0.5
-        RED newRed = new RED(
+        // Setup: Set IR token and mint rate to 0.5
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
@@ -653,8 +658,8 @@ contract InfraredTest is Helper {
         );
 
         vm.startPrank(infraredGovernance);
-        infrared.setRed(address(newRed));
-        infrared.updateRedMintRate(500_000); // 0.5 * 1e6
+        infrared.setIR(address(newIR));
+        infrared.updateIRMintRate(500_000); // 0.5 * 1e6
         vm.stopPrank();
 
         // Setup vault and rewards
@@ -671,15 +676,15 @@ contract InfraredTest is Helper {
         vm.prank(keeper);
         infrared.harvestVault(address(wbera));
 
-        // Verify RED minting ratio (0.5 RED per InfraredBGT)
-        uint256 redBalance = newRed.balanceOf(address(ibgtVault));
+        // Verify IR minting ratio (0.5 IR per InfraredBGT)
+        uint256 redBalance = newIR.balanceOf(address(ibgtVault));
         uint256 ibgtBalance = ibgt.balanceOf(address(ibgtVault));
         assertApproxEqRel(redBalance, ibgtBalance / 2, 1e16); // 1% tolerance
     }
 
     function testRedMintingRatioDouble() public {
-        // Setup: Set RED token and mint rate to 2.0
-        RED newRed = new RED(
+        // Setup: Set IR token and mint rate to 2.0
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
@@ -688,8 +693,8 @@ contract InfraredTest is Helper {
         );
 
         vm.startPrank(infraredGovernance);
-        infrared.setRed(address(newRed));
-        infrared.updateRedMintRate(2_000_000); // 2 * 1e6
+        infrared.setIR(address(newIR));
+        infrared.updateIRMintRate(2_000_000); // 2 * 1e6
         vm.stopPrank();
 
         // Setup vault and rewards
@@ -706,8 +711,8 @@ contract InfraredTest is Helper {
         vm.prank(keeper);
         infrared.harvestVault(address(wbera));
 
-        // Verify RED minting ratio (2 RED per InfraredBGT)
-        uint256 redBalance = newRed.balanceOf(address(ibgtVault));
+        // Verify IR minting ratio (2 IR per InfraredBGT)
+        uint256 redBalance = newIR.balanceOf(address(ibgtVault));
         uint256 ibgtBalance = ibgt.balanceOf(address(ibgtVault));
         assertApproxEqRel(redBalance, ibgtBalance * 2, 1e16); // 1% tolerance
     }

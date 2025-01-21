@@ -4,10 +4,10 @@ pragma solidity 0.8.26;
 import {ERC20PresetMinterPauser} from "../vendors/ERC20PresetMinterPauser.sol";
 
 /**
- * @title RED
- * @notice This contract is the RED token.
+ * @title Infrared Governance Token
+ * @notice This contract is the IR token.
  */
-contract RED is ERC20PresetMinterPauser {
+contract InfraredGovernanceToken is ERC20PresetMinterPauser {
     error ZeroAddress();
 
     address public immutable ibgt;
@@ -22,7 +22,7 @@ contract RED is ERC20PresetMinterPauser {
     )
         ERC20PresetMinterPauser(
             "Infared Governance Token",
-            "RED",
+            "IR",
             _admin,
             _minter,
             _pauser

@@ -72,8 +72,8 @@ contract VotingEscrowTest is Base {
 
     function testCreateLock() public {
         vm.startPrank(user1);
-        ired.mint(user1, 1e25);
-        ired.approve(address(escrow), 1e25);
+        ir.mint(user1, 1e25);
+        ir.approve(address(escrow), 1e25);
         uint256 lockDuration = 7 * 24 * 3600; // 1 week
 
         // Balance should be zero before and 1 after creating the lock
@@ -101,7 +101,7 @@ contract VotingEscrowTest is Base {
     }
 
     function testCreateLockOutsideAllowedZones() public {
-        ired.approve(address(escrow), 1e25);
+        ir.approve(address(escrow), 1e25);
         vm.expectRevert(IVotingEscrow.LockDurationTooLong.selector);
         escrow.createLock(1e25, MAXTIME + 1 weeks);
     }
@@ -111,8 +111,8 @@ contract VotingEscrowTest is Base {
 
         vm.startPrank(user1);
         IVotingEscrow.LockedBalance memory preLocked = escrow.locked(tokenId);
-        ired.mint(user1, TOKEN_1);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.mint(user1, TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         vm.expectEmit(false, false, false, true, address(escrow));
         emit MetadataUpdate(tokenId);
         escrow.increaseAmount(tokenId, TOKEN_1);
@@ -130,8 +130,8 @@ contract VotingEscrowTest is Base {
 
     function testIncreaseUnlockTime() public {
         vm.startPrank(user1);
-        ired.mint(user1, TOKEN_1);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.mint(user1, TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, 4 weeks);
 
         skip((1 weeks) / 2);
@@ -157,8 +157,8 @@ contract VotingEscrowTest is Base {
         skipAndRoll(1);
 
         vm.startPrank(user1);
-        ired.mint(user1, TOKEN_1);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.mint(user1, TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         escrow.increaseAmount(tokenId, TOKEN_1);
 
         // check locked balance state is updated correctly
@@ -195,7 +195,7 @@ contract VotingEscrowTest is Base {
 
         IVotingEscrow.LockedBalance memory preLocked = escrow.locked(tokenId);
         // address (this) will deposit for user1 (add balance to NFT)
-        ired.approve(address(escrow), TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         vm.expectEmit(false, false, false, true, address(escrow));
         emit MetadataUpdate(tokenId);
         escrow.depositFor(tokenId, TOKEN_1);
@@ -219,8 +219,8 @@ contract VotingEscrowTest is Base {
 
         skipAndRoll(1);
 
-        ired.mint(user1, TOKEN_1);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.mint(user1, TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         escrow.increaseAmount(tokenId, TOKEN_1);
 
         // check locked balance state is updated correctly
@@ -267,8 +267,8 @@ contract VotingEscrowTest is Base {
         vm.prank(user1);
         escrow.lockPermanent(tokenId);
         vm.startPrank(user2);
-        ired.mint(user2, TOKEN_1);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.mint(user2, TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         uint256 tokenId2 = escrow.createLock(TOKEN_1, MAXTIME);
         vm.stopPrank();
 
@@ -291,8 +291,8 @@ contract VotingEscrowTest is Base {
 
         skipAndRoll(1);
         vm.startPrank(user1);
-        ired.mint(user1, TOKEN_1);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.mint(user1, TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         escrow.increaseAmount(tokenId, TOKEN_1);
         vm.stopPrank();
 
@@ -468,19 +468,19 @@ contract VotingEscrowTest is Base {
     }
 
     function testWithdraw() public {
-        deal(address(ired), user1, TOKEN_1);
+        deal(address(ir), user1, TOKEN_1);
         vm.startPrank(user1);
         uint256 lockDuration = 7 * 24 * 3600; // 1 week
-        ired.approve(address(escrow), TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
 
         uint256 tokenId = escrow.createLock(TOKEN_1, lockDuration);
-        uint256 preBalance = ired.balanceOf(user1);
+        uint256 preBalance = ir.balanceOf(user1);
         skipAndRoll(lockDuration);
 
         escrow.withdraw(tokenId);
         vm.stopPrank();
 
-        uint256 postBalance = ired.balanceOf(user1);
+        uint256 postBalance = ir.balanceOf(user1);
         assertEq(postBalance - preBalance, TOKEN_1);
         assertEq(escrow.ownerOf(tokenId), address(0));
         assertEq(escrow.balanceOf(user1), 0);
@@ -499,10 +499,10 @@ contract VotingEscrowTest is Base {
         assertEq(escrow.balanceOfNFT(tokenId), 0);
     }
 
-    function testCannotWithdrawBeforeLockExpiry() public {
-        deal(address(ired), user1, TOKEN_1);
+    function testCannotWithdrawBeforeLockExpired() public {
+        deal(address(ir), user1, TOKEN_1);
         vm.startPrank(user1);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         uint256 lockDuration = 7 * 24 * 3600; // 1 week
         uint256 tokenId = escrow.createLock(TOKEN_1, lockDuration);
         skipAndRoll(1);
@@ -512,9 +512,9 @@ contract VotingEscrowTest is Base {
     }
 
     function testCannotWithdrawPermanentLock() public {
-        deal(address(ired), user1, TOKEN_1);
+        deal(address(ir), user1, TOKEN_1);
         vm.startPrank(user1);
-        ired.approve(address(escrow), TOKEN_1);
+        ir.approve(address(escrow), TOKEN_1);
         uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
         escrow.lockPermanent(tokenId);
         skipAndRoll(1);
@@ -1344,7 +1344,7 @@ contract VotingEscrowTest is Base {
     //     escrow.merge(tokenId, tokenId2);
     // }
 
-    // function testMergeWithExpiredFromVeNFT() public {
+    // function testMergeWithExpirFromVeNFT() public {
     //     // first veNFT max lock time (4yrs)
     //     VELO.approve(address(escrow), type(uint256).max);
     //     uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
@@ -1359,7 +1359,7 @@ contract VotingEscrowTest is Base {
     //     skip(4 weeks);
 
     //     uint256 lock = escrow.locked(tokenId2).end;
-    //     assertLt(lock, block.timestamp); // check expired
+    //     assertLt(lock, block.timestamp); // check expir
 
     //     vm.expectEmit(true, true, true, true, address(escrow));
     //     emit Merge(user1, tokenId2, tokenId, TOKEN_1, TOKEN_1, TOKEN_1 * 2, expectedLockTime, 3024001);
@@ -1394,7 +1394,7 @@ contract VotingEscrowTest is Base {
     //     assertEq(uint256(uint128(lockedTo.end)), expectedLockTime);
     // }
 
-    // function testCannotMergeWithExpiredToVeNFT() public {
+    // function testCannotMergeWithExpirToVeNFT() public {
     //     // first veNFT max lock time (4yrs)
     //     VELO.approve(address(escrow), type(uint256).max);
     //     uint256 tokenId = escrow.createLock(TOKEN_1, MAXTIME);
@@ -1406,7 +1406,7 @@ contract VotingEscrowTest is Base {
     //     // let second veNFT expire
     //     skip(4 weeks);
 
-    //     vm.expectRevert(IVotingEscrow.LockExpired.selector);
+    //     vm.expectRevert(IVotingEscrow.LockExpir.selector);
     //     escrow.merge(tokenId, tokenId2);
     // }
 
@@ -1579,7 +1579,7 @@ contract VotingEscrowTest is Base {
     //     escrow.split(ownerTokenId, TOKEN_1 / 2);
     // }
 
-    // function testCannotSplitWithExpiredVeNFT() public {
+    // function testCannotSplitWithExpirVeNFT() public {
     //     escrow.toggleSplit(address(0), true);
     //     // create veNFT with one week locktime
     //     VELO.approve(address(escrow), type(uint256).max);
@@ -1588,7 +1588,7 @@ contract VotingEscrowTest is Base {
     //     // let second veNFT expire
     //     skip(1 weeks + 1);
 
-    //     vm.expectRevert(IVotingEscrow.LockExpired.selector);
+    //     vm.expectRevert(IVotingEscrow.LockExpir.selector);
     //     escrow.split(tokenId, TOKEN_1 / 2);
     // }
 
@@ -2050,13 +2050,13 @@ contract VotingEscrowTest is Base {
     //     escrow.lockPermanent(tokenId);
     // }
 
-    // function testCannotLockPermanentWithExpiredLock() public {
+    // function testCannotLockPermanentWithExpirLock() public {
     //     VELO.approve(address(escrow), TOKEN_1);
     //     uint256 tokenId = escrow.createLock(TOKEN_1, 4 weeks);
 
     //     skipAndRoll(4 weeks + 1);
 
-    //     vm.expectRevert(IVotingEscrow.LockExpired.selector);
+    //     vm.expectRevert(IVotingEscrow.LockExpir.selector);
     //     escrow.lockPermanent(tokenId);
     // }
 
@@ -2200,7 +2200,7 @@ contract VotingEscrowTest is Base {
     //     bytes32 digest = sigUtils.getTypedDataHash(delegation);
     //     (uint8 v, bytes32 r, bytes32 s) = vm.sign(alicePrivateKey, digest);
 
-    //     vm.expectRevert(IVotingEscrow.SignatureExpired.selector);
+    //     vm.expectRevert(IVotingEscrow.SignatureExpir.selector);
     //     escrow.delegateBySig(1, 2, 0, 604801, v, r, s);
     // }
 

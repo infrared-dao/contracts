@@ -8,7 +8,7 @@ import {ERC1967Proxy} from
 import {ERC20PresetMinterPauser} from
     "../src/vendors/ERC20PresetMinterPauser.sol";
 
-import {RED} from "src/core/RED.sol";
+import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {Voter} from "src/voting/Voter.sol";
 import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 
@@ -27,7 +27,7 @@ import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 
 contract InfraredDeployer is Script {
     InfraredBGT public ibgt;
-    ERC20PresetMinterPauser public red;
+    ERC20PresetMinterPauser public ir;
 
     InfraredBERA public ibera;
     InfraredBERADepositor public depositor;
@@ -39,7 +39,7 @@ contract InfraredDeployer is Script {
     Infrared public infrared;
 
     Voter public voter;
-    VotingEscrow public veIRED;
+    VotingEscrow public sIR;
 
     function run(
         address _gov,
@@ -104,17 +104,17 @@ contract InfraredDeployer is Script {
             address(_bgt), data._gov, address(infrared), data._gov
         );
 
-        red = new RED(
+        ir = new InfraredGovernanceToken(
             address(ibgt), address(infrared), data._gov, data._gov, data._gov
         );
 
         infrared.setIBGT(address(ibgt));
-        infrared.setRed(address(red));
+        infrared.setIR(address(ir));
 
-        veIRED = new VotingEscrow(
-            _keeper, address(red), address(voter), address(infrared)
+        sIR = new VotingEscrow(
+            _keeper, address(ir), address(voter), address(infrared)
         );
-        voter.initialize(address(veIRED), data._gov, data._keeper);
+        voter.initialize(address(sIR), data._gov, data._keeper);
 
         // initialize ibera proxies
         depositor.initialize(_gov, _keeper, address(ibera), _beaconDeposit);

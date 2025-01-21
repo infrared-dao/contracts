@@ -71,7 +71,7 @@ contract VotingEscrow is IVotingEscrow, ReentrancyGuard {
     /**
      * @notice Initializes VotingEscrow contract
      * @param _keeper Address of keeper contract
-     * @param _token Address of token (RED) used to create a veNFT
+     * @param _token Address of token (IR) used to create a veNFT
      * @param _voter Address of Voter contract
      * @param _infrared Address of Infrared contract
      */

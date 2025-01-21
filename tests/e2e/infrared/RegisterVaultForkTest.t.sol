@@ -12,30 +12,30 @@ contract RegisterVaultForkTest is InfraredForkTest {
         vm.startPrank(infraredGovernance);
 
         // priors checked
-        assertEq(address(infrared.vaultRegistry(address(red))), address(0));
-        assertEq(factory.getVault(address(red)), address(0));
+        assertEq(address(infrared.vaultRegistry(address(ir))), address(0));
+        assertEq(factory.getVault(address(ir)), address(0));
 
         address[] memory _rewardTokens = new address[](1);
-        _rewardTokens[0] = address(ired);
+        _rewardTokens[0] = address(ir);
 
-        IInfraredVault _newVault = infrared.registerVault(address(red));
+        IInfraredVault _newVault = infrared.registerVault(address(ir));
 
         // check vault stored in registry
-        assertTrue(address(infrared.vaultRegistry(address(red))) != address(0));
+        assertTrue(address(infrared.vaultRegistry(address(ir))) != address(0));
         assertEq(
-            address(infrared.vaultRegistry(address(red))), address(_newVault)
+            address(infrared.vaultRegistry(address(ir))), address(_newVault)
         );
 
         // check berachain rewards vault created
         IRewardVault _newRewardsVault = _newVault.rewardsVault();
-        assertEq(address(_newRewardsVault), factory.getVault(address(red)));
+        assertEq(address(_newRewardsVault), factory.getVault(address(ir)));
 
         // check infrared rewards vault sets infrared as operator
         assertEq(
             _newRewardsVault.operator(address(_newVault)), address(infrared)
         );
 
-        infrared.updateWhiteListedRewardTokens(address(ired), true);
+        infrared.updateWhiteListedRewardTokens(address(ir), true);
 
         infrared.addReward(address(stakingToken), _rewardTokens[0], 10 days);
 

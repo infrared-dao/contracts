@@ -218,7 +218,7 @@ contract InfraredInitializationTest is Helper {
         // Test redMintRate (slot 10)
         uint256 testRate = 500_000;
         vm.prank(infraredGovernance);
-        infrared.updateRedMintRate(testRate);
+        infrared.updateIRMintRate(testRate);
         assertEq(
             uint256(vm.load(address(infrared), bytes32(uint256(baseSlot) + 1))),
             testRate,

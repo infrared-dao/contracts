@@ -14,7 +14,7 @@ contract MockInfrared {
     using EnumerableSet for EnumerableSet.AddressSet;
 
     IInfraredBGT public immutable ibgt;
-    IERC20Mintable public immutable ired;
+    IERC20Mintable public immutable ir;
     IBerachainRewardsVaultFactory public immutable rewardsFactory;
 
     EnumerableSet.AddressSet internal _infraredValidators;
@@ -26,9 +26,9 @@ contract MockInfrared {
 
     mapping(address => IInfraredVault) public vaultRegistry;
 
-    constructor(address _ibgt, address _ired, address _rewardsFactory) {
+    constructor(address _ibgt, address _ir, address _rewardsFactory) {
         ibgt = IInfraredBGT(_ibgt);
-        ired = IERC20Mintable(_ired);
+        ir = IERC20Mintable(_ir);
         rewardsFactory = IBerachainRewardsVaultFactory(_rewardsFactory);
     }
 

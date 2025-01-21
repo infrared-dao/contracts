@@ -25,7 +25,8 @@ import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 
-import {IRED} from "src/interfaces/IRED.sol";
+import {IInfraredGovernanceToken} from
+    "src/interfaces/IInfraredGovernanceToken.sol";
 import {IBribeCollector} from "src/interfaces/IBribeCollector.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
@@ -93,7 +94,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     IInfraredBERA public ibera;
 
     /// @inheritdoc IInfrared
-    IRED public red;
+    IInfraredGovernanceToken public ir;
 
     /// @inheritdoc IInfrared
     IInfraredVault public ibgtVault;
@@ -425,22 +426,26 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @inheritdoc IInfrared
-    function setRed(address _red) external {
-        if (_red == address(0)) revert Errors.ZeroAddress();
-        if (address(red) != address(0)) revert Errors.AlreadySet();
-        if (!IRED(_red).hasRole(IRED(_red).MINTER_ROLE(), address(this))) {
+    function setIR(address _ir) external {
+        if (_ir == address(0)) revert Errors.ZeroAddress();
+        if (address(ir) != address(0)) revert Errors.AlreadySet();
+        if (
+            !IInfraredGovernanceToken(_ir).hasRole(
+                IInfraredGovernanceToken(_ir).MINTER_ROLE(), address(this)
+            )
+        ) {
             revert Errors.Unauthorized(address(this));
         }
-        red = IRED(_red);
-        emit RedSet(msg.sender, _red);
+        ir = IInfraredGovernanceToken(_ir);
+        emit IRSet(msg.sender, _ir);
     }
 
     /// @inheritdoc IInfrared
-    function updateRedMintRate(uint256 _redMintRate) external onlyGovernor {
-        uint256 oldRate = _rewardsStorage().redMintRate;
-        _rewardsStorage().updateRedMintRate(_redMintRate);
+    function updateIRMintRate(uint256 _irMintRate) external onlyGovernor {
+        uint256 oldRate = _rewardsStorage().irMintRate;
+        _rewardsStorage().updateIRMintRate(_irMintRate);
 
-        emit UpdatedRedMintRate(oldRate, _redMintRate, msg.sender);
+        emit UpdatedIRMintRate(oldRate, _irMintRate, msg.sender);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -475,7 +480,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
             address(_bgt),
             address(ibgt),
             address(voter),
-            address(red),
+            address(ir),
             rewardsDuration()
         );
         emit VaultHarvested(msg.sender, _asset, address(vault), bgtAmt);
