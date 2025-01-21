@@ -7,8 +7,6 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ReentrancyGuard} from
     "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import {Errors} from "src/utils/Errors.sol";
-
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
@@ -331,15 +329,8 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
 
             // Remove residual before setting rate
             totalAmount = totalAmount - rewardData[_rewardsToken].rewardResidual;
-
-            uint256 oldRewardRate = rewardData[_rewardsToken].rewardRate;
-            uint256 newRewardRate =
+            rewardData[_rewardsToken].rewardRate =
                 totalAmount / rewardData[_rewardsToken].rewardsDuration;
-            if (newRewardRate < oldRewardRate) {
-                revert Errors.RewardRateDecreased();
-            } else {
-                rewardData[_rewardsToken].rewardRate = newRewardRate;
-            }
         }
 
         rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
@@ -377,12 +368,28 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         address _rewardsToken,
         uint256 _rewardsDuration
     ) internal {
-        require(
-            block.timestamp > rewardData[_rewardsToken].periodFinish,
-            "Reward period still active"
-        );
-
         require(_rewardsDuration > 0, "Reward duration must be non-zero");
+
+        if (block.timestamp < rewardData[_rewardsToken].periodFinish) {
+            uint256 remaining =
+                rewardData[_rewardsToken].periodFinish - block.timestamp;
+            uint256 leftover = remaining * rewardData[_rewardsToken].rewardRate;
+
+            // Calculate total and its residual
+            uint256 totalAmount =
+                leftover + rewardData[_rewardsToken].rewardResidual;
+            rewardData[_rewardsToken].rewardResidual =
+                totalAmount % _rewardsDuration;
+
+            // Remove residual before setting rate
+            totalAmount = totalAmount - rewardData[_rewardsToken].rewardResidual;
+            rewardData[_rewardsToken].rewardRate =
+                totalAmount / _rewardsDuration;
+        }
+
+        rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
+        rewardData[_rewardsToken].periodFinish =
+            block.timestamp + _rewardsDuration;
 
         rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
         emit RewardsDurationUpdated(_rewardsToken, _rewardsDuration);

@@ -109,9 +109,36 @@ library VaultManagerLib {
 
         IInfraredVault vault = $.vaultRegistry[_stakingToken];
 
-        (, uint256 _vaultRewardsDuration,,,,,) = vault.rewardData(_rewardsToken);
+        (
+            ,
+            uint256 _vaultRewardsDuration,
+            uint256 periodFinish,
+            uint256 rewardRate,
+            ,
+            ,
+            uint256 rewardResidual
+        ) = vault.rewardData(_rewardsToken);
         if (_vaultRewardsDuration == 0) {
             revert Errors.RewardTokenNotWhitelisted();
+        }
+
+        if (block.timestamp < periodFinish) {
+            // enforce externally added incentives cannot reduce current rate
+            // calc new reward residual
+            uint256 reward = _amount + rewardResidual;
+            rewardResidual = reward % _vaultRewardsDuration;
+            reward = reward - rewardResidual;
+            uint256 remaining = periodFinish - block.timestamp;
+            uint256 leftover = remaining * rewardRate;
+            // Calculate total and its residual
+            uint256 totalAmount = reward + leftover + rewardResidual;
+            rewardResidual = totalAmount % _vaultRewardsDuration;
+            // Remove residual before setting rate
+            totalAmount = totalAmount - rewardResidual;
+            uint256 newRewardRate = totalAmount / _vaultRewardsDuration;
+            if (newRewardRate < rewardRate) {
+                revert Errors.RewardRateDecreased();
+            }
         }
 
         ERC20(_rewardsToken).safeTransferFrom(
