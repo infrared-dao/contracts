@@ -86,7 +86,7 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
     }
 
     /// @inheritdoc IInfraredDistributor
-    function purge(bytes calldata pubkey) external {
+    function purge(bytes calldata pubkey) external onlyGovernor {
         address validator = _validators[keccak256(pubkey)];
         if (validator == address(0)) revert Errors.ValidatorDoesNotExist();
 

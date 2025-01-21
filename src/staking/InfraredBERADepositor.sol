@@ -63,20 +63,6 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
         DEPOSIT_CONTRACT = _depositContract;
     }
 
-    /// @notice Checks whether enough time has passed beyond min delay
-    /// @param then The block timestamp in past
-    /// @param current The current block timestamp now
-    /// @return has Whether time between then and now exceeds forced min delay
-    function _enoughtime(uint96 then, uint96 current)
-        private
-        pure
-        returns (bool has)
-    {
-        unchecked {
-            has = (current - then) >= InfraredBERAConstants.FORCED_MIN_DELAY;
-        }
-    }
-
     /// @inheritdoc IInfraredBERADepositor
     function reserves() public view returns (uint256) {
         return address(this).balance - fees;
