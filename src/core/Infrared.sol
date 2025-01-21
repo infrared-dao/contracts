@@ -282,6 +282,12 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         address _rewardsToken,
         uint256 _amount
     ) external {
+        bool whitelistStatus = whitelistedRewardTokens(_rewardsToken);
+
+        if (!whitelistStatus) {
+            revert Errors.RewardTokenNotWhitelisted();
+        }
+
         _vaultStorage().addIncentives(_stakingToken, _rewardsToken, _amount);
     }
 
