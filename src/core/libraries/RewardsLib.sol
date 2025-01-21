@@ -17,7 +17,8 @@ import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
-import {IIR} from "src/interfaces/IIR.sol";
+import {IInfraredGovernanceToken} from
+    "src/interfaces/IInfraredGovernanceToken.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {Errors} from "src/utils/Errors.sol";
 
@@ -129,7 +130,7 @@ library RewardsLib {
         address bgt,
         address ibgt,
         address voter,
-        address IR,
+        address ir,
         uint256 rewardsDuration
     ) external returns (uint256 bgtAmt) {
         // Ensure the vault is valid
@@ -173,33 +174,33 @@ library RewardsLib {
         uint256 mintRate = $.irMintRate;
 
         // If IR token is set and mint rate is greater than zero, handle IR rewards
-        if (IR != address(0) && mintRate > 0) {
+        if (ir != address(0) && mintRate > 0) {
             // Calculate the amount of IR tokens to mint
-            uint256 IRAmt = bgtAmt * mintRate / RATE_UNIT;
-            try IIR(IR).mint(address(this), IRAmt) {
+            uint256 irAmt = bgtAmt * mintRate / RATE_UNIT;
+            try IInfraredGovernanceToken(ir).mint(address(this), irAmt) {
                 {
                     // Check if IR is already a reward token in the vault
-                    (, uint256 IRRewardsDuration,,,,,) = vault.rewardData(IR);
+                    (, uint256 IRRewardsDuration,,,,,) = vault.rewardData(ir);
                     if (IRRewardsDuration == 0) {
                         // Add IR as a reward token if not already added
-                        vault.addReward(IR, rewardsDuration);
+                        vault.addReward(ir, rewardsDuration);
                     }
                 }
 
                 // Calculate and distribute fees on the IR rewards
                 (_amt, _amtVoter, _amtProtocol) =
-                    _chargedFeesOnRewards(IRAmt, 0, 0);
+                    _chargedFeesOnRewards(irAmt, 0, 0);
                 _distributeFeesOnRewards(
-                    $.protocolFeeAmounts, voter, IR, _amtVoter, _amtProtocol
+                    $.protocolFeeAmounts, voter, ir, _amtVoter, _amtProtocol
                 );
 
                 // Send the remaining IR rewards to the vault
                 if (_amt > 0) {
-                    ERC20(IR).safeApprove(address(vault), _amt);
-                    vault.notifyRewardAmount(IR, _amt);
+                    ERC20(ir).safeApprove(address(vault), _amt);
+                    vault.notifyRewardAmount(ir, _amt);
                 }
             } catch {
-                emit RedNotMinted(IRAmt);
+                emit RedNotMinted(irAmt);
             }
         }
     }

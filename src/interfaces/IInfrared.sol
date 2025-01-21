@@ -8,7 +8,8 @@ import {IRewardVaultFactory as IBerachainRewardsVaultFactory} from
     "@berachain/pol/interfaces/IRewardVaultFactory.sol";
 import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
-import {IIR} from "src/interfaces/IIR.sol";
+import {IInfraredGovernanceToken} from
+    "src/interfaces/IInfraredGovernanceToken.sol";
 
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
@@ -127,7 +128,7 @@ interface IInfrared {
      * @notice The IR token
      * @return IR instance of the IR token contract address
      */
-    function ir() external view returns (IIR);
+    function ir() external view returns (IInfraredGovernanceToken);
 
     /**
      * @notice The rewards duration

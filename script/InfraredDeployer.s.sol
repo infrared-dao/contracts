@@ -8,7 +8,7 @@ import {ERC1967Proxy} from
 import {ERC20PresetMinterPauser} from
     "../src/vendors/ERC20PresetMinterPauser.sol";
 
-import {IR} from "src/core/IR.sol";
+import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {Voter} from "src/voting/Voter.sol";
 import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 
@@ -104,7 +104,7 @@ contract InfraredDeployer is Script {
             address(_bgt), data._gov, address(infrared), data._gov
         );
 
-        ir = new IR(
+        ir = new InfraredGovernanceToken(
             address(ibgt), address(infrared), data._gov, data._gov, data._gov
         );
 

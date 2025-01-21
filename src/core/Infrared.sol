@@ -25,7 +25,8 @@ import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 
-import {IIR} from "src/interfaces/IIR.sol";
+import {IInfraredGovernanceToken} from
+    "src/interfaces/IInfraredGovernanceToken.sol";
 import {IBribeCollector} from "src/interfaces/IBribeCollector.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
@@ -93,7 +94,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     IInfraredBERA public ibera;
 
     /// @inheritdoc IInfrared
-    IIR public ir;
+    IInfraredGovernanceToken public ir;
 
     /// @inheritdoc IInfrared
     IInfraredVault public ibgtVault;
@@ -422,10 +423,14 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     function setIR(address _ir) external {
         if (_ir == address(0)) revert Errors.ZeroAddress();
         if (address(ir) != address(0)) revert Errors.AlreadySet();
-        if (!IIR(_ir).hasRole(IIR(_ir).MINTER_ROLE(), address(this))) {
+        if (
+            !IInfraredGovernanceToken(_ir).hasRole(
+                IInfraredGovernanceToken(_ir).MINTER_ROLE(), address(this)
+            )
+        ) {
             revert Errors.Unauthorized(address(this));
         }
-        ir = IIR(_ir);
+        ir = IInfraredGovernanceToken(_ir);
         emit IRSet(msg.sender, _ir);
     }
 

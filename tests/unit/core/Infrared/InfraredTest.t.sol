@@ -1,7 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {Helper, IInfrared, InfraredVault, IR} from "./Helper.sol";
+import {
+    Helper,
+    IInfrared,
+    InfraredVault,
+    InfraredGovernanceToken
+} from "./Helper.sol";
 import "tests/unit/mocks/MockERC20.sol";
 import {BGTStaker} from "@berachain/pol/BGTStaker.sol";
 import "@berachain/pol/rewards/RewardVaultFactory.sol";
@@ -508,7 +513,7 @@ contract InfraredTest is Helper {
 
     function testSetRedSuccess() public {
         // Create new IR token mock
-        IR newIR = new IR(
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
@@ -537,7 +542,7 @@ contract InfraredTest is Helper {
 
     function testSetRedFailsAlreadySet() public {
         // First set
-        IR newIR = new IR(
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
@@ -549,7 +554,7 @@ contract InfraredTest is Helper {
         infrared.setIR(address(newIR));
 
         // Try to set again
-        IR anotherIR = new IR(
+        InfraredGovernanceToken anotherIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
@@ -564,7 +569,7 @@ contract InfraredTest is Helper {
 
     function testSetRedFailsAccessControll() public {
         // Create IR token without granting MINTER_ROLE
-        IR newIR = new IR(
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(12),
             infraredGovernance,
@@ -579,7 +584,7 @@ contract InfraredTest is Helper {
 
     function testSetRedFailsMinterUnauthorized() public {
         // Create IR token without granting MINTER_ROLE
-        IR newIR = new IR(
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(12),
             infraredGovernance,
@@ -595,7 +600,7 @@ contract InfraredTest is Helper {
 
     function testUpdateirMintRateSuccess() public {
         // Setup: First set IR token
-        IR newIR = new IR(
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
@@ -644,7 +649,7 @@ contract InfraredTest is Helper {
 
     function testRedMintingRatioHalf() public {
         // Setup: Set IR token and mint rate to 0.5
-        IR newIR = new IR(
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,
@@ -679,7 +684,7 @@ contract InfraredTest is Helper {
 
     function testRedMintingRatioDouble() public {
         // Setup: Set IR token and mint rate to 2.0
-        IR newIR = new IR(
+        InfraredGovernanceToken newIR = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             infraredGovernance,

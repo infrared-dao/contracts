@@ -29,7 +29,7 @@ import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {BribeCollector} from "src/core/BribeCollector.sol";
 
-import {IR} from "src/core/IR.sol";
+import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -46,7 +46,7 @@ contract HelperForkTest is Test {
 
     Infrared public infrared;
     InfraredBGT public ibgt;
-    IR public ir;
+    InfraredGovernanceToken public ir;
 
     Voter public voter;
     VotingEscrow public sIR;
@@ -172,7 +172,7 @@ contract HelperForkTest is Test {
         voter = deployer.voter();
         sIR = deployer.sIR();
         ibgt = deployer.ibgt();
-        ir = IR(address(deployer.ir()));
+        ir = InfraredGovernanceToken(address(deployer.ir()));
 
         ibera = deployer.ibera();
         depositor = deployer.depositor();

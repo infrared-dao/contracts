@@ -28,7 +28,7 @@ import {BribeCollector} from "src/core/BribeCollector.sol";
 import {ERC20, Infrared} from "src/core/Infrared.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-import {IR} from "src/core/IR.sol";
+import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
 
@@ -42,7 +42,7 @@ import {BeaconDepositMock, POLTest} from "@berachain/../test/pol/POL.t.sol";
 abstract contract Helper is POLTest {
     Infrared public infrared;
     InfraredBGT public ibgt;
-    IR public ir;
+    InfraredGovernanceToken public ir;
 
     Voter public voter;
     VotingEscrow public sIR;
@@ -176,7 +176,7 @@ abstract contract Helper is POLTest {
             address(receivor)
         );
 
-        ir = new IR(
+        ir = new InfraredGovernanceToken(
             address(ibgt), address(infrared), data._gov, data._gov, data._gov
         );
 

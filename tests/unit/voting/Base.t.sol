@@ -11,7 +11,7 @@ import "@berachain/pol/rewards/RewardVaultFactory.sol";
 
 import "src/voting/VotingEscrow.sol";
 import "src/voting/Voter.sol";
-import "src/core/IR.sol";
+import "src/core/InfraredGovernanceToken.sol";
 
 import "src/core/InfraredBGT.sol";
 import "src/core/Infrared.sol";
@@ -22,7 +22,7 @@ import "forge-std/Test.sol";
 /// @notice Base contract used for tests and deployment scripts
 abstract contract Base is Test {
     MockWbera public WBERA;
-    IR public ir;
+    InfraredGovernanceToken public ir;
     MockERC20 public honey;
     address[] public stakingTokens;
     InfraredBGT public ibgt;
@@ -78,7 +78,7 @@ abstract contract Base is Test {
         ibgt = new InfraredBGT(
             address(bgt), address(this), address(infrared), address(this)
         );
-        ir = new IR(
+        ir = new InfraredGovernanceToken(
             address(ibgt),
             address(infrared),
             address(this),
