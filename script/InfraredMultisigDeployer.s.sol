@@ -9,7 +9,7 @@ import {ERC20PresetMinterPauser} from
     "../src/vendors/ERC20PresetMinterPauser.sol";
 import {BatchScript} from "@forge-safe/BatchScript.sol";
 
-import {RED} from "src/core/RED.sol";
+import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {Voter} from "src/voting/Voter.sol";
 import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 
@@ -99,7 +99,7 @@ contract InfraredMultisigDeployer is BatchScript {
         addToBatch(
             proxyInfrared,
             0,
-            abi.encodeWithSelector(Infrared.setRed.selector, red)
+            abi.encodeWithSelector(Infrared.setIR.selector, red)
         );
 
         deployVeIred(_gov, _keeper);
