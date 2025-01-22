@@ -902,6 +902,72 @@ contract InfraredBERATest is InfraredBERABaseTest {
         );
     }
 
+    function testPreviewMintNoCompoundBetweenFeeAndMin() public {
+        // Setup initial state
+        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
+        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
+        uint256 mintAmount = 12 ether;
+
+        // Initial mint to setup non-zero totalSupply
+        (, uint256 initialShares) = ibera.mint{value: mintAmount}(alice);
+        assertGt(initialShares, 0);
+
+        // Test compounding with amount between fee and min+fee
+        uint256 compoundAmount = min + (fee / 2); // Amount > fee but < min+fee
+        (bool success,) = address(receivor).call{value: compoundAmount}("");
+        assertTrue(success);
+
+        // Record state before mint
+        uint256 preCompoundDeposits = ibera.deposits();
+        (uint256 previewShares,) = ibera.previewMint(mintAmount);
+
+        // Do the actual mint
+        (, uint256 actualShares) = ibera.mint{value: mintAmount}(alice);
+
+        // Verify
+        assertEq(
+            previewShares, actualShares, "Preview shares should match actual"
+        );
+        assertEq(
+            ibera.deposits() - preCompoundDeposits,
+            mintAmount - fee,
+            "Should not have compounded"
+        );
+    }
+
+    function testPreviewMintWithCompoundAboveMin() public {
+        // Setup initial state
+        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
+        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
+        uint256 mintAmount = 12 ether;
+
+        // Initial mint to setup non-zero totalSupply
+        (, uint256 initialShares) = ibera.mint{value: mintAmount}(alice);
+        assertGt(initialShares, 0);
+
+        // Test compounding with amount above min+fee
+        uint256 compoundAmount = (min + fee) * 2;
+        (bool success,) = address(receivor).call{value: compoundAmount}("");
+        assertTrue(success);
+
+        // Record state before mint
+        uint256 preCompoundDeposits = ibera.deposits();
+        (uint256 previewShares,) = ibera.previewMint(mintAmount);
+
+        // Do the actual mint
+        (, uint256 actualShares) = ibera.mint{value: mintAmount}(alice);
+
+        // Verify
+        assertEq(
+            previewShares, actualShares, "Preview shares should match actual"
+        );
+        assertEq(
+            ibera.deposits() - preCompoundDeposits,
+            (mintAmount - fee) + (compoundAmount - fee),
+            "Should have compounded"
+        );
+    }
+
     function testPreviewBurnReturnsZeroForInvalidShares() public view {
         (uint256 amount, uint256 fee) = ibera.previewBurn(0);
         assertEq(amount, 0, "Should return 0 amount for 0 shares");

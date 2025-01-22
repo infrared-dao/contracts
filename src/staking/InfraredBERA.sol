@@ -310,7 +310,10 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         // First simulate compound effect on deposits
         if (compoundAmount > 0) {
             uint256 compoundFee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-            if (compoundAmount > compoundFee) {
+            if (
+                compoundAmount
+                    >= compoundFee + InfraredBERAConstants.MINIMUM_DEPOSIT
+            ) {
                 depositsAfterCompound += (compoundAmount - compoundFee);
             }
         }
@@ -352,7 +355,10 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
         if (compoundAmount > 0) {
             uint256 compoundFee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-            if (compoundAmount > compoundFee) {
+            if (
+                compoundAmount
+                    >= compoundFee + InfraredBERAConstants.MINIMUM_DEPOSIT
+            ) {
                 depositsAfterCompound += (compoundAmount - compoundFee);
             }
         }
