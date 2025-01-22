@@ -21,7 +21,7 @@ contract InfraredGovernanceToken is ERC20PresetMinterPauser {
         address _pauser
     )
         ERC20PresetMinterPauser(
-            "Infared Governance Token",
+            "Infrared Governance Token",
             "IR",
             _admin,
             _minter,
