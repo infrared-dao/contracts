@@ -62,7 +62,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /**
      * @notice The BGT token contract reference
-     * @dev Immutable IBerachainBGT instance of the BGT token
+     * @dev IBerachainBGT instance of the BGT token
      */
     IBerachainBGT internal _bgt;
 
