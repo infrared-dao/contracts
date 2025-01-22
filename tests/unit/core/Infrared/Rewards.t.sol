@@ -145,6 +145,58 @@ contract InfraredRewardsTest is Helper {
         vm.stopPrank();
     }
 
+    function testHarvestVaultRedRevert() public {
+        uint256 rewardsDuration = 7 days;
+        vm.startPrank(address(infrared));
+        for (uint160 i = 0; i < 9; i++) {
+            infraredVault.addReward(address(i + 900), rewardsDuration);
+        }
+
+        // Setup: Configure RED token and mint rate
+        vm.startPrank(infraredGovernance);
+        infrared.updateWhiteListedRewardTokens(address(wbera), true);
+        infrared.setIR(address(ir));
+        infrared.updateIRMintRate(1_500_000); // 1.5x RED per InfraredBGT
+        vm.stopPrank();
+
+        // Setup vault and user stake
+        address user = address(10);
+        vm.deal(user, 1000 ether);
+        uint256 stakeAmount = 1000 ether;
+        vm.startPrank(user);
+        wbera.deposit{value: stakeAmount}();
+        wbera.approve(address(infraredVault), stakeAmount);
+        infraredVault.stake(stakeAmount);
+        vm.stopPrank();
+
+        // Setup rewards in BerachainRewardsVault
+        address vaultWbera = factory.getVault(address(wbera));
+        vm.startPrank(address(blockRewardController));
+        bgt.mint(address(distributor), 100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(address(distributor));
+        bgt.approve(address(vaultWbera), 100 ether);
+        IBerachainRewardsVault(vaultWbera).notifyRewardAmount(
+            abi.encodePacked(bytes32("v0"), bytes16("")), 100 ether
+        );
+        vm.stopPrank();
+
+        // Advance time to accrue rewards
+        vm.warp(block.timestamp + 10 days);
+
+        // Perform harvest
+        vm.startPrank(address(infraredVault));
+        infraredVault.rewardsVault().setOperator(address(infrared));
+        vm.startPrank(keeper);
+
+        /// Should not Revert, IR Should always be allowed as a reward
+        ///vm.expectRevert(abi.encodeWithSignature("MaxNumberOfRewards()"));
+
+        infrared.harvestVault(address(wbera));
+        vm.stopPrank();
+    }
+
     function testRecoverERC20WithProtocolFees() public {
         // First run harvestVault to accumulate protocol fees
         testHarvestVaultWithProtocolFees();
