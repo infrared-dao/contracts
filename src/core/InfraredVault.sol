@@ -139,7 +139,10 @@ contract InfraredVault is MultiRewards, IInfraredVault {
     {
         if (_rewardsToken == address(0)) revert Errors.ZeroAddress();
         if (_rewardsDuration == 0) revert Errors.ZeroAmount();
-        if (rewardTokens.length == MAX_NUM_REWARD_TOKENS && _rewardsToken != address(IInfrared(infrared).ir())) {
+        if (
+            rewardTokens.length == MAX_NUM_REWARD_TOKENS
+                && _rewardsToken != address(IInfrared(infrared).ir())
+        ) {
             revert Errors.MaxNumberOfRewards();
         }
         _addReward(_rewardsToken, infrared, _rewardsDuration);

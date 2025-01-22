@@ -189,10 +189,10 @@ contract InfraredRewardsTest is Helper {
         vm.startPrank(address(infraredVault));
         infraredVault.rewardsVault().setOperator(address(infrared));
         vm.startPrank(keeper);
-        
+
         /// Should not Revert, IR Should always be allowed as a reward
         ///vm.expectRevert(abi.encodeWithSignature("MaxNumberOfRewards()"));
-        
+
         infrared.harvestVault(address(wbera));
         vm.stopPrank();
     }
