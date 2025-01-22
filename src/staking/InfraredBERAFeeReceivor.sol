@@ -88,7 +88,7 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
             + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
         if (shf < min) {
-            revert Errors.InvalidAmount();
+            return 0;
         }
 
         if (shf > 0) {
