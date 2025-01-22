@@ -87,7 +87,7 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
         }
 
         fees += fee;
-        queuedAmount += amount; 
+        queuedAmount += amount;
         nonce = nonceSlip++;
 
         slips[nonce] =
@@ -168,7 +168,7 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
 
         // remove accumulated escrowed fee from each request in bundled deposits and refund to keeper
         fees -= fee;
-        queuedAmount -= amount; 
+        queuedAmount -= amount;
 
         // @dev ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#eth1_address_withdrawal_prefix
         // @dev only important on the first deposit, signatures are ignored on subsequent deposits:
