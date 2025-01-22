@@ -73,6 +73,7 @@ library VaultManagerLib {
         address token,
         bool whitelisted
     ) external {
+        if (address(token) == address(0)) revert Errors.NoRewardsVault();
         if (whitelisted) {
             $.whitelistedRewardTokens.add(token);
         } else {
