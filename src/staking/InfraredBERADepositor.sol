@@ -38,6 +38,8 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
     /// @inheritdoc IInfraredBERADepositor
     uint256 public nonceSubmit;
 
+    uint256 public queuedAmount;
+
     /// @notice Initialize the contract (replaces the constructor)
     /// @param _gov Address for admin / gov to upgrade
     /// @param _keeper Address for keeper
@@ -65,7 +67,7 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
 
     /// @inheritdoc IInfraredBERADepositor
     function reserves() public view returns (uint256) {
-        return address(this).balance - fees;
+        return queuedAmount;
     }
 
     /// @inheritdoc IInfraredBERADepositor
@@ -83,9 +85,11 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
         if (fee < InfraredBERAConstants.MINIMUM_DEPOSIT_FEE) {
             revert Errors.InvalidFee();
         }
-        fees += fee;
 
+        fees += fee;
+        queuedAmount += amount; 
         nonce = nonceSlip++;
+
         slips[nonce] =
             Slip({timestamp: uint96(block.timestamp), fee: fee, amount: amount});
         emit Queue(nonce, amount);
@@ -164,6 +168,7 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
 
         // remove accumulated escrowed fee from each request in bundled deposits and refund to keeper
         fees -= fee;
+        queuedAmount -= amount; 
 
         // @dev ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#eth1_address_withdrawal_prefix
         // @dev only important on the first deposit, signatures are ignored on subsequent deposits:
