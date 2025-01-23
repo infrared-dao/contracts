@@ -547,7 +547,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
             .harvestBoostRewards(
             address(_bgt), address(ibgtVault), address(voter), rewardsDuration()
         );
-        emit RewardSupplied(address(_bgt), _token, _amount);
+        emit RewardSupplied(address(ibgtVault), _token, _amount);
     }
 
     /*//////////////////////////////////////////////////////////////
