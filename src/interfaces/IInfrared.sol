@@ -292,9 +292,8 @@ interface IInfrared {
      * @notice Claims accumulated protocol fees in contract
      * @param _to     address The recipient of the fees
      * @param _token  address The token to claim fees in
-     * @param _amount uint256 The amount of accumulated fees to claim
      */
-    function claimProtocolFees(address _to, address _token, uint256 _amount)
+    function claimProtocolFees(address _to, address _token)
         external;
 
     /**

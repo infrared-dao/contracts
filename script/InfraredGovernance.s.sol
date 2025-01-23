@@ -160,11 +160,10 @@ contract InfraredGovernance is Script {
     function claimProtocolFees(
         address payable infrared,
         address _to,
-        address _token,
-        uint256 _amount
+        address _token
     ) external {
         vm.startBroadcast();
-        Infrared(infrared).claimProtocolFees(_to, _token, _amount);
+        Infrared(infrared).claimProtocolFees(_to, _token);
         vm.stopBroadcast();
     }
 

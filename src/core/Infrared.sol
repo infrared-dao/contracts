@@ -374,7 +374,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @inheritdoc IInfrared
     function delegateBGT(address _delegatee) external onlyGovernor {
-        _rewardsStorage().delegateBGT(_delegatee, address(_bgt));
+        RewardsLib.delegateBGT(_delegatee, address(_bgt));
     }
 
     /// @inheritdoc IInfrared
@@ -398,11 +398,11 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @inheritdoc IInfrared
-    function claimProtocolFees(address _to, address _token, uint256 _amount)
+    function claimProtocolFees(address _to, address _token)
         external
         onlyGovernor
     {
-        _rewardsStorage().claimProtocolFees(_to, _token, _amount);
+        uint256 _amount = _rewardsStorage().claimProtocolFees(_to, _token);
         emit ProtocolFeesClaimed(msg.sender, _to, _token, _amount);
     }
 

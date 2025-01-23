@@ -28,7 +28,7 @@ library RewardsLib {
     struct RewardsStorage {
         mapping(address => uint256) protocolFeeAmounts; // Tracks accumulated protocol fees per token
         uint256 irMintRate; // Rate for minting IR tokens
-        uint256 collectBribesWeight;
+        uint256 incentiveSplitRatio; // Ratio for splitting received bribes to be iBERA and iBGT, weighted towards iBERA
         mapping(uint256 => uint256) fees; // Fee configuration
     }
 
@@ -39,10 +39,10 @@ library RewardsLib {
     uint256 internal constant RATE_UNIT = 1e6;
 
     /**
-     * @notice Weight units when partitioning reward amounts in hundredths of 1 bip
+     * @notice Split unit when partitioning reward amounts in hundredths of 1 bip
      * @dev Used as the denominator when calculating weighted distributions (1e6)
      */
-    uint256 internal constant WEIGHT_UNIT = 1e6;
+    uint256 internal constant SPLIT_UNIT = 1e6;
 
     /**
      * @notice Protocol fee rate in hundredths of 1 bip
@@ -135,7 +135,7 @@ library RewardsLib {
         returns (uint256 bgtAmt)
     {
         uint256 minted = IInfraredBGT(ibgt).totalSupply();
-        uint256 bgtBalance = _getBGTBalance(bgt);
+        uint256 bgtBalance = IBerachainBGT(bgt).balanceOf(address(this));
         // @dev should never happen but check in case
         if (bgtBalance < minted) revert Errors.UnderFlow();
 
@@ -173,14 +173,14 @@ library RewardsLib {
         }
 
         // Record the BGT balance before claiming rewards
-        uint256 balanceBefore = _getBGTBalance(bgt);
+        uint256 balanceBefore = IBerachainBGT(bgt).balanceOf(address(this));
 
         // Get the rewards from the vault's reward vault
         IBerachainRewardsVault rewardsVault = vault.rewardsVault();
         rewardsVault.getReward(address(vault), address(this));
 
         // Calculate the amount of BGT rewards received
-        bgtAmt = _getBGTBalance(bgt) - balanceBefore;
+        bgtAmt = IBerachainBGT(bgt).balanceOf(address(this)) - balanceBefore;
 
         // If no BGT rewards were received, exit early
         if (bgtAmt == 0) return bgtAmt;
@@ -262,7 +262,7 @@ library RewardsLib {
                 - $.protocolFeeAmounts[_token];
             _amounts[i] = _amount;
             tokens[i] = _token;
-            _handleTokenBribesForReceiver($, collector, _token, _amount);
+            _handleTokenBribesForReceiver(collector, _token, _amount);
         }
     }
 
@@ -292,7 +292,7 @@ library RewardsLib {
         ERC20(wbera).safeTransferFrom(msg.sender, address(this), _amount);
 
         // determine amount to send to iBERA and IBGT vault
-        amtInfraredBERA = _amount * $.collectBribesWeight / WEIGHT_UNIT;
+        amtInfraredBERA = _amount * $.incentiveSplitRatio / SPLIT_UNIT;
         amtIbgtVault = _amount - amtInfraredBERA;
 
         // Redeem WBERA for BERA and send to IBERA receivor for compounding
@@ -368,8 +368,8 @@ library RewardsLib {
     /// @param ibera            The address of the InfraredBERA token
     /// @param voter            The address of the voter (address(0) if IR token is not live)
     /// @param distributor      The address of the distributor
-    ///
-    /// @param _amt             The amount of rewards harvested
+    /// 
+    /// @return _amt            The amount of rewards harvested
     function harvestOperatorRewards(
         RewardsStorage storage $,
         address ibera,
@@ -391,14 +391,15 @@ library RewardsLib {
         );
     }
 
-    /**
-     * @notice Handles non-InfraredBGT token rewards to the vault.
-     * @param _vault       IInfraredVault   The address of the vault.
-     * @param _token       address          The reward token.
-     * @param _amount      uint256          The amount of reward token to send to vault.
-     * @param _feeTotal    uint256          The rate to charge for total fees on `_amount`.
-     * @param _feeProtocol uint256          The rate to charge for protocol treasury on total fees.
-     */
+    /// @notice Handles non-InfraredBGT token rewards to the vault.
+    /// @param $            RewardsStorage  The storage pointer for all rewards accumulators.
+    /// @param _vault       IInfraredVault   The address of the vault.
+    /// @param _token       address          The reward token.
+    /// @param voter        address          The address of the voter.
+    /// @param _amount      uint256          The amount of reward token to send to vault.
+    /// @param _feeTotal    uint256          The rate to charge for total fees on `_amount`.
+    /// @param _feeProtocol uint256          The rate to charge for protocol treasury on total fees.
+    /// @param rewardsDuration uint256        The duration of the rewards.
     function _handleTokenRewardsForVault(
         RewardsStorage storage $,
         IInfraredVault _vault,
@@ -434,14 +435,10 @@ library RewardsLib {
         }
     }
 
-    /**
-     * @notice Handles non-InfraredBGT token bribe rewards to a non-vault receiver address.
-     * @dev Does *not* take protocol fee on bribe coin, as taken on bribe collector payout token in eventual callback.
-     * @param _recipient address  The address of the recipient.
-     * @param _token     address  The address of the token to forward to recipient.
-     */
+    /// @param _amount   The amount of reward token to send to recipient.
+    /// @param _token    The address of the token to forward to recipient.
+    /// @param _amount   The amount of reward token to send to recipient.
     function _handleTokenBribesForReceiver(
-        RewardsStorage storage,
         address _recipient,
         address _token,
         uint256 _amount
@@ -452,12 +449,14 @@ library RewardsLib {
         ERC20(_token).safeTransfer(_recipient, _amount);
     }
 
-    /**
-     * @notice Handles BGT base rewards supplied to validator distributor.
-     * @param _iBERAShares      uint256         The BGT reward amount.
-     * @param _feeTotal    uint256         The rate to charge for total fees on `_iBERAShares`.
-     * @param _feeProtocol uint256         The rate to charge for protocol treasury on total fees.
-     */
+    /// @notice Handles BGT base rewards supplied to validator distributor.
+    /// @param $            The storage pointer for all rewards accumulators.
+    /// @param ibera        The address of the InfraredBERA token.
+    /// @param voter        The address of the voter (address(0) if IR token is not live).
+    /// @param distributor  The address of the distributor.
+    /// @param _iBERAShares The iBera reward amount.
+    /// @param _feeTotal    The rate to charge for total fees on `_iBERAShares`.
+    /// @param _feeProtocol The rate to charge for protocol treasury on total fees.
     function _handleRewardsForOperators(
         RewardsStorage storage $,
         address ibera,
@@ -467,7 +466,7 @@ library RewardsLib {
         uint256 _feeTotal,
         uint256 _feeProtocol
     ) internal returns (uint256 _amt) {
-        // pass if no bgt rewards
+        // pass if no iBera rewards
         if (_iBERAShares == 0) return 0;
 
         address _token = ibera;
@@ -489,24 +488,32 @@ library RewardsLib {
         }
     }
 
+    /// @notice Delegates Berachain Governance Voting Power to a delegatee
+    /// @param _delegatee The address to delegate voting power to
+    /// @param bgt        The address of the BGT token
     function delegateBGT(
-        RewardsStorage storage,
         address _delegatee,
         address bgt
     ) external {
-        if (_delegatee == address(0)) revert Errors.ZeroAddress();
-        if (_delegatee == address(this)) revert Errors.InvalidDelegatee();
         IBerachainBGT(bgt).delegate(_delegatee);
     }
 
-    function updateInfraredBERABribesWeight(
+    /// @notice Update the split ratio for iBERA and iBGT rewards
+    /// @param $           The storage pointer for all rewards accumulators
+    /// @param _split The ratio for splitting received bribes to be iBERA and iBGT, weighted towards iBERA
+    function updateInfraredBERAIncentiveSplit(
         RewardsStorage storage $,
-        uint256 _weight
+        uint256 _split
     ) external {
-        if (_weight > WEIGHT_UNIT) revert Errors.InvalidWeight();
-        $.collectBribesWeight = _weight;
+        if (_split > SPLIT_UNIT) revert Errors.InvalidWeight();
+        $.incentiveSplitRatio = _split;
+
     }
 
+    /// @notice Update the fee rate for a given fee type
+    /// @param $           The storage pointer for all rewards accumulators
+    /// @param _t          The fee type to update
+    /// @param _fee        The new fee rate
     function updateFee(
         RewardsStorage storage $,
         ConfigTypes.FeeType _t,
@@ -516,31 +523,24 @@ library RewardsLib {
         $.fees[uint256(_t)] = _fee;
     }
 
+    /// @notice Claim protocol fees for a given token
+    /// @param $           The storage pointer for all rewards accumulators
+    /// @param _to         The address to send the protocol fees to
+    /// @param _token      The token to claim protocol fees for
     function claimProtocolFees(
         RewardsStorage storage $,
         address _to,
-        address _token,
-        uint256 _amount
-    ) external {
-        if (_amount > $.protocolFeeAmounts[_token]) {
-            revert Errors.MaxProtocolFeeAmount();
-        }
-        $.protocolFeeAmounts[_token] -= _amount;
-        ERC20(_token).safeTransfer(_to, _amount);
+        address _token
+    ) external returns (uint256 _amountClaimed) {
+        _amountClaimed = $.protocolFeeAmounts[_token];
+        delete $.protocolFeeAmounts[_token];
+
+        ERC20(_token).safeTransfer(_to, _amountClaimed);
     }
 
-    function getBGTBalance(RewardsStorage storage, address bgt)
-        external
-        view
-        returns (uint256)
-    {
-        return _getBGTBalance(bgt);
-    }
-
-    function _getBGTBalance(address bgt) internal view returns (uint256) {
-        return IBerachainBGT(bgt).balanceOf(address(this));
-    }
-
+    /// @notice Update the IR minting rate
+    /// @param $           The storage pointer for all rewards accumulators
+    /// @param _irMintRate The new IR minting rate out of RATE_UNIT
     function updateIRMintRate(RewardsStorage storage $, uint256 _irMintRate)
         external
     {
