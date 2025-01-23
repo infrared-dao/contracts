@@ -1158,4 +1158,68 @@ contract InfraredBERATest is InfraredBERABaseTest {
         vm.prank(address(ibera));
         withdrawor.queue{value: fee}(receiver, amount);
     }
+
+    function testPrecisionLossEdgeCase() public {
+        // Setup initial state using same pattern as other burn tests
+        testMintCompoundsPrior();
+
+        vm.prank(infraredGovernance);
+        ibera.setDepositSignature(pubkey0, signature0);
+        uint256 _reserves = depositor.reserves();
+        vm.prank(keeper);
+        depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
+        vm.prank(keeper);
+        depositor.execute(
+            pubkey0, _reserves - InfraredBERAConstants.INITIAL_DEPOSIT
+        );
+        assertEq(ibera.confirmed(), _reserves);
+        assertEq(depositor.reserves(), 0);
+
+        // Enable withdrawals
+        vm.prank(infraredGovernance);
+        ibera.setWithdrawalsEnabled(true);
+
+        // Record state before mint
+        uint256 initialDeposits = ibera.deposits();
+        uint256 initialTotalSupply = ibera.totalSupply();
+
+        // Calculate amount that would cause precision loss on mint
+        // Want (deposits * shares) to be close to (totalSupply * n) - 1
+        uint256 n = 2; // multiplier
+        uint256 targetAmount = ((initialTotalSupply * n) - 1)
+            / initialTotalSupply * initialDeposits;
+
+        // Bob mints with edge case amount
+        (, uint256 bobShares) = ibera.mint{value: targetAmount}(bob);
+
+        // Calculate expected return amount
+        uint256 deposits = ibera.deposits();
+        uint256 totalSupply = ibera.totalSupply();
+        uint256 expectedAmount = Math.mulDiv(deposits, bobShares, totalSupply);
+
+        // Bob burns shares with minimum withdraw fee
+        uint256 withdrawFee = InfraredBERAConstants.MINIMUM_WITHDRAW_FEE;
+        vm.prank(bob);
+        (, uint256 returnedAmount) =
+            ibera.burn{value: withdrawFee}(bob, bobShares);
+
+        // Verify precision is maintained through mint/burn cycle
+        uint256 difference = expectedAmount > returnedAmount
+            ? expectedAmount - returnedAmount
+            : returnedAmount - expectedAmount;
+        assertLe(
+            difference, 1, "Should maintain precision through mint/burn cycle"
+        );
+
+        // Verify no funds are stuck
+        assertEq(
+            ibera.deposits(), initialDeposits, "No deposits should be stuck"
+        );
+        assertEq(
+            ibera.totalSupply(),
+            initialTotalSupply,
+            "TotalSupply should return to initial state"
+        );
+        assertEq(ibera.balanceOf(bob), 0, "Bob should have no remaining shares");
+    }
 }
