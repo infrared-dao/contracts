@@ -13,6 +13,12 @@ contract InfraredGovernanceToken is ERC20PresetMinterPauser {
     address public immutable ibgt;
     address public immutable infrared;
 
+    /// @notice Construct the Infrared Governance Token contract
+    /// @param _ibgt The address of the IBGT contract
+    /// @param _infrared The address of the Infrared contract
+    /// @param _admin The address of the admin
+    /// @param _minter The address of the minter
+    /// @param _pauser The address of the pauser
     constructor(
         address _ibgt,
         address _infrared,

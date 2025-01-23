@@ -543,11 +543,11 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @inheritdoc IInfrared
     function harvestBoostRewards() external {
-        (address _vault, address _token, uint256 _amount) = _rewardsStorage()
+        (address _token, uint256 _amount) = _rewardsStorage()
             .harvestBoostRewards(
             address(_bgt), address(ibgtVault), address(voter), rewardsDuration()
         );
-        emit RewardSupplied(address(_vault), _token, _amount);
+        emit RewardSupplied(address(_bgt), _token, _amount);
     }
 
     /*//////////////////////////////////////////////////////////////
