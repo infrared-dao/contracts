@@ -110,6 +110,14 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
             revert Errors.InvalidAmount();
         }
 
+        // The validator balance + amount must not surpase MaxEffectiveBalance of 10 million BERA.
+        if (
+            IInfraredBERA(InfraredBERA).stakes(pubkey) + amount
+                > InfraredBERAConstants.MAX_EFFECTIVE_BALANCE
+        ) {
+            revert Errors.ExceedsMaxEffectiveBalance();
+        }
+
         // all operator addresses must be the `Infrared.sol` contract address
         address operator = IInfraredBERA(InfraredBERA).infrared();
         address currentOperator =

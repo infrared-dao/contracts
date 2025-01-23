@@ -556,16 +556,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         depositor.execute(pubkey1, InfraredBERAConstants.INITIAL_DEPOSIT);
     }
 
-    function testExecuteRevertsWhenAmountGreaterThanMax() public {
-        testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
-        assertEq(ibera.signatures(pubkey0), signature0);
-        uint256 stake = ibera.stakes(pubkey0);
-        uint256 amount = uint256(type(uint64).max) * (1 gwei) - stake + 1 gwei;
-        vm.expectRevert(Errors.InvalidAmount.selector);
-        vm.prank(keeper);
-        depositor.execute(pubkey0, amount);
-    }
-
     function testExecuteValidatesOperatorForSubsequentDeposits() public {
         // Setup and do initial deposit
         testQueueMultiple();
@@ -651,5 +641,49 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
             ibera.stakes(pubkey0),
             InfraredBERAConstants.INITIAL_DEPOSIT + amount
         );
+    }
+
+    function testExecuteRevertsWhenExceedsMaxEffectiveBalance() public {
+        // Define MAX_EFFECTIVE_BALANCE in gwei (10 million BERA)
+        uint256 maxEffectiveBalance =
+            InfraredBERAConstants.MAX_EFFECTIVE_BALANCE;
+
+        // Queue the initial deposit amount
+        _queueFundsForDeposit(InfraredBERAConstants.INITIAL_DEPOSIT);
+
+        // Set the deposit signature for the validator
+        vm.prank(infraredGovernance);
+        ibera.setDepositSignature(pubkey0, signature0);
+
+        // Execute the initial deposit
+        vm.prank(keeper);
+        depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
+
+        // Verify the validator's staked balance after the initial deposit
+        uint256 currentStake = ibera.stakes(pubkey0);
+        assertEq(currentStake, InfraredBERAConstants.INITIAL_DEPOSIT);
+
+        // Queue additional funds for the excess deposit
+        uint256 remainingSpace = maxEffectiveBalance - currentStake;
+        uint256 excessAmount = remainingSpace + 1 gwei; // This would push the total stake over the limit
+        _queueFundsForDeposit(excessAmount);
+
+        // Attempt to deposit the excess amount
+        vm.expectRevert(Errors.ExceedsMaxEffectiveBalance.selector);
+        vm.prank(keeper);
+        depositor.execute(pubkey0, excessAmount);
+    }
+
+    function _queueFundsForDeposit(uint256 amount) internal {
+        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
+        uint256 value = amount + fee;
+
+        // Ensure the ibera contract has enough funds
+        vm.deal(address(ibera), value);
+        assertTrue(address(ibera).balance >= value);
+
+        // Queue the funds for deposit
+        vm.prank(address(ibera));
+        depositor.queue{value: value}(amount);
     }
 }
