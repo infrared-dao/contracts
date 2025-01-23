@@ -252,6 +252,7 @@ library RewardsLib {
 
         for (uint256 i = 0; i < len; i++) {
             if (!whitelisted[i]) continue;
+
             address _token = _tokens[i];
             if (_token == DataTypes.NATIVE_ASSET) {
                 IWBERA(wbera).deposit{value: address(this).balance}();
@@ -260,6 +261,7 @@ library RewardsLib {
             // amount to forward is balance of this address less existing protocol fees
             uint256 _amount = ERC20(_token).balanceOf(address(this))
                 - $.protocolFeeAmounts[_token];
+
             _amounts[i] = _amount;
             tokens[i] = _token;
             _handleTokenBribesForReceiver(collector, _token, _amount);
@@ -318,7 +320,7 @@ library RewardsLib {
         );
     }
 
-    /// @notice Harvest boost rewards from the BGT staker (in HONEY -- likely -- inshAllah)
+    /// @notice Harvest boost rewards from the BGT staker (in HONEY -- likely)
     /// @param $                The storage pointer for all rewards accumulators
     /// @param bgt              The address of the BGT token
     /// @param ibgtVault        The address of the InfraredBGT vault
@@ -457,6 +459,8 @@ library RewardsLib {
     /// @param _iBERAShares The iBera reward amount.
     /// @param _feeTotal    The rate to charge for total fees on `_iBERAShares`.
     /// @param _feeProtocol The rate to charge for protocol treasury on total fees.
+    ///
+    /// @return _amt        The amount of rewards harvested.
     function _handleRewardsForOperators(
         RewardsStorage storage $,
         address ibera,
@@ -469,8 +473,6 @@ library RewardsLib {
         // pass if no iBera rewards
         if (_iBERAShares == 0) return 0;
 
-        address _token = ibera;
-
         uint256 _amtVoter;
         uint256 _amtProtocol;
 
@@ -478,12 +480,12 @@ library RewardsLib {
         (_amt, _amtVoter, _amtProtocol) =
             _chargedFeesOnRewards(_iBERAShares, _feeTotal, _feeProtocol);
         _distributeFeesOnRewards(
-            $.protocolFeeAmounts, voter, _token, _amtVoter, _amtProtocol
+            $.protocolFeeAmounts, voter, ibera, _amtVoter, _amtProtocol
         );
 
         // send token rewards less fee to vault
         if (_amt > 0) {
-            ERC20(_token).safeApprove(distributor, _amt);
+            ERC20(ibera).safeApprove(distributor, _amt);
             IInfraredDistributor(distributor).notifyRewardAmount(_amt);
         }
     }

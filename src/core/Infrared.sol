@@ -378,13 +378,13 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @inheritdoc IInfrared
-    function updateInfraredBERABribesWeight(uint256 _weight)
+    function updateInfraredBERAIncentiveSplit(uint256 _weight)
         external
         onlyGovernor
     {
-        uint256 prevWeight = _rewardsStorage().collectBribesWeight;
-        _rewardsStorage().updateInfraredBERABribesWeight(_weight);
-        emit InfraredBERABribesWeightUpdated(msg.sender, prevWeight, _weight);
+        uint256 prevWeight = _rewardsStorage().incentiveSplitRatio;
+        _rewardsStorage().updateInfraredBERAIncentiveSplit(_weight);
+        emit InfraredBERAIncentiveSplitUpdated(msg.sender, prevWeight, _weight);
     }
 
     /// @inheritdoc IInfrared
