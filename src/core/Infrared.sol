@@ -667,7 +667,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         external
         onlyKeeper
     {
-        _validatorStorage().queueBoosts(address(_bgt), _pubkeys, _amts);
+        _validatorStorage().queueBoosts(
+            address(_bgt), address(ibgt), _pubkeys, _amts
+        );
         emit QueuedBoosts(msg.sender, _pubkeys, _amts);
     }
 

@@ -146,18 +146,38 @@ library ValidatorManagerLib {
     function queueBoosts(
         ValidatorStorage storage $,
         address bgt,
+        address ibgt,
         bytes[] memory _pubkeys,
         uint128[] memory _amts
     ) external {
         if (_pubkeys.length != _amts.length) {
             revert Errors.InvalidArrayLength();
         }
+        // check if sum of boosts is less than or equal to totalSpupply of iBGT
+        uint256 _totalBoosts = 0;
 
         for (uint256 i = 0; i < _pubkeys.length; i++) {
             if (!$.validatorIds.contains(keccak256(_pubkeys[i]))) {
                 revert Errors.InvalidValidator();
             }
             if (_amts[i] == 0) revert Errors.ZeroAmount();
+            _totalBoosts += _amts[i];
+        }
+
+        // make that new boost plus the existing boosts and queued boosts
+        // are less than or equal to the total supply of iBGT to ensure that `harvestBase` can be called without reverting.
+        if (
+            _totalBoosts
+                > IInfraredBGT(ibgt).totalSupply()
+                    - (
+                        IBerachainBGT(bgt).boosts(address(this))
+                            + IBerachainBGT(bgt).queuedBoost(address(this))
+                    )
+        ) {
+            revert Errors.BoostExceedsSupply();
+        }
+        // check if all pubkeys are valid
+        for (uint256 i = 0; i < _pubkeys.length; i++) {
             IBerachainBGT(bgt).queueBoost(_pubkeys[i], _amts[i]);
         }
     }
