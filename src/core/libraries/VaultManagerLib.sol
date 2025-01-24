@@ -154,6 +154,15 @@ library VaultManagerLib {
         vault.updateRewardsDuration(_rewardsToken, _rewardsDuration);
     }
 
+    /// @notice Pauses or unpauses the registration of new vaults.
+    /// @param $ Storage pointer to the VaultStorage struct.
+    /// @param pause Flag to pause or unpause vault registration.
+    function setVaultRegistrationPauseStatus(VaultStorage storage $, bool pause)
+        external
+    {
+        $.pausedVaultRegistration = pause;
+    }
+
     /// @notice Claims lost rewards from a vault.
     /// @param $ Storage pointer to the VaultStorage struct.
     /// @param _asset address of the asset to claim lost rewards from.
@@ -169,7 +178,7 @@ library VaultManagerLib {
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       WRITE                                */
+    /*                       EXTERNAL                             */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Adds a reward to a vault, if the reward token is whitelisted.
@@ -229,22 +238,6 @@ library VaultManagerLib {
         vault.notifyRewardAmount(_rewardsToken, _amount);
     }
 
-    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       READ                                 */
-    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
-
-    /// @notice Checks if a token is whitelisted as a reward token.
-    /// @param $ Storage pointer to the VaultStorage struct.
-    /// @param token address of the token to check.
-    /// @return bool indicating if the token is whitelisted.
-    function isWhitelisted(VaultStorage storage $, address token)
-        public
-        view
-        returns (bool)
-    {
-        return $.whitelistedRewardTokens.contains(token);
-    }
-
     /// @notice Registers a new vault for a specific asset.
     /// @param $ Storage pointer to the VaultStorage struct.
     /// @param asset address of the asset to register a vault for.
@@ -267,12 +260,19 @@ library VaultManagerLib {
         return newVault;
     }
 
-    /// @notice Pauses or unpauses the registration of new vaults.
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       READ                                 */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Checks if a token is whitelisted as a reward token.
     /// @param $ Storage pointer to the VaultStorage struct.
-    /// @param pause Flag to pause or unpause vault registration.
-    function setVaultRegistrationPauseStatus(VaultStorage storage $, bool pause)
-        external
+    /// @param token address of the token to check.
+    /// @return bool indicating if the token is whitelisted.
+    function isWhitelisted(VaultStorage storage $, address token)
+        public
+        view
+        returns (bool)
     {
-        $.pausedVaultRegistration = pause;
+        return $.whitelistedRewardTokens.contains(token);
     }
 }

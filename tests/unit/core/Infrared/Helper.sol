@@ -145,9 +145,7 @@ abstract contract Helper is POLTest {
             1 days
         );
         infrared.initialize(data);
-        ibgt = new InfraredBGT(
-            address(bgt), data._gov, address(infrared), data._gov
-        );
+        ibgt = new InfraredBGT(data._gov, address(infrared), data._gov);
 
         infrared.setIBGT(address(ibgt));
 
