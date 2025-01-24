@@ -109,6 +109,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     bytes32 public constant REWARDS_STORAGE_LOCATION =
         0xad12e6d08cc0150709acd6eed0bf697c60a83227922ab1d254d1ca4d3072ca00;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     /// @return vs The validator storage struct
     function _validatorStorage()
         internal
