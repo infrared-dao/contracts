@@ -293,8 +293,7 @@ interface IInfrared {
      * @param _to     address The recipient of the fees
      * @param _token  address The token to claim fees in
      */
-    function claimProtocolFees(address _to, address _token)
-        external;
+    function claimProtocolFees(address _to, address _token) external;
 
     /**
      * @notice Claims all the BGT base and commission rewards minted to this contract for validators.

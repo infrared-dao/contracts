@@ -382,7 +382,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         external
         onlyGovernor
     {
-        uint256 prevWeight = _rewardsStorage().incentiveSplitRatio;
+        uint256 prevWeight = _rewardsStorage().bribeSplitRatio;
         _rewardsStorage().updateInfraredBERAIncentiveSplit(_weight);
         emit InfraredBERAIncentiveSplitUpdated(msg.sender, prevWeight, _weight);
     }
@@ -461,14 +461,13 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         pure
         returns (uint256 amtRecipient, uint256 amtVoter, uint256 amtProtocol)
     {
-        if (_feeTotal > RewardsLib.FEE_UNIT) revert Errors.InvalidFee();
+        if (_feeTotal > RewardsLib.UNIT_DENOMINATOR) revert Errors.InvalidFee();
         return RewardsLib.chargedFeesOnRewards(_amt, _feeTotal, _feeProtocol);
     }
 
     /// @inheritdoc IInfrared
     function harvestBase() public {
-        uint256 bgtAmt =
-            RewardsLib.harvestBase(address(_bgt), address(ibgt), address(ibera));
+        uint256 bgtAmt = RewardsLib.harvestBase(address(_bgt), address(ibera));
         emit BaseHarvested(msg.sender, bgtAmt);
     }
 
@@ -499,7 +498,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
             }
         }
         (address[] memory tokens, uint256[] memory _amounts) = _rewardsStorage()
-            .harvestBribes(address(wbera), address(collector), _tokens, whitelisted);
+            .harvestBribes(address(collector), _tokens, whitelisted);
         for (uint256 i; i < len; ++i) {
             if (whitelisted[i]) {
                 emit BribeSupplied(address(collector), tokens[i], _amounts[i]);

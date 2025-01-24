@@ -161,13 +161,13 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         if (amount < min) return;
         // revert if insufficient balance
         if (amount > address(this).balance) revert Errors.InvalidAmount();
-        
+
         uint256 currentStakeWeight = IInfraredBERA(InfraredBERA).stakes(pubkey);
 
         if (currentStakeWeight + amount > InfraredBERAConstants.MAXIMUM_STAKE) {
-            revert Errors.InvalidAmount(); 
+            revert Errors.InvalidAmount();
         }
-        
+
         // re-stake amount back to ibera depositor
         IInfraredBERADepositor(IInfraredBERA(InfraredBERA).depositor()).queue{
             value: amount
