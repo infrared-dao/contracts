@@ -45,9 +45,9 @@ library RewardsLib {
     /*                       EVENTS                               */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    // TODO: WTF IS THIS
-    // /// @notice Emitted when Red cannot be minted during a harvest because of pause
-    event IRNotMinted(uint256 amount);
+    /// @dev Emitted when protocol wants to mint `IR` but fails.
+    /// @param amount uint256 The amount of `IR` that failed to mint
+    event ErrorMisconfiguredIRMinting(uint256 amount);
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       CONSTANTS                            */
@@ -384,7 +384,8 @@ library RewardsLib {
                     vault.notifyRewardAmount(ir, irAmt);
                 }
             } catch {
-                emit IRNotMinted(irAmt);
+                // @dev Misconfigured Role or Hit Supply Cap
+                emit ErrorMisconfiguredIRMinting(irAmt);
             }
         }
     }
