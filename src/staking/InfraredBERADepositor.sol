@@ -36,10 +36,8 @@ contract InfraredBERADepositor is Upgradeable {
         address _depositContract
     ) public initializer {
         if (
-            _gov == address(0) ||
-            _keeper == address(0) ||
-            ibera == address(0) ||
-            _depositContract == address(0)
+            _gov == address(0) || _keeper == address(0) || ibera == address(0)
+                || _depositContract == address(0)
         ) revert Errors.ZeroAddress();
         __Upgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, _gov);
@@ -56,8 +54,8 @@ contract InfraredBERADepositor is Upgradeable {
         /// @dev can only be called by InfraredBERA for adding to the reserves and by withdrawor for rebalancing
         /// when validators get kicked out of the set, TODO: link the set kickout code.
         if (
-            msg.sender != InfraredBERA &&
-            msg.sender != IInfraredBERA(InfraredBERA).withdrawor()
+            msg.sender != InfraredBERA
+                && msg.sender != IInfraredBERA(InfraredBERA).withdrawor()
         ) {
             revert Errors.Unauthorized(msg.sender);
         }
@@ -68,10 +66,10 @@ contract InfraredBERADepositor is Upgradeable {
         emit Queue(msg.value);
     }
 
-    function execute(
-        bytes calldata pubkey,
-        uint256 amount
-    ) external onlyKeeper {
+    function execute(bytes calldata pubkey, uint256 amount)
+        external
+        onlyKeeper
+    {
         // check if pubkey is a valid validator being tracked by InfraredBERA
         if (!IInfraredBERA(InfraredBERA).validator(pubkey)) {
             revert Errors.InvalidValidator();
@@ -84,19 +82,16 @@ contract InfraredBERADepositor is Upgradeable {
 
         // The validator balance + amount must not surpase MaxEffectiveBalance of 10 million BERA.
         if (
-            IInfraredBERA(InfraredBERA).stakes(pubkey) + amount >
-            InfraredBERAConstants.MAX_EFFECTIVE_BALANCE
+            IInfraredBERA(InfraredBERA).stakes(pubkey) + amount
+                > InfraredBERAConstants.MAX_EFFECTIVE_BALANCE
         ) {
             revert Errors.ExceedsMaxEffectiveBalance();
         }
 
         // @dev determin what to set the operator, if the operator is not set we know this is the first deposit and we should set it to infrared.
         // if not we know this is the second or subsequent deposit and we should set the operator to address(0).
-        address operator = IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(
-            pubkey
-        ) == address(0)
-            ? IInfraredBERA(InfraredBERA).infrared()
-            : address(0);
+        address operator = IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(pubkey)
+            == address(0) ? IInfraredBERA(InfraredBERA).infrared() : address(0);
 
         // @dev this is the first deposit, we need to set the amount to the initial deposit amount.
         if (operator != address(0)) {
@@ -133,10 +128,7 @@ contract InfraredBERADepositor is Upgradeable {
         // @dev deposit the BERA to the deposit contract.
         // @dev the amount being divided by 1 gwei is checked inside.
         IBeaconDeposit(DEPOSIT_CONTRACT).deposit{value: amount}(
-            pubkey,
-            credentials,
-            signature,
-            operator
+            pubkey, credentials, signature, operator
         );
 
         emit Execute(pubkey, amount);
