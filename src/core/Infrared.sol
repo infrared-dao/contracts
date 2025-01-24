@@ -516,7 +516,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Claims all the BGT base and commission rewards minted to this contract for validators.
     function harvestBase() public {
-        uint256 bgtAmt = RewardsLib.harvestBase(address(_bgt), address(ibera));
+        uint256 bgtAmt = RewardsLib.harvestBase(address(ibgt), address(_bgt), address(ibera));
         emit BaseHarvested(msg.sender, bgtAmt);
     }
 
