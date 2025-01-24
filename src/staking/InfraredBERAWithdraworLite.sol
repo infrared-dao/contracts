@@ -119,10 +119,6 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         if (IInfraredBERA(InfraredBERA).withdrawalsEnabled()) {
             revert Errors.Unauthorized(msg.sender);
         }
-        // onlyKeeper call
-        if (!IInfraredBERA(InfraredBERA).keeper(msg.sender)) {
-            revert Errors.Unauthorized(msg.sender);
-        }
         // Check if validator has already exited - do this before checking stake
         if (IInfraredBERA(InfraredBERA).hasExited(pubkey)) {
             revert Errors.ValidatorForceExited();

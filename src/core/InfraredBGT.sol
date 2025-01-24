@@ -8,14 +8,13 @@ import {ERC20PresetMinterPauser} from "../vendors/ERC20PresetMinterPauser.sol";
  * @notice This contract is the InfraredBGT token.
  */
 contract InfraredBGT is ERC20PresetMinterPauser {
-    error ZeroAddress();
-
-    address public immutable bgt;
-
-    constructor(address _bgt, address _admin, address _minter, address _pauser)
+    /**
+     * @notice Constructor for InfraredBGT
+     * @param _admin The admin address to controll the roles of the contract
+     * @param _minter The minter address of the contract
+     * @param _pauser The pauser address of the contract
+     */
+    constructor(address _admin, address _minter, address _pauser)
         ERC20PresetMinterPauser("Infrared BGT", "iBGT", _admin, _minter, _pauser)
-    {
-        if (_bgt == address(0)) revert ZeroAddress();
-        bgt = _bgt;
-    }
+    {}
 }
