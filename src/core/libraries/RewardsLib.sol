@@ -244,7 +244,7 @@ library RewardsLib {
     /// @notice Update the split ratio for iBERA and iBGT rewards
     /// @param $           The storage pointer for all rewards accumulators
     /// @param _split The ratio for splitting received bribes to be iBERA and iBGT, weighted towards iBERA
-    function updateInfraredBERAIncentiveSplit(
+    function updateInfraredBERABribeSplit(
         RewardsStorage storage $,
         uint256 _split
     ) external {

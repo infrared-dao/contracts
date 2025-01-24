@@ -415,13 +415,13 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Updates the weight for iBERA bribes
     /// @param _weight uint256 The weight value
-    function updateInfraredBERAIncentiveSplit(uint256 _weight)
+    function updateInfraredBERABribeSplit(uint256 _weight)
         external
         onlyGovernor
     {
         uint256 prevWeight = _rewardsStorage().bribeSplitRatio;
-        _rewardsStorage().updateInfraredBERAIncentiveSplit(_weight);
-        emit InfraredBERAIncentiveSplitUpdated(msg.sender, prevWeight, _weight);
+        _rewardsStorage().updateInfraredBERABribeSplit(_weight);
+        emit InfraredBERABribeSplitUpdated(msg.sender, prevWeight, _weight);
     }
 
     /// @notice Updates the fee rate charged on different harvest functions

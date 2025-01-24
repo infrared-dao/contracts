@@ -257,7 +257,7 @@ interface IInfrared {
      * @notice Updates the weight for iBERA bribes
      * @param _weight uint256 The weight value
      */
-    function updateInfraredBERAIncentiveSplit(uint256 _weight) external;
+    function updateInfraredBERABribeSplit(uint256 _weight) external;
 
     /**
      * @notice Updates the fee rate charged on different harvest functions
@@ -564,7 +564,7 @@ interface IInfrared {
      * @param _oldWeight The old value of the weight.
      * @param _newWeight The new value of the weight.
      */
-    event InfraredBERAIncentiveSplitUpdated(
+    event InfraredBERABribeSplitUpdated(
         address _sender, uint256 _oldWeight, uint256 _newWeight
     );
 
