@@ -124,9 +124,7 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         uint256 amount = IInfraredBERA(InfraredBERA).stakes(pubkey);
 
         // do nothing if InfraredBERA deposit would revert
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        if (amount < min) return;
+        if (amount < InfraredBERAConstants.MINIMUM_DEPOSIT) return;
         // revert if insufficient balance
         if (amount > address(this).balance) revert Errors.InvalidAmount();
 
@@ -138,7 +136,7 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         // re-stake amount back to ibera depositor
         IInfraredBERADepositor(IInfraredBERA(InfraredBERA).depositor()).queue{
             value: amount
-        }(amount - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE);
+        }(amount);
 
         emit Sweep(InfraredBERA, amount);
     }

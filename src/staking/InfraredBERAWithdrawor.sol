@@ -100,10 +100,7 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
         }
         if (
             (receiver != depositor && amount == 0)
-                || (
-                    receiver == depositor
-                        && amount <= InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
-                ) || amount > IInfraredBERA(InfraredBERA).confirmed()
+                || amount > IInfraredBERA(InfraredBERA).confirmed()
         ) {
             revert Errors.InvalidAmount();
         }
@@ -229,9 +226,7 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
         if (r.receiver == depositor) {
             // queue up rebalance to depositor
             rebalancing -= amount;
-            IInfraredBERADepositor(r.receiver).queue{value: amount}(
-                amount - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
-            );
+            IInfraredBERADepositor(r.receiver).queue{value: amount}(amount);
         } else {
             // queue up receiver claim to claimor
             IInfraredBERAClaimor(claimor).queue{value: amount}(r.receiver);
@@ -257,9 +252,7 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
         uint256 amount = IInfraredBERA(InfraredBERA).stakes(pubkey);
 
         // do nothing if InfraredBERA deposit would revert
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        if (amount < min) return;
+        if (amount < InfraredBERAConstants.MINIMUM_DEPOSIT) return;
         // revert if insufficient balance
         if (amount > address(this).balance) revert Errors.InvalidAmount();
 
@@ -271,7 +264,7 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
         // re-stake amount back to ibera depositor
         IInfraredBERADepositor(IInfraredBERA(InfraredBERA).depositor()).queue{
             value: amount
-        }(amount - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE);
+        }(amount);
 
         emit Sweep(IInfraredBERA(InfraredBERA).depositor(), amount);
     }

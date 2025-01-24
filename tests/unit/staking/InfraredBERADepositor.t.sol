@@ -12,155 +12,108 @@ import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {InfraredBERABaseTest} from "./InfraredBERABase.t.sol";
 
 contract InfraredBERADepositorTest is InfraredBERABaseTest {
+    uint256 internal constant amountFirst = 25000 ether;
+    uint256 internal constant amountSecond = 30000 ether;
+    uint256 internal constant amountThird = 35000 ether;
+
     function testQueueUpdatesFees() public {
         uint256 value = 12 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 amount = value - fee;
+        uint256 amount = value;
 
         vm.deal(address(ibera), value);
         assertTrue(address(ibera).balance >= value);
 
-        uint256 fees = depositor.fees();
         vm.prank(address(ibera));
-        depositor.queue{value: value}(amount);
-
-        assertEq(depositor.fees(), fees + fee);
+        depositor.queue{value: value}();
     }
 
     function testQueueUpdatesNonce() public {
         uint256 value = 11 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 amount = value - fee;
+        uint256 amount = value;
 
         vm.deal(address(ibera), value);
         assertTrue(address(ibera).balance >= value);
 
-        uint256 nonceSlip = depositor.nonceSlip();
-        uint256 nonceSubmit = depositor.nonceSubmit();
-
         vm.prank(address(ibera));
-        depositor.queue{value: value}(amount);
-
-        assertEq(depositor.nonceSlip(), nonceSlip + 1);
-        assertEq(depositor.nonceSubmit(), nonceSubmit);
+        depositor.queue{value: value}();
     }
 
     function testQueueStoresSlip() public {
         uint256 value = 11 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 amount = value - fee;
+        uint256 amount = value;
 
         vm.deal(address(ibera), value);
         assertTrue(address(ibera).balance >= value);
 
-        uint256 nonceSlip = depositor.nonceSlip();
-        (uint96 _timestamp, uint256 _fee, uint256 _amount) =
-            depositor.slips(nonceSlip);
-        assertEq(_timestamp, 0);
-        assertEq(_fee, 0);
-        assertEq(_amount, 0);
-
         vm.prank(address(ibera));
-        uint256 nonce_ = depositor.queue{value: value}(amount);
-
-        assertEq(nonce_, nonceSlip);
-        (uint96 timestamp_, uint256 fee_, uint256 amount_) =
-            depositor.slips(nonce_);
-        assertEq(timestamp_, uint96(block.timestamp));
-        assertEq(fee_, fee);
-        assertEq(amount_, amount);
+        depositor.queue{value: value}();
     }
 
     function testQueueUpdatesReserves() public {
         uint256 value = 11 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 amount = value - fee;
+        uint256 amount = value;
 
         vm.deal(address(ibera), value);
         assertTrue(address(ibera).balance >= value);
 
         uint256 balanceDepositor = address(depositor).balance;
         uint256 reserves = depositor.reserves();
-        uint256 fees = depositor.fees();
-        assertEq(reserves, balanceDepositor - fees);
+        assertEq(reserves, balanceDepositor);
 
         vm.prank(address(ibera));
-        depositor.queue{value: value}(amount);
+        depositor.queue{value: value}();
 
         assertEq(depositor.reserves(), reserves + amount);
     }
 
     function testQueueWhenSenderWithdrawor() public {
         uint256 value = 11 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 amount = value - fee;
+        uint256 amount = value;
 
         vm.deal(address(withdrawor), value);
         assertTrue(address(withdrawor).balance >= value);
 
         vm.prank(address(withdrawor));
-        uint256 nonce_ = depositor.queue{value: value}(amount);
-
-        (uint96 timestamp_, uint256 fee_, uint256 amount_) =
-            depositor.slips(nonce_);
-        assertEq(timestamp_, uint96(block.timestamp));
-        assertEq(fee_, fee);
-        assertEq(amount_, amount);
+        depositor.queue{value: value}();
     }
 
     function testQueueEmitsQueue() public {
         uint256 value = 11 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 amount = value - fee;
+        uint256 amount = value;
 
         vm.deal(address(ibera), value);
         assertTrue(address(ibera).balance >= value);
-        uint256 nonce = depositor.nonceSlip();
 
         vm.expectEmit();
-        emit IInfraredBERADepositor.Queue(nonce, amount);
+        emit IInfraredBERADepositor.Queue(amount);
         vm.prank(address(ibera));
-        depositor.queue{value: value}(amount);
+        depositor.queue{value: value}();
     }
 
     function testQueueMultiple() public {
         uint256 value = 90000 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-
         uint256 reserves = depositor.reserves();
-        uint256 fees = depositor.fees();
 
         vm.deal(address(ibera), value);
         assertTrue(address(ibera).balance >= value);
-        uint256 nonce = depositor.nonceSlip();
 
         vm.prank(address(ibera));
-        depositor.queue{value: 25000 ether}(25000 ether - fee);
+        depositor.queue{value: 25000 ether}();
         vm.prank(address(ibera));
-        depositor.queue{value: 30000 ether}(30000 ether - fee);
+        depositor.queue{value: 30000 ether}();
         vm.prank(address(ibera));
-        depositor.queue{value: 35000 ether}(35000 ether - fee);
+        depositor.queue{value: 35000 ether}();
 
-        assertEq(depositor.reserves(), reserves + 90000 ether - 3 * fee);
-        assertEq(depositor.fees(), fees + 3 * fee);
-        assertEq(address(depositor).balance, reserves + fees + 90000 ether);
-        assertEq(depositor.nonceSlip(), nonce + 3);
-
-        (,, uint256 amountFirst_) = depositor.slips(nonce);
-        (,, uint256 amountSecond_) = depositor.slips(nonce + 1);
-        (,, uint256 amountThird_) = depositor.slips(nonce + 2);
-        assertEq(amountFirst_, 25000 ether - fee);
-        assertEq(amountSecond_, 30000 ether - fee);
-        assertEq(amountThird_, 35000 ether - fee);
+        assertEq(depositor.reserves(), reserves + 90000 ether);
+        assertEq(address(depositor).balance, reserves + 90000 ether);
     }
 
     function testQueueRevertsWhenSenderUnauthorized() public {
         uint256 value = 1 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 amount = value - fee;
+        uint256 amount = value;
 
         vm.expectRevert();
-        depositor.queue{value: value}(amount);
+        depositor.queue{value: value}();
     }
 
     function testQueueRevertsWhenAmountZero() public {
@@ -172,7 +125,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
         vm.expectRevert(Errors.InvalidAmount.selector);
         vm.prank(address(ibera));
-        depositor.queue{value: value}(amount);
+        depositor.queue{value: value}();
     }
 
     function testQueueRevertsWhenValueLessThanAmount() public {
@@ -184,32 +137,26 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
         vm.expectRevert(Errors.InvalidAmount.selector);
         vm.prank(address(ibera));
-        depositor.queue{value: value}(amount);
+        depositor.queue{value: value}();
     }
 
     function testQueueRevertsWhenFeeLessThanMin() public {
         uint256 value = 1 ether;
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE - 1;
-        uint256 amount = value - fee;
+        uint256 amount = value;
 
         vm.deal(address(ibera), value);
         assertTrue(address(ibera).balance >= value);
 
         vm.expectRevert(Errors.InvalidFee.selector);
         vm.prank(address(ibera));
-        depositor.queue{value: value}(amount);
+        depositor.queue{value: value}();
     }
 
     function testExecuteUpdatesSlipsNonceFeesWhenFillAmounts() public {
         testQueueMultiple();
-        // should have the min deposit from iibera.initialize call to push through
-        assertEq(depositor.nonceSlip(), 5); // 1 on init, 3 on test multiple
-        assertEq(depositor.nonceSubmit(), 1); // none submitted yet
 
-        uint256 fees = depositor.fees();
-        (, uint256 feeFirst, uint256 amountFirst) = depositor.slips(1);
-        (, uint256 feeSecond, uint256 amountSecond) = depositor.slips(2);
-        // (, uint256 feeThird, uint256 amountThird) = depositor.slips(3);
+        uint256 amountFirst = 25000 ether;
+        uint256 amountSecond = 30000 ether;
 
         uint256 amount = amountFirst + amountSecond;
         assertTrue(amount > InfraredBERAConstants.INITIAL_DEPOSIT);
@@ -224,56 +171,18 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         depositor.execute(
             pubkey0, amount - InfraredBERAConstants.INITIAL_DEPOSIT
         );
-
-        // nonce submit should have been bumped up by 2 given processed 2 slips
-        assertEq(depositor.nonceSubmit(), 3);
-        assertEq(depositor.fees(), fees - feeFirst - feeSecond);
-
-        (, uint256 feeFirst_, uint256 amountFirst_) = depositor.slips(1);
-        (, uint256 feeSecond_, uint256 amountSecond_) = depositor.slips(2);
-        // (, uint256 feeThird_, uint256 amountThird_) = depositor.slips(3);
-        assertEq(feeFirst_, 0);
-        assertEq(feeSecond_, 0);
-        assertEq(amountFirst_, 0);
-        assertEq(amountSecond_, 0);
-        // assertEq(feeThird_, 0);
-        // assertEq(amountThird_, 0);
-    }
-
-    function testExecuteUpdatesSlipNonceFeesWhenFillAmount() public {
-        testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
-
-        uint256 nonce = depositor.nonceSubmit();
-        uint256 fees = depositor.fees();
-        (, uint256 fee, uint256 amount) = depositor.slips(nonce);
-        assertTrue(amount > InfraredBERAConstants.INITIAL_DEPOSIT); // min deposit for deposit contract
-        assertTrue(amount % 1 gwei == 0);
-
-        assertEq(ibera.signatures(pubkey0), signature0);
-
-        vm.prank(keeper);
-        depositor.execute(pubkey0, amount);
-
-        (, uint256 fee_, uint256 amount_) = depositor.slips(nonce);
-        assertEq(fee_, 0);
-        assertEq(amount_, 0);
-
-        assertEq(depositor.fees(), fees - fee);
-        assertEq(depositor.nonceSubmit(), nonce + 1);
     }
 
     function testExecuteMaxStakers() public {
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = InfraredBERAConstants.MINIMUM_DEPOSIT + fee;
+        uint256 value = InfraredBERAConstants.MINIMUM_DEPOSIT;
 
         uint256 reserves = depositor.reserves();
-        uint256 fees = depositor.fees();
 
         vm.deal(
             address(ibera),
             InfraredBERAConstants.INITIAL_DEPOSIT
-                + fee * InfraredBERAConstants.INITIAL_DEPOSIT
-                    / InfraredBERAConstants.MINIMUM_DEPOSIT
+                * InfraredBERAConstants.INITIAL_DEPOSIT
+                / InfraredBERAConstants.MINIMUM_DEPOSIT
         );
         assertTrue(address(ibera).balance >= value);
 
@@ -281,7 +190,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         uint256 maxIterations = InfraredBERAConstants.INITIAL_DEPOSIT
             / InfraredBERAConstants.MINIMUM_DEPOSIT;
         for (uint256 i; i < maxIterations; i++) {
-            depositor.queue{value: value}(value - fee);
+            depositor.queue{value: value}();
         }
         vm.stopPrank();
 
@@ -289,7 +198,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
             depositor.reserves(),
             reserves + InfraredBERAConstants.INITIAL_DEPOSIT
         );
-        assertEq(depositor.fees(), fees + maxIterations * fee);
 
         vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
@@ -305,9 +213,8 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
     function testExecuteUpdatesSlipNonceFeesWhenPartialAmount() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
 
-        uint256 nonce = depositor.nonceSubmit();
-        uint256 fees = depositor.fees();
-        (, uint256 fee, uint256 _amount) = depositor.slips(nonce);
+        uint256 _amount = amountSecond;
+
         uint256 amount = ((3 * _amount / 4) / 1 gwei) * 1 gwei;
         assertTrue(amount > InfraredBERAConstants.INITIAL_DEPOSIT); // min deposit for deposit contract
         assertTrue(amount % 1 gwei == 0);
@@ -316,22 +223,10 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
         vm.prank(keeper);
         depositor.execute(pubkey0, amount);
-
-        (, uint256 fee_, uint256 amount_) = depositor.slips(nonce);
-        assertEq(fee_, 0);
-        assertEq(amount_, _amount - amount);
-
-        assertEq(depositor.fees(), fees - fee);
-        assertEq(depositor.nonceSubmit(), nonce); // same nonce since didnt fill
     }
 
     function testExecuteUpdatesSlipsNonceFeesWhenPartialLastAmount() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
-
-        uint256 nonce = depositor.nonceSubmit();
-        uint256 fees = depositor.fees();
-        (, uint256 feeFirst, uint256 amountFirst) = depositor.slips(nonce);
-        (, uint256 feeSecond, uint256 amountSecond) = depositor.slips(nonce + 1);
 
         uint256 amount = ((amountFirst + amountSecond / 4) / 1 gwei) * 1 gwei;
         assertTrue(amount > InfraredBERAConstants.INITIAL_DEPOSIT);
@@ -341,26 +236,10 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
         vm.prank(keeper);
         depositor.execute(pubkey0, amount);
-
-        // nonce submit should have been bumped up by only 1 given fully processed 1 slip
-        assertEq(depositor.nonceSubmit(), nonce + 1);
-        assertEq(depositor.fees(), fees - feeFirst - feeSecond);
-
-        (, uint256 feeFirst_, uint256 amountFirst_) = depositor.slips(nonce);
-        (, uint256 feeSecond_, uint256 amountSecond_) =
-            depositor.slips(nonce + 1);
-        assertEq(feeFirst_, 0);
-        assertEq(feeSecond_, 0);
-        assertEq(amountFirst_, 0);
-        assertEq(amountSecond_, amountSecond - (amount - amountFirst));
     }
 
     function testExecuteDepositsToDepositContract() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
-
-        uint256 nonce = depositor.nonceSubmit();
-        (,, uint256 amountFirst) = depositor.slips(nonce);
-        (,, uint256 amountSecond) = depositor.slips(nonce + 1);
 
         assertEq(ibera.signatures(pubkey0), signature0);
 
@@ -392,11 +271,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
     function testExecuteRegistersDeposit() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
 
-        uint256 nonce = depositor.nonceSubmit();
-
-        (,, uint256 amountFirst) = depositor.slips(nonce);
-        (,, uint256 amountSecond) = depositor.slips(nonce + 1);
-
         assertEq(ibera.signatures(pubkey0), signature0);
 
         uint256 amount = ((amountFirst + amountSecond / 4) / 1 gwei) * 1 gwei;
@@ -415,11 +289,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
     function testExecuteTransfersETH() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
 
-        uint256 nonce = depositor.nonceSubmit();
-
-        (, uint256 feeFirst, uint256 amountFirst) = depositor.slips(nonce);
-        (, uint256 feeSecond, uint256 amountSecond) = depositor.slips(nonce + 1);
-
         assertEq(ibera.signatures(pubkey0), signature0);
 
         uint256 amount = ((amountFirst + amountSecond / 4) / 1 gwei) * 1 gwei;
@@ -433,21 +302,13 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         vm.prank(keeper);
         depositor.execute(pubkey0, amount);
 
-        assertEq(address(keeper).balance, balanceKeeper + feeFirst + feeSecond);
+        assertEq(address(keeper).balance, balanceKeeper);
         assertEq(address(0).balance, balanceZero + amount);
-        assertEq(
-            address(depositor).balance,
-            balanceDepositor - amount - feeFirst - feeSecond
-        );
+        assertEq(address(depositor).balance, balanceDepositor - amount);
     }
 
     function testExecuteEmitsExecute() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
-
-        uint256 nonce = depositor.nonceSubmit();
-
-        (,, uint256 amountFirst) = depositor.slips(nonce);
-        (,, uint256 amountSecond) = depositor.slips(nonce + 1);
 
         assertEq(ibera.signatures(pubkey0), signature0);
 
@@ -456,7 +317,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         assertTrue(amount % 1 gwei == 0);
 
         vm.expectEmit();
-        emit IInfraredBERADepositor.Execute(pubkey0, nonce, nonce + 1, amount);
+        emit IInfraredBERADepositor.Execute(pubkey0, amount);
 
         vm.prank(keeper);
         depositor.execute(pubkey0, amount);
@@ -474,11 +335,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
     function testExecuteRevertsWhenSenderNotKeeper() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
 
-        uint256 nonce = depositor.nonceSubmit();
-
-        (,, uint256 amountFirst) = depositor.slips(nonce);
-        (,, uint256 amountSecond) = depositor.slips(nonce + 1);
-
         assertEq(ibera.signatures(pubkey0), signature0);
 
         uint256 amount = ((amountFirst + amountSecond / 4) / 1 gwei) * 1 gwei;
@@ -491,11 +347,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
     function testExecuteRevertsWhenInvalidValidator() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
-
-        uint256 nonce = depositor.nonceSubmit();
-
-        (,, uint256 amountFirst) = depositor.slips(nonce);
-        (,, uint256 amountSecond) = depositor.slips(nonce + 1);
 
         assertEq(ibera.signatures(pubkey0), signature0);
 
@@ -521,11 +372,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
         assertEq(ibera.signatures(pubkey0), signature0);
 
-        uint256 nonce = depositor.nonceSubmit();
-
-        (,, uint256 amountFirst) = depositor.slips(nonce);
-        (,, uint256 amountSecond) = depositor.slips(nonce + 1);
-
         uint256 amount = ((amountFirst + amountSecond / 4) / 1 gwei) * 1 gwei;
         assertTrue(amount > InfraredBERAConstants.INITIAL_DEPOSIT);
         assertTrue(amount % 1 gwei == 0);
@@ -538,11 +384,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
     function testExecuteRevertsWhenSignatureNotSet() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
-
-        uint256 nonce = depositor.nonceSubmit();
-
-        (,, uint256 amountFirst) = depositor.slips(nonce);
-        (,, uint256 amountSecond) = depositor.slips(nonce + 1);
 
         assertEq(ibera.signatures(pubkey1).length, 0);
 
@@ -567,9 +408,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
 
         // Get next valid deposit amount from slip
-        uint256 nonce = depositor.nonceSubmit();
-        (,, uint256 slipAmount) = depositor.slips(nonce);
-        uint256 amount = ((slipAmount) / 1 gwei) * 1 gwei;
+        uint256 amount = ((amountFirst) / 1 gwei) * 1 gwei;
         assertTrue(amount >= InfraredBERAConstants.INITIAL_DEPOSIT);
 
         // Should succeed with subsequent deposit
@@ -627,9 +466,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         assertEq(operator, IInfraredBERA(depositor.InfraredBERA()).infrared());
 
         // Get balances for next slip
-        uint256 nonce = depositor.nonceSubmit();
-        (,, uint256 slipAmount) = depositor.slips(nonce);
-        uint256 amount = ((slipAmount) / 1 gwei) * 1 gwei; // Must be gwei aligned
+        uint256 amount = ((amountFirst) / 1 gwei) * 1 gwei; // Must be gwei aligned
         assertTrue(amount >= InfraredBERAConstants.INITIAL_DEPOSIT); // Must meet minimum
 
         // Execute subsequent deposit with proper amount from slip
@@ -675,8 +512,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
     }
 
     function _queueFundsForDeposit(uint256 amount) internal {
-        uint256 fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 value = amount + fee;
+        uint256 value = amount;
 
         // Ensure the ibera contract has enough funds
         vm.deal(address(ibera), value);
@@ -684,6 +520,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
         // Queue the funds for deposit
         vm.prank(address(ibera));
-        depositor.queue{value: value}(amount);
+        depositor.queue{value: value}();
     }
 }
