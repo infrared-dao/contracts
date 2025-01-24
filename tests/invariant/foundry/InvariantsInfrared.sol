@@ -121,9 +121,7 @@ contract InvariantsInfrared is Test {
             1 days
         );
         infrared.initialize(data); // make helper contract the admin
-        ibgt = new InfraredBGT(
-            address(bgt), data._gov, address(infrared), data._gov
-        );
+        ibgt = new InfraredBGT(data._gov, address(infrared), data._gov);
 
         infrared.setIBGT(address(ibgt));
 
@@ -195,7 +193,7 @@ contract InvariantsInfrared is Test {
         // assert that the total delegated bgt is not bigger than the total bgt rewards
         assertLe(
             governanceHandler.totalDelegatedBgt(),
-            ERC20(infrared.ibgt().bgt()).balanceOf(address(infrared))
+            ERC20(address(bgt)).balanceOf(address(infrared))
         );
     }
 
