@@ -305,7 +305,9 @@ library RewardsLib {
         uint256 balance = IBerachainBGT(bgt).balanceOf(address(this));
         if (balance == 0) return 0;
 
-        IBerachainBGT(bgt).redeem(IInfraredBERA(ibera).receivor(), balance - minted);
+        IBerachainBGT(bgt).redeem(
+            IInfraredBERA(ibera).receivor(), balance - minted
+        );
     }
 
     /// @notice Harvests the accrued BGT rewards to a vault.
