@@ -54,9 +54,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     using VaultManagerLib for VaultManagerLib.VaultStorage;
     using RewardsLib for RewardsLib.RewardsStorage;
 
-    //////////////////////////////////////////////////////////////////
-                           STORAGE/EVENTS
-    //////////////////////////////////////////////////////////////////
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       STORAGE/EVENTS                        */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice The Canonical BGT token Contract
     IBerachainBGT internal _bgt;
@@ -154,9 +154,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         _;
     }
 
-    //////////////////////////////////////////////////////////////////
-                INITIALIZATION LOGIC
-    //////////////////////////////////////////////////////////////////
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       INITIALIZATION                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     constructor() InfraredUpgradeable(address(0)) {}
 
@@ -242,17 +242,17 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         }
     }
 
-    //////////////////////////////////////////////////////////////////
-                        VAULT REGISTRY
-    //////////////////////////////////////////////////////////////////
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VAULT REGISTRY                       */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     ///////
-     /// @notice Registers a new vault for a given asset
-     /// @dev Infrared.sol must be admin over MINTER_ROLE on InfraredBGT to grant minter role to deployed vault
-     /// @param _asset The address of the asset, such as a specific LP token
-     /// @return vault The address of the newly created InfraredVault contract
-     /// @custom:emits NewVault with the caller, asset address, and new vault address.
-     ////
+    /// @notice Registers a new vault for a given asset
+    /// @dev Infrared.sol must be admin over MINTER_ROLE on InfraredBGT to grant minter role to deployed vault
+    /// @param _asset The address of the asset, such as a specific LP token
+    /// @return vault The address of the newly created InfraredVault contract
+    /// @custom:emits NewVault with the caller, asset address, and new vault address.
+    ////
     function registerVault(address _asset)
         external
         returns (IInfraredVault vault)
@@ -262,15 +262,15 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     ///////
-     /// @notice Adds a new reward token to a specific staking vault
-     /// @dev Only callable by governance when contract is initialized
-     /// @param _stakingToken The address of the staking token associated with the vault
-     /// @param _rewardsToken The address of the token to be added as a reward
-     /// @param _rewardsDuration The duration period for the rewards distribution, in seconds
-     /// @custom:error ZeroAmount if _rewardsDuration is 0
-     /// @custom:error RewardTokenNotWhitelisted if _rewardsToken is not whitelisted
-     /// @custom:error NoRewardsVault if vault doesn't exist for _stakingToken
-     ////
+    /// @notice Adds a new reward token to a specific staking vault
+    /// @dev Only callable by governance when contract is initialized
+    /// @param _stakingToken The address of the staking token associated with the vault
+    /// @param _rewardsToken The address of the token to be added as a reward
+    /// @param _rewardsDuration The duration period for the rewards distribution, in seconds
+    /// @custom:error ZeroAmount if _rewardsDuration is 0
+    /// @custom:error RewardTokenNotWhitelisted if _rewardsToken is not whitelisted
+    /// @custom:error NoRewardsVault if vault doesn't exist for _stakingToken
+    ////
     function addReward(
         address _stakingToken,
         address _rewardsToken,
@@ -281,7 +281,6 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         );
     }
 
-    
     /// @notice Adds reward incentives to a specific staking vault
     /// @dev Transfers reward tokens from caller to this contract, then notifies vault of new rewards
     /// @param _stakingToken The address of the staking token associated with the vault
@@ -306,9 +305,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         _vaultStorage().addIncentives(_stakingToken, _rewardsToken, _amount);
     }
 
-    //////////////////////////////////////////////////////////////////
-                        ADMIN
-    //////////////////////////////////////////////////////////////////
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       ADMIN                                */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Updates the whitelist status of a reward token
     /// @param _token The address of the token to whitelist or remove from whitelist
@@ -417,7 +416,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         external
         onlyGovernor
     {
-        uint256 prevWeight = _rewardsStorage().incentiveSplitRatio;
+        uint256 prevWeight = _rewardsStorage().bribeSplitRatio;
         _rewardsStorage().updateInfraredBERAIncentiveSplit(_weight);
         emit InfraredBERAIncentiveSplitUpdated(msg.sender, prevWeight, _weight);
     }
@@ -470,7 +469,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Sets the address of the IR contract
     /// @dev Infrared must be granted MINTER_ROLE on IR to set the address
-    /// @param _IR The address of the IR contract
+    /// @param _ir The address of the IR contract
     function setIR(address _ir) external {
         if (_ir == address(0)) revert Errors.ZeroAddress();
         if (address(ir) != address(0)) revert Errors.AlreadySet();
@@ -481,13 +480,13 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         ) {
             revert Errors.Unauthorized(address(this));
         }
-        
+
         ir = IInfraredGovernanceToken(_ir);
         emit IRSet(msg.sender, _ir);
     }
 
     /// @notice Updates the mint rate for IR
-    /// @param _IRMintRate The new mint rate for IR
+    /// @param _irMintRate The new mint rate for IR
     function updateIRMintRate(uint256 _irMintRate) external onlyGovernor {
         uint256 oldRate = _rewardsStorage().irMintRate;
         _rewardsStorage().updateIRMintRate(_irMintRate);
@@ -495,9 +494,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         emit UpdatedIRMintRate(oldRate, _irMintRate, msg.sender);
     }
 
-    //////////////////////////////////////////////////////////////////
-                            REWARDS
-    //////////////////////////////////////////////////////////////////
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       REWARDS                              */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     function chargedFeesOnRewards(
         uint256 _amt,
@@ -508,14 +507,13 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         pure
         returns (uint256 amtRecipient, uint256 amtVoter, uint256 amtProtocol)
     {
-        if (_feeTotal > RewardsLib.FEE_UNIT) revert Errors.InvalidFee();
+        if (_feeTotal > RewardsLib.UNIT_DENOMINATOR) revert Errors.InvalidFee();
         return RewardsLib.chargedFeesOnRewards(_amt, _feeTotal, _feeProtocol);
     }
 
     /// @notice Claims all the BGT base and commission rewards minted to this contract for validators.
     function harvestBase() public {
-        uint256 bgtAmt =
-            RewardsLib.harvestBase(address(_bgt), address(ibgt), address(ibera));
+        uint256 bgtAmt = RewardsLib.harvestBase(address(_bgt), address(ibera));
         emit BaseHarvested(msg.sender, bgtAmt);
     }
 
@@ -548,7 +546,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
             }
         }
         (address[] memory tokens, uint256[] memory _amounts) = _rewardsStorage()
-            .harvestBribes(address(wbera), address(collector), _tokens, whitelisted);
+            .harvestBribes(address(collector), _tokens, whitelisted);
         for (uint256 i; i < len; ++i) {
             if (whitelisted[i]) {
                 emit BribeSupplied(address(collector), tokens[i], _amounts[i]);
@@ -602,9 +600,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         emit RewardSupplied(address(ibgtVault), _token, _amount);
     }
 
-    //////////////////////////////////////////////////////////////////
-                            VALIDATORS
-    //////////////////////////////////////////////////////////////////
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       VALIDATORS                           */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Adds validators to the set of `InfraredValidators`.
     /// @param _validators Validator[] memory The validators to add.
@@ -658,9 +656,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         chef.queueNewRewardAllocation(_pubkey, _startBlock, _weights);
     }
 
-    //////////////////////////////////////////////////////////////////
-                            BOOSTS
-    //////////////////////////////////////////////////////////////////
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       BOOST                                */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Queue `_amts` of tokens to `_validators` for boosts.
     /// @param _pubkeys     bytes[] memory The pubkeys of the validators to queue boosts for.
@@ -696,8 +694,8 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Queues a drop boost of the validators removing an amount of BGT for sender.
     /// @dev Reverts if `user` does not have enough boosted balance to cover amount.
-    /// @param pubkeys     bytes[] memory The pubkeys of the validators to remove boost from.
-    /// @param amounts Amounts of BGT to remove from the queued drop boosts.
+    /// @param _pubkeys     bytes[] calldata The pubkeys of the validators to remove boost from.
+    /// @param _amts Amounts of BGT to remove from the queued drop boosts.
     function queueDropBoosts(
         bytes[] calldata _pubkeys,
         uint128[] calldata _amts
@@ -707,8 +705,8 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @notice Cancels a queued drop boost of the validator removing an amount of BGT for sender.
-    /// @param pubkeys     bytes[] memory The pubkeys of the validators to remove boost from.
-    /// @param amounts Amounts of BGT to remove from the queued drop boosts.
+    /// @param _pubkeys bytes[] calldata   The pubkeys of the validators to remove boost from.
+    /// @param _amts    uint128[] calldata Amounts of BGT to remove from the queued drop boosts.
     function cancelDropBoosts(
         bytes[] calldata _pubkeys,
         uint128[] calldata _amts
@@ -718,15 +716,15 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @notice Drops an amount of BGT from an existing boost of validators by user.
-    /// @param pubkeys     bytes[] memory The pubkeys of the validators to remove boost from.
+    /// @param _pubkeys bytes[] memory The pubkeys of the validators to remove boost from.
     function dropBoosts(bytes[] calldata _pubkeys) external {
         _validatorStorage().dropBoosts(address(_bgt), _pubkeys);
         emit DroppedBoosts(msg.sender, _pubkeys);
     }
 
-    //////////////////////////////////////////////////////////////////
-                            HELPERS
-    //////////////////////////////////////////////////////////////////
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       HELPERS                                */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Gets the set of infrared validator pubkeys.
     /// @return validators Validator[] memory The set of infrared validators.
@@ -794,7 +792,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice The rewards duration
     /// @dev Used as gloabl variabel to set the rewards duration for all new reward tokens on InfraredVaults
-    /// @return uint256 The reward duration period, in seconds
+    /// @return duration uint256 reward duration period, in seconds
     function rewardsDuration() public view returns (uint256 duration) {
         return _vaultStorage().rewardsDuration;
     }
@@ -807,7 +805,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @notice The unclaimed Infrared protocol fees of token accumulated by contract
-    /// @param token address The token address for the accumulated fees
+    /// @param _token address The token address for the accumulated fees
     /// @return uint256 The amount of accumulated fees
     function protocolFeeAmounts(address _token)
         external

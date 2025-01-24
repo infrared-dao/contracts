@@ -25,76 +25,126 @@ import {Errors} from "src/utils/Errors.sol";
 library RewardsLib {
     using SafeTransferLib for ERC20;
 
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       STORAGE TYPE                         */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    // @notice Storage for all reward accumulators and configurations
+    // @notice protocolFeeAmounts Tracks accumulated protocol fees per token so that the protocol can claim them at a later time
+    // @notice irMintRate         Rate for minting IR tokens at a rate of BGT to IR in hundredths of 1 bip (1e6)
+    // @notice bribeSplitRatio    Ratio for splitting received bribes to the iBERA and IBGT product, weighted towards iBERA, ie iBGT weight = (UNIT_DENOMINATOR - bribeSplitRatio))
+    // @notice fees               Mapping of fee rates for different fee types
     struct RewardsStorage {
-        mapping(address => uint256) protocolFeeAmounts; // Tracks accumulated protocol fees per token
-        uint256 irMintRate; // Rate for minting IR tokens
-        uint256 incentiveSplitRatio; // Ratio for splitting received bribes to be iBERA and iBGT, weighted towards iBERA
-        mapping(uint256 => uint256) fees; // Fee configuration
+        mapping(address => uint256) protocolFeeAmounts;
+        uint256 irMintRate;
+        uint256 bribeSplitRatio;
+        mapping(uint256 => uint256) fees;
     }
 
-    /**
-     * @notice IR mint rate in hundredths of 1 bip
-     * @dev Used as the denominator when calculating IR minting (1e6)
-     */
-    uint256 internal constant RATE_UNIT = 1e6;
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       EVENTS                               */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    // TODO: WTF IS THIS
+    // /// @notice Emitted when Red cannot be minted during a harvest because of pause
+    event IRNotMinted(uint256 amount);
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CONSTANTS                            */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /**
-     * @notice Split unit when partitioning reward amounts in hundredths of 1 bip
-     * @dev Used as the denominator when calculating weighted distributions (1e6)
+     * @notice Unit denominotor for calculating all fees and rates in the system
+     * @dev All fees and rates are calculated out of 1e6
      */
-    uint256 internal constant SPLIT_UNIT = 1e6;
+    uint256 internal constant UNIT_DENOMINATOR = 1e6;
 
-    /**
-     * @notice Protocol fee rate in hundredths of 1 bip
-     * @dev Used as the denominator when calculating protocol fees (1e6)
-     */
-    uint256 internal constant FEE_UNIT = 1e6;
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       FEES                                 */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Emitted when Red cannot be minted during a harvest because of pause
-    event RedNotMinted(uint256 amount);
-
-    /// @notice Calculates how fees are split between protocol, voters, and the recipient.
-    /// @notice _amt            The amount of rewards in wei
-    /// @notice _feeTotal       The fee rate out of 1e6
-    /// @notice _feeProtocol    The protocol fee rate out of 1e6
-    function chargedFeesOnRewards(
-        uint256 _amt,
-        uint256 _feeTotal,
-        uint256 _feeProtocol
-    )
-        external
-        pure
-        returns (uint256 amtRecipient, uint256 amtVoter, uint256 amtProtocol)
-    {
-        (amtRecipient, amtVoter, amtProtocol) =
-            _chargedFeesOnRewards(_amt, _feeTotal, _feeProtocol);
-    }
-
-    /// @notice Internal logic for chargedFeesOnRewards
-    /// @notice _amt            The amount of rewards in wei
-    /// @notice _feeTotal       The fee rate out of 1e6
-    /// @notice _feeProtocol    The protocol fee rate out of 1e6
+    /// @notice Harvest rewards given to our operators for setting their cuttingboard weights
+    /// ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/staking/InfraredBERAFeeReceivor.sol#L83
+    /// @param $                The storage pointer for all rewards accumulators
+    /// @param ibera            The address of the InfraredBERA token
+    /// @param voter            The address of the voter (address(0) if IR token is not live)
+    /// @param distributor      The address of the distributor
     ///
-    /// @return amtRecipient    The amount of rewards for the recipient
-    /// @return amtVoter        The amount of rewards for the voter
-    /// @return amtProtocol     The amount of rewards for the protocol
-    function _chargedFeesOnRewards(
-        uint256 _amt,
-        uint256 _feeTotal,
-        uint256 _feeProtocol
-    )
-        internal
-        pure
-        returns (uint256 amtRecipient, uint256 amtVoter, uint256 amtProtocol)
-    {
-        amtRecipient = _amt;
-        if (_feeTotal == 0) return (amtRecipient, 0, 0);
+    /// @return _amt            The amount of rewards harvested
+    function harvestOperatorRewards(
+        RewardsStorage storage $,
+        address ibera,
+        address voter,
+        address distributor
+    ) external returns (uint256 _amt) {
+        // Compound + Collect, syncing the iBERA rewards to latest.
+        IInfraredBERA(ibera).compound();
+        uint256 iBERAShares = IInfraredBERA(ibera).collect();
+        if (iBERAShares == 0) return 0;
 
-        uint256 _amtTotal = amtRecipient * _feeTotal / FEE_UNIT; // FEE_UNIT = 1e6
-        amtProtocol =
-            amtRecipient * _feeTotal * _feeProtocol / (FEE_UNIT * FEE_UNIT); // Protocol's share
-        amtVoter = _amtTotal - amtProtocol; // Remainder for voter
-        amtRecipient -= (amtProtocol + amtVoter); // Deduct fees from recipient
+        // The total fee rate to charge on iBERA harvest rewards.
+        uint256 feeTotal =
+            $.fees[uint256(ConfigTypes.FeeType.HarvestOperatorFeeRate)];
+
+        // The rate to charge for the protocol treasury on total fees.
+        uint256 feeProtocol =
+            $.fees[uint256(ConfigTypes.FeeType.HarvestOperatorProtocolRate)];
+
+        // the recepient of the rewards is the total pool of operators which is aggregated in the `Distributor` smart contract.
+        uint256 amountOperators;
+        // The amount of rewards going to the voter contract
+        uint256 amountVoters;
+        /// The amount of rewards going to the protocol treasury
+        uint256 amountProtocol;
+        (amountOperators, amountVoters, amountProtocol) =
+            chargedFeesOnRewards(iBERAShares, feeTotal, feeProtocol);
+
+        // Distribute the fees for the protocol and voter amounts.
+        _distributeFeesOnRewards(
+            $.protocolFeeAmounts, voter, ibera, amountVoters, amountProtocol
+        );
+
+        // Send the rewards owed to the operators to the distributor.
+        if (amountOperators > 0) {
+            ERC20(ibera).safeApprove(distributor, amountOperators);
+            IInfraredDistributor(distributor).notifyRewardAmount(
+                amountOperators
+            );
+        }
+    }
+
+    /// @notice Generic function to calculate the fees charged on rewards, returning the amount owed to the recipient, protocol, and voter.
+    /// @notice the recepient is the amount of rewards being sent forward into the protocol for example a vault
+    /// @param  amount          The amount of rewards to calculate fees on
+    /// @param  totalFeeRate    The total fee rate to charge on rewards (protocol + voter)
+    /// @param  protocolFeeRate The rate to charge for protocol fees
+    /// @return recepient       The amount of rewards to send to the recipient
+    /// @return voterFees       The amount of rewards to send to the voter
+    /// @return protocolFees    The amount of rewards to send to the protocol
+    function chargedFeesOnRewards(
+        uint256 amount,
+        uint256 totalFeeRate,
+        uint256 protocolFeeRate
+    )
+        public
+        pure
+        returns (uint256 recepient, uint256 voterFees, uint256 protocolFees)
+    {
+        // if the total fee charged is 0, return the amount as is and 0 for the rest
+        if (totalFeeRate == 0) return (amount, 0, 0);
+
+        // calculate the total fees to be charged = amount * totalFeeRate
+        uint256 totalFees = (amount * totalFeeRate) / UNIT_DENOMINATOR;
+
+        // calculate the protocol fees = totalFees * protocolFeeRate
+        protocolFees = (amount * totalFeeRate * protocolFeeRate)
+            / (UNIT_DENOMINATOR * UNIT_DENOMINATOR);
+
+        // calculate the voter fees = totalFees - protocolFees
+        voterFees = totalFees - protocolFees;
+
+        // deduct the total fees from the amount to get the recipient amount
+        recepient = amount - totalFees;
     }
 
     /// @notice Distributes fees on rewards to the protocol, voter, and recipient.
@@ -123,32 +173,138 @@ library RewardsLib {
         emit IInfrared.ProtocolFees(_token, _amtProtocol, _amtVoter);
     }
 
+    /// @notice Handles non-InfraredBGT token rewards to the vault.
+    /// @param $            RewardsStorage  The storage pointer for all rewards accumulators.
+    /// @param _vault       IInfraredVault   The address of the vault.
+    /// @param _token       address          The reward token.
+    /// @param voter        address          The address of the voter.
+    /// @param _amount      uint256          The amount of reward token to send to vault.
+    /// @param _feeTotal    uint256          The rate to charge for total fees on `_amount`.
+    /// @param _feeProtocol uint256          The rate to charge for protocol treasury on total fees.
+    /// @param rewardsDuration uint256        The duration of the rewards.
+    function _handleTokenRewardsForVault(
+        RewardsStorage storage $,
+        IInfraredVault _vault,
+        address _token,
+        address voter,
+        uint256 _amount,
+        uint256 _feeTotal,
+        uint256 _feeProtocol,
+        uint256 rewardsDuration
+    ) internal {
+        if (_amount == 0) return;
+
+        // add reward if not already added
+        (, uint256 _vaultRewardsDuration,,,,,) = _vault.rewardData(_token);
+        if (_vaultRewardsDuration == 0) {
+            _vault.addReward(_token, rewardsDuration);
+        }
+
+        uint256 _amtVoter;
+        uint256 _amtProtocol;
+
+        // calculate and distribute fees on rewards
+        (_amount, _amtVoter, _amtProtocol) =
+            chargedFeesOnRewards(_amount, _feeTotal, _feeProtocol);
+        _distributeFeesOnRewards(
+            $.protocolFeeAmounts, voter, _token, _amtVoter, _amtProtocol
+        );
+
+        // increase allowance then notify vault of new rewards
+        if (_amount > 0) {
+            ERC20(_token).safeApprove(address(_vault), _amount);
+            _vault.notifyRewardAmount(_token, _amount);
+        }
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       ADMIN                                */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Update the IR minting rate for the protocol.
+    /// @notice This rate determines how many IR tokens are minted whenever BGT rewards are harvested.
+    /// @notice For example, if the rate is 500,000 (0.5 * UNIT_DENOMINATOR), 0.5 IR is minted per BGT.
+    /// @notice If the rate is 2,000,000 (2 * UNIT_DENOMINATOR), 2 IR are minted per BGT.
+    /// @notice The actuall calculation is done in the `harvestVault` function when BGT rewards are harvested and IR tokens are minted accordingly.
+    /// @param $           The storage pointer for all rewards accumulators
+    /// @param newRate The new IR minting rate out of UNIT_DENOMINATOR(1e6 being 100% or a 1:1 rate)
+    function updateIRMintRate(RewardsStorage storage $, uint256 newRate)
+        external
+    {
+        $.irMintRate = newRate;
+    }
+
+    /// @notice Delegates Berachain Governance Voting Power to a delegatee
+    /// @param _delegatee The address to delegate voting power to
+    /// @param bgt        The address of the BGT token
+    function delegateBGT(address _delegatee, address bgt) external {
+        IBerachainBGT(bgt).delegate(_delegatee);
+    }
+
+    /// @notice Update the split ratio for iBERA and iBGT rewards
+    /// @param $           The storage pointer for all rewards accumulators
+    /// @param _split The ratio for splitting received bribes to be iBERA and iBGT, weighted towards iBERA
+    function updateInfraredBERAIncentiveSplit(
+        RewardsStorage storage $,
+        uint256 _split
+    ) external {
+        if (_split > UNIT_DENOMINATOR) revert Errors.InvalidWeight();
+        $.bribeSplitRatio = _split;
+    }
+
+    /// @notice Update the fee rate for a given fee type
+    /// @param $           The storage pointer for all rewards accumulators
+    /// @param _t          The fee type to update
+    /// @param _fee        The new fee rate
+    function updateFee(
+        RewardsStorage storage $,
+        ConfigTypes.FeeType _t,
+        uint256 _fee
+    ) external {
+        if (_fee > UNIT_DENOMINATOR) revert Errors.InvalidFee();
+        $.fees[uint256(_t)] = _fee;
+    }
+
+    /// @notice Claim protocol fees for a given token
+    /// @param $           The storage pointer for all rewards accumulators
+    /// @param _to         The address to send the protocol fees to
+    /// @param _token      The token to claim protocol fees for
+    function claimProtocolFees(
+        RewardsStorage storage $,
+        address _to,
+        address _token
+    ) external returns (uint256 _amountClaimed) {
+        _amountClaimed = $.protocolFeeAmounts[_token];
+        delete $.protocolFeeAmounts[_token];
+
+        ERC20(_token).safeTransfer(_to, _amountClaimed);
+    }
+
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       HARVEST Functions                    */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
     /// @notice Harvet's base rewards from the BGT contract, ie rewards from Distributor, given in BGT
     ///     ref - https://github.com/berachain/contracts-monorepo/blob/main/src/pol/rewards/Distributor.sol#L160
+    /// @notice The BGT accumilates in the contract, therfore can check balance(this) since all other BGT rewards are claimed and harvested atomically
+    /// @notice Reward paid out to validators proposing a block, MUST be forwarded to IBERA.receivor, the fees are handled there. TODO: Link here.
     /// @param bgt      The address of the BGT token
-    /// @param ibgt     The address of the InfraredBGT token
     /// @param ibera    The address of the InfraredBERA token
     ///
     /// @return bgtAmt  The amount of BGT rewards harvested
-    function harvestBase(address bgt, address ibgt, address ibera)
+    function harvestBase(address bgt, address ibera)
         external
         returns (uint256 bgtAmt)
     {
-        uint256 minted = IInfraredBGT(ibgt).totalSupply();
-        uint256 bgtBalance = IBerachainBGT(bgt).balanceOf(address(this));
-        // @dev should never happen but check in case
-        if (bgtBalance < minted) revert Errors.UnderFlow();
+        // The balance of BGT in the contract is the rewards accumilated from base rewards since the last harvest
+        // Since is paid out every block our validators propose (have a `Distributor::distibuteFor()` call)
+        uint256 balance = IBerachainBGT(bgt).balanceOf(address(this));
+        if (balance == 0) return 0;
 
-        bgtAmt = bgtBalance - minted;
-        if (bgtAmt == 0) return 0;
-
-        // Redeem BGT for BERA and send to InfraredBERA receivor
-        // No fee deduction needed here as fees will be handled by
-        // subsequent harvest calls through the InfraredBERA receiver's logic
-        IBerachainBGT(bgt).redeem(IInfraredBERA(ibera).receivor(), bgtAmt);
+        IBerachainBGT(bgt).redeem(IInfraredBERA(ibera).receivor(), balance);
     }
 
-    /// @notice Harvest's ERC20 Rewards from the vault
+    /// @notice Harvests the accrued BGT rewards to a vault.
     /// @notice BGT transferred here directly to the user https://github.com/berachain/contracts-monorepo/blob/c374de32077ede0147985cf2bf6ed89570244a7e/src/pol/rewards/RewardVault.sol#L404
     /// @param vault            The address of the InfraredRewardVault, wrapping an underlying RewardVault
     /// @param bgt              The address of the BGT token
@@ -156,7 +312,7 @@ library RewardsLib {
     /// @param voter            The address of the voter (0 until IR token is live)
     /// @param ir               The address of the Infrared token
     /// @param rewardsDuration  The duration of the rewards
-    /// 
+    ///
     /// @return bgtAmt The amount of BGT rewards harvested
     function harvestVault(
         RewardsStorage storage $,
@@ -172,10 +328,10 @@ library RewardsLib {
             revert Errors.VaultNotSupported();
         }
 
-        // Record the BGT balance before claiming rewards
+        // Record the BGT balance before claiming rewards since there could be base rewards that are in the balance.
         uint256 balanceBefore = IBerachainBGT(bgt).balanceOf(address(this));
 
-        // Get the rewards from the vault's reward vault
+        // Get the underlying Berachain RewardVault and claim the BGT rewards.
         IBerachainRewardsVault rewardsVault = vault.rewardsVault();
         rewardsVault.getReward(address(vault), address(this));
 
@@ -188,29 +344,30 @@ library RewardsLib {
         // Mint InfraredBGT tokens equivalent to the BGT rewards
         IInfraredBGT(ibgt).mint(address(this), bgtAmt);
 
-        // Calculate and distribute fees on the BGT rewards
+        // Calculate the voter and protocol fees to charge on the rewards
         (uint256 _amt, uint256 _amtVoter, uint256 _amtProtocol) =
-        _chargedFeesOnRewards(
+        chargedFeesOnRewards(
             bgtAmt,
             $.fees[uint256(ConfigTypes.FeeType.HarvestVaultFeeRate)],
             $.fees[uint256(ConfigTypes.FeeType.HarvestVaultProtocolRate)]
         );
+
+        // Distribute the fees on the rewards.
         _distributeFeesOnRewards(
             $.protocolFeeAmounts, voter, ibgt, _amtVoter, _amtProtocol
         );
 
-        // Send the remaining InfraredBGT rewards to the vault
+        // Send the post-fee rewards to the vault
         if (_amt > 0) {
             ERC20(ibgt).safeApprove(address(vault), _amt);
             vault.notifyRewardAmount(ibgt, _amt);
         }
 
+        // If IR token is set and mint rate is greater than zero, handle IR rewards.
         uint256 mintRate = $.irMintRate;
-
-        // If IR token is set and mint rate is greater than zero, handle IR rewards
         if (ir != address(0) && mintRate > 0) {
-            // Calculate the amount of IR tokens to mint
-            uint256 irAmt = bgtAmt * mintRate / RATE_UNIT;
+            // Calculate the amount of IR tokens to mint = BGT rewards * mint rate
+            uint256 irAmt = (bgtAmt * mintRate) / UNIT_DENOMINATOR;
             try IInfraredGovernanceToken(ir).mint(address(this), irAmt) {
                 {
                     // Check if IR is already a reward token in the vault
@@ -227,97 +384,48 @@ library RewardsLib {
                     vault.notifyRewardAmount(ir, irAmt);
                 }
             } catch {
-                emit RedNotMinted(irAmt);
+                emit IRNotMinted(irAmt);
             }
         }
     }
 
     /// @notice Harvest Bribes in tokens from RewardVault, sent to us via processIncentive
-    /// ref - https://github.com/berachain/contracts-monorepo/blob/c374de32077ede0147985cf2bf6ed89570244a7e/src/pol/rewards/RewardVault.sol#L421 
+    /// ref - https://github.com/berachain/contracts-monorepo/blob/c374de32077ede0147985cf2bf6ed89570244a7e/src/pol/rewards/RewardVault.sol#L421
     /// @param $            The storage pointer for all rewards accumulators
-    /// @param wbera        The address of the WBERA token
     /// @param collector    The address of the bribe collector, which will auction off fees for WBERA
     /// @param _tokens      The array of token addresses to harvest
     /// @param whitelisted  The array of booleans indicating if the token is whitelisted, and should be collected
     function harvestBribes(
         RewardsStorage storage $,
-        address wbera,
         address collector,
         address[] memory _tokens,
         bool[] memory whitelisted
-    ) external returns (address[] memory tokens, uint256[] memory _amounts) {
+    ) external returns (address[] memory tokens, uint256[] memory amounts) {
+        // Create new arrays for the tokens and amounts
         uint256 len = _tokens.length;
-        _amounts = new uint256[](len);
+        amounts = new uint256[](len);
         tokens = new address[](len);
 
+        // Iterate over the tokens, checking if they are whitelisted and collecting them to the bribe collector
+        // if they are. Since we accumulate protocol fees for each token, balance - protocol fees = amounts the contract has earned from bribes.
         for (uint256 i = 0; i < len; i++) {
             if (!whitelisted[i]) continue;
-
+            // Current token being processed
             address _token = _tokens[i];
-            if (_token == DataTypes.NATIVE_ASSET) {
-                IWBERA(wbera).deposit{value: address(this).balance}();
-                _token = wbera;
-            }
-            // amount to forward is balance of this address less existing protocol fees
+
+            // Calculate the amount of the token to forward to the bribe collector = balance of this address - existing protocol fees
             uint256 _amount = ERC20(_token).balanceOf(address(this))
                 - $.protocolFeeAmounts[_token];
 
-            _amounts[i] = _amount;
+            // Store the token and amount in the arrays
+            amounts[i] = _amount;
             tokens[i] = _token;
-            _handleTokenBribesForReceiver(collector, _token, _amount);
+
+            // Transfer the tokens to the bribe collector
+            if (_amount > 0) {
+                ERC20(_token).safeTransfer(collector, _amount);
+            }
         }
-    }
-
-    /// @notice Callback from the BribeCollector to payout the WBERA bribes were auctioned off for
-    ///     ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/core/BribeCollector.sol#L87
-    /// @param $        Storage pointer for reward accumulators
-    /// @param _amount          The amount of WBERA our bribes were auctioned off for
-    /// @param wbera            The address of the WBERA token
-    /// @param ibera            The address of the InfraredBERA token
-    /// @param ibgtVault        The address of the InfraredBGT vault
-    /// @param voter            The address of the voter (address(0) if IR token is not live)
-    /// @param rewardsDuration  The duration of the rewards
-    ///
-    /// @notice WBERA is split between the iBERA product (where it is redeemed for BERA) and the rest is sent to the IBGT vault.
-    /// @return amtInfraredBERA The amount of WBERA sent to the iBERA product
-    /// @return amtIbgtVault    The amount of WBERA sent to the IBGT vault
-    function collectBribesInWBERA(
-        RewardsStorage storage $,
-        uint256 _amount,
-        address wbera,
-        address ibera,
-        address ibgtVault,
-        address voter,
-        uint256 rewardsDuration
-    ) external returns (uint256 amtInfraredBERA, uint256 amtIbgtVault) {
-        // transfer WBERA from bribe collector
-        ERC20(wbera).safeTransferFrom(msg.sender, address(this), _amount);
-
-        // determine amount to send to iBERA and IBGT vault
-        amtInfraredBERA = _amount * $.incentiveSplitRatio / SPLIT_UNIT;
-        amtIbgtVault = _amount - amtInfraredBERA;
-
-        // Redeem WBERA for BERA and send to IBERA receivor for compounding
-        IWBERA(wbera).withdraw(amtInfraredBERA);
-        SafeTransferLib.safeTransferETH(IInfraredBERA(ibera).receivor(), amtInfraredBERA);
-
-        // Get Fee totals (voter + protocol)
-        uint256 feeTotal =
-            $.fees[uint256(ConfigTypes.FeeType.HarvestBribesFeeRate)];
-        uint256 feeProtocol =
-            $.fees[uint256(ConfigTypes.FeeType.HarvestBribesProtocolRate)];
-
-        // Charge fees and notify rewards
-        _handleTokenRewardsForVault(
-            $,
-            IInfraredVault(ibgtVault),
-            wbera,
-            voter,
-            amtIbgtVault,
-            feeTotal,
-            feeProtocol,
-            rewardsDuration
-        );
     }
 
     /// @notice Harvest boost rewards from the BGT staker (in HONEY -- likely)
@@ -364,201 +472,61 @@ library RewardsLib {
         );
     }
 
-    /// @notice Harvest rewards given to our operators for setting their cuttingboard weights
-    /// ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/staking/InfraredBERAFeeReceivor.sol#L83
-    /// @param $                The storage pointer for all rewards accumulators
+    /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
+    /*                       CALLBACK                             */
+    /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
+
+    /// @notice Callback from the BribeCollector to payout the WBERA bribes were auctioned off for
+    ///     ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/core/BribeCollector.sol#L87
+    /// @param $        Storage pointer for reward accumulators
+    /// @param _amount          The amount of WBERA our bribes were auctioned off for
+    /// @param wbera            The address of the WBERA token
     /// @param ibera            The address of the InfraredBERA token
+    /// @param ibgtVault        The address of the InfraredBGT vault
     /// @param voter            The address of the voter (address(0) if IR token is not live)
-    /// @param distributor      The address of the distributor
-    /// 
-    /// @return _amt            The amount of rewards harvested
-    function harvestOperatorRewards(
-        RewardsStorage storage $,
-        address ibera,
-        address voter,
-        address distributor
-    ) external returns (uint256 _amt) {
-        IInfraredBERA(ibera).compound();
-        uint256 iBERAShares = IInfraredBERA(ibera).collect();
-
-        if (iBERAShares == 0) return 0;
-
-        uint256 feeTotal =
-            $.fees[uint256(ConfigTypes.FeeType.HarvestOperatorFeeRate)];
-        uint256 feeProtocol =
-            $.fees[uint256(ConfigTypes.FeeType.HarvestOperatorProtocolRate)];
-
-        _amt = _handleRewardsForOperators(
-            $, ibera, voter, distributor, iBERAShares, feeTotal, feeProtocol
-        );
-    }
-
-    /// @notice Handles non-InfraredBGT token rewards to the vault.
-    /// @param $            RewardsStorage  The storage pointer for all rewards accumulators.
-    /// @param _vault       IInfraredVault   The address of the vault.
-    /// @param _token       address          The reward token.
-    /// @param voter        address          The address of the voter.
-    /// @param _amount      uint256          The amount of reward token to send to vault.
-    /// @param _feeTotal    uint256          The rate to charge for total fees on `_amount`.
-    /// @param _feeProtocol uint256          The rate to charge for protocol treasury on total fees.
-    /// @param rewardsDuration uint256        The duration of the rewards.
-    function _handleTokenRewardsForVault(
-        RewardsStorage storage $,
-        IInfraredVault _vault,
-        address _token,
-        address voter,
-        uint256 _amount,
-        uint256 _feeTotal,
-        uint256 _feeProtocol,
-        uint256 rewardsDuration
-    ) internal {
-        if (_amount == 0) return;
-
-        // add reward if not already added
-        (, uint256 _vaultRewardsDuration,,,,,) = _vault.rewardData(_token);
-        if (_vaultRewardsDuration == 0) {
-            _vault.addReward(_token, rewardsDuration);
-        }
-
-        uint256 _amtVoter;
-        uint256 _amtProtocol;
-
-        // calculate and distribute fees on rewards
-        (_amount, _amtVoter, _amtProtocol) =
-            _chargedFeesOnRewards(_amount, _feeTotal, _feeProtocol);
-        _distributeFeesOnRewards(
-            $.protocolFeeAmounts, voter, _token, _amtVoter, _amtProtocol
-        );
-
-        // increase allowance then notify vault of new rewards
-        if (_amount > 0) {
-            ERC20(_token).safeApprove(address(_vault), _amount);
-            _vault.notifyRewardAmount(_token, _amount);
-        }
-    }
-
-    /// @param _amount   The amount of reward token to send to recipient.
-    /// @param _token    The address of the token to forward to recipient.
-    /// @param _amount   The amount of reward token to send to recipient.
-    function _handleTokenBribesForReceiver(
-        address _recipient,
-        address _token,
-        uint256 _amount
-    ) internal {
-        if (_amount == 0) return;
-
-        // transfer rewards to recipient
-        ERC20(_token).safeTransfer(_recipient, _amount);
-    }
-
-    /// @notice Handles BGT base rewards supplied to validator distributor.
-    /// @param $            The storage pointer for all rewards accumulators.
-    /// @param ibera        The address of the InfraredBERA token.
-    /// @param voter        The address of the voter (address(0) if IR token is not live).
-    /// @param distributor  The address of the distributor.
-    /// @param _iBERAShares The iBera reward amount.
-    /// @param _feeTotal    The rate to charge for total fees on `_iBERAShares`.
-    /// @param _feeProtocol The rate to charge for protocol treasury on total fees.
+    /// @param rewardsDuration  The duration of the rewards
     ///
-    /// @return _amt        The amount of rewards harvested.
-    function _handleRewardsForOperators(
+    /// @notice WBERA is split between the iBERA product (where it is redeemed for BERA) and the rest is sent to the IBGT vault.
+    /// @return amtInfraredBERA The amount of WBERA sent to the iBERA product
+    /// @return amtIbgtVault    The amount of WBERA sent to the IBGT vault
+    function collectBribesInWBERA(
         RewardsStorage storage $,
+        uint256 _amount,
+        address wbera,
         address ibera,
+        address ibgtVault,
         address voter,
-        address distributor,
-        uint256 _iBERAShares,
-        uint256 _feeTotal,
-        uint256 _feeProtocol
-    ) internal returns (uint256 _amt) {
-        // pass if no iBera rewards
-        if (_iBERAShares == 0) return 0;
+        uint256 rewardsDuration
+    ) external returns (uint256 amtInfraredBERA, uint256 amtIbgtVault) {
+        // transfer WBERA from bribe collector
+        ERC20(wbera).safeTransferFrom(msg.sender, address(this), _amount);
 
-        uint256 _amtVoter;
-        uint256 _amtProtocol;
+        // determine amount to send to iBERA and IBGT vault
+        amtInfraredBERA = (_amount * $.bribeSplitRatio) / UNIT_DENOMINATOR;
+        amtIbgtVault = _amount - amtInfraredBERA;
 
-        // calculate and distribute fees on rewards
-        (_amt, _amtVoter, _amtProtocol) =
-            _chargedFeesOnRewards(_iBERAShares, _feeTotal, _feeProtocol);
-        _distributeFeesOnRewards(
-            $.protocolFeeAmounts, voter, ibera, _amtVoter, _amtProtocol
+        // Redeem WBERA for BERA and send to IBERA receivor for compounding
+        IWBERA(wbera).withdraw(amtInfraredBERA);
+        SafeTransferLib.safeTransferETH(
+            IInfraredBERA(ibera).receivor(), amtInfraredBERA
         );
 
-        // send token rewards less fee to vault
-        if (_amt > 0) {
-            ERC20(ibera).safeApprove(distributor, _amt);
-            IInfraredDistributor(distributor).notifyRewardAmount(_amt);
-        }
-    }
+        // Get Fee totals (voter + protocol)
+        uint256 feeTotal =
+            $.fees[uint256(ConfigTypes.FeeType.HarvestBribesFeeRate)];
+        uint256 feeProtocol =
+            $.fees[uint256(ConfigTypes.FeeType.HarvestBribesProtocolRate)];
 
-    /// @notice Delegates Berachain Governance Voting Power to a delegatee
-    /// @param _delegatee The address to delegate voting power to
-    /// @param bgt        The address of the BGT token
-    function delegateBGT(
-        address _delegatee,
-        address bgt
-    ) external {
-        IBerachainBGT(bgt).delegate(_delegatee);
-    }
-
-    /// @notice Update the split ratio for iBERA and iBGT rewards
-    /// @param $           The storage pointer for all rewards accumulators
-    /// @param _split The ratio for splitting received bribes to be iBERA and iBGT, weighted towards iBERA
-    function updateInfraredBERAIncentiveSplit(
-        RewardsStorage storage $,
-        uint256 _split
-    ) external {
-        if (_split > SPLIT_UNIT) revert Errors.InvalidWeight();
-        $.incentiveSplitRatio = _split;
-
-    }
-
-    /// @notice Update the fee rate for a given fee type
-    /// @param $           The storage pointer for all rewards accumulators
-    /// @param _t          The fee type to update
-    /// @param _fee        The new fee rate
-    function updateFee(
-        RewardsStorage storage $,
-        ConfigTypes.FeeType _t,
-        uint256 _fee
-    ) external {
-        if (_fee > FEE_UNIT) revert Errors.InvalidFee();
-        $.fees[uint256(_t)] = _fee;
-    }
-
-    /// @notice Claim protocol fees for a given token
-    /// @param $           The storage pointer for all rewards accumulators
-    /// @param _to         The address to send the protocol fees to
-    /// @param _token      The token to claim protocol fees for
-    function claimProtocolFees(
-        RewardsStorage storage $,
-        address _to,
-        address _token
-    ) external returns (uint256 _amountClaimed) {
-        _amountClaimed = $.protocolFeeAmounts[_token];
-        delete $.protocolFeeAmounts[_token];
-
-        ERC20(_token).safeTransfer(_to, _amountClaimed);
-    }
-
-    /// @notice Update the IR minting rate
-    /// @param $           The storage pointer for all rewards accumulators
-    /// @param _irMintRate The new IR minting rate out of RATE_UNIT
-    function updateIRMintRate(RewardsStorage storage $, uint256 _irMintRate)
-        external
-    {
-        // Update the IR minting rate
-        // This rate determines how many IR tokens are minted per IBGT
-
-        // @note The rate can be greater than RATE_UNIT (1e6)
-        // This allows for minting multiple IR tokens per IBGT if desired
-
-        // For example:
-        // - If _irMintRate = 500,000 (0.5 * RATE_UNIT), 0.5 IR is minted per IBGT
-        // - If _irMintRate = 2,000,000 (2 * RATE_UNIT), 2 IR are minted per IBGT
-
-        // The actual calculation is done in harvestVault
-        // uint256 _redAmt = Math.mulDiv(_bgtAmt, $.redMintRate, RATE_UNIT);
-
-        $.irMintRate = _irMintRate;
+        // Charge fees and notify rewards
+        _handleTokenRewardsForVault(
+            $,
+            IInfraredVault(ibgtVault),
+            wbera,
+            voter,
+            amtIbgtVault,
+            feeTotal,
+            feeProtocol,
+            rewardsDuration
+        );
     }
 }

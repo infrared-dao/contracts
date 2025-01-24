@@ -94,8 +94,8 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
         delete shareholderFees;
         (, sharesMinted) =
             IInfraredBERA(InfraredBERA).mint{value: shf}(address(infrared));
-        
-            emit Collect(address(infrared), shf, sharesMinted);
+
+        emit Collect(address(infrared), shf, sharesMinted);
     }
 
     receive() external payable {}
