@@ -226,7 +226,7 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
         if (r.receiver == depositor) {
             // queue up rebalance to depositor
             rebalancing -= amount;
-            IInfraredBERADepositor(r.receiver).queue{value: amount}(amount);
+            IInfraredBERADepositor(r.receiver).queue{value: amount}();
         } else {
             // queue up receiver claim to claimor
             IInfraredBERAClaimor(claimor).queue{value: amount}(r.receiver);
@@ -264,7 +264,7 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
         // re-stake amount back to ibera depositor
         IInfraredBERADepositor(IInfraredBERA(InfraredBERA).depositor()).queue{
             value: amount
-        }(amount);
+        }();
 
         emit Sweep(IInfraredBERA(InfraredBERA).depositor(), amount);
     }

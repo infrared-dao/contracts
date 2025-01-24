@@ -136,7 +136,7 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         // re-stake amount back to ibera depositor
         IInfraredBERADepositor(IInfraredBERA(InfraredBERA).depositor()).queue{
             value: amount
-        }(amount);
+        }();
 
         emit Sweep(InfraredBERA, amount);
     }

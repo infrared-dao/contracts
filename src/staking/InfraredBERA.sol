@@ -95,7 +95,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         // update tracked deposits with validators
         deposits += amount;
         // escrow funds to depositor contract to eventually forward to precompile
-        IInfraredBERADepositor(depositor).queue{value: amount}(amount);
+        IInfraredBERADepositor(depositor).queue{value: amount}();
     }
 
     function _withdraw(address receiver, uint256 amount, uint256 fee)

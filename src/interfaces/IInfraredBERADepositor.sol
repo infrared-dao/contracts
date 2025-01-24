@@ -12,8 +12,7 @@ interface IInfraredBERADepositor {
     function reserves() external view returns (uint256);
 
     /// @notice Queues a deposit from InfraredBERA for chain deposit precompile escrowing msg.value in contract
-    /// @param amount The amount of funds to deposit
-    function queue(uint256 amount) external payable;
+    function queue() external payable;
 
     /// @notice Executes a deposit to deposit precompile using escrowed funds
     /// @param pubkey The pubkey to deposit validator funds to

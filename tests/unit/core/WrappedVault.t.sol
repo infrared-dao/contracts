@@ -18,7 +18,7 @@ contract WrappedVaultTest is Helper {
     address public user = address(0x456);
     address public owner = address(0x789);
 
-    function setUp() public override {
+    function setUp() override public {
         super.setUp();
 
         // Deploy the staking token (ERC20 mock)
