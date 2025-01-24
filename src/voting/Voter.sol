@@ -69,6 +69,9 @@ contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
     /// @inheritdoc IVoter
     mapping(address => bool) public isAlive;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     /**
      * @notice Ensures operations only occur in new epochs and outside distribution window
      * @dev Validates both epoch transition and proper timing within epoch

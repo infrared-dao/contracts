@@ -53,6 +53,9 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
     /// @inheritdoc IInfraredBERAWithdrawor
     uint256 public nonceProcess;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     function initializeV2(address _claimor, address _withdraw_precompile)
         external
         onlyGovernor
