@@ -112,8 +112,6 @@ contract WrappedVault is ERC4626 {
         // Loop through reward tokens and transfer them to the reward distributor
         for (uint256 i; i < len; ++i) {
             ERC20 _token = ERC20(_tokens[i]);
-            // Skip if the reward token is the staking token
-            if (_token == asset) continue;
             uint256 bal = _token.balanceOf(address(this));
             if (bal == 0) continue;
             (bool success, bytes memory data) = address(_token).call(
