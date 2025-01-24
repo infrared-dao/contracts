@@ -21,6 +21,8 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
     /// @inheritdoc IInfraredDistributor
     uint256 public amountsCumulative;
 
+    uint256 private residualAmount;
+
     mapping(bytes32 pubkeyHash => Snapshot) internal _snapshots;
 
     mapping(bytes32 pubkeyHash => address) internal _validators;
@@ -109,7 +111,20 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
         if (num == 0) revert Errors.InvalidValidator();
 
         unchecked {
-            amountsCumulative += amount / num;
+            uint256 sharePerValidator = amount / num;
+            uint256 residual = amount % num; // Calculate residual amount
+
+            // Accumulate the residual for future use
+            residualAmount += residual;
+
+            // If residual exceeds `num`, distribute it to validators
+            if (residualAmount >= num) {
+                uint256 extraShare = residualAmount / num;
+                sharePerValidator += extraShare;
+                residualAmount = residualAmount % num; // Update residual with leftover
+            }
+
+            amountsCumulative += sharePerValidator;
         }
         token.safeTransferFrom(msg.sender, address(this), amount);
 
