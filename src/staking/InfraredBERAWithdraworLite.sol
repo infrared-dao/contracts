@@ -143,38 +143,5 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         emit Sweep(InfraredBERA, amount);
     }
 
-    /// @notice Triggered when a validator reaches max stake and is refunded
-    ///     the excess stake
-    function sweepDust(bytes calldata pubkey, uint256 amount)
-        external
-        onlyGovernor
-    {
-        // only callable when withdrawals are not enabled
-        if (IInfraredBERA(InfraredBERA).withdrawalsEnabled()) {
-            revert Errors.Unauthorized(msg.sender);
-        }
-
-        // do nothing if InfraredBERA deposit would revert
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-
-        if (amount < min) return;
-        // revert if insufficient balance
-        if (amount > address(this).balance) revert Errors.InvalidAmount();
-
-        uint256 currentStakeWeight = IInfraredBERA(InfraredBERA).stakes(pubkey);
-
-        if (currentStakeWeight + amount > InfraredBERAConstants.MAXIMUM_STAKE) {
-            revert Errors.InvalidAmount();
-        }
-
-        // re-stake amount back to ibera depositor
-        IInfraredBERADepositor(IInfraredBERA(InfraredBERA).depositor()).queue{
-            value: amount
-        }(amount - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE);
-
-        emit Sweep(InfraredBERA, amount);
-    }
-
     receive() external payable {}
 }
