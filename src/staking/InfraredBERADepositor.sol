@@ -11,34 +11,18 @@ import {InfraredBERAConstants} from "./InfraredBERAConstants.sol";
 
 /// @title InfraredBERADepositor
 /// @notice Depositor to deposit BERA to CL for Infrared liquid staking token
-contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
+contract InfraredBERADepositor is Upgradeable {
+    /// @notice https://eth2book.info/capella/part2/deposits-withdrawals/withdrawal-processing/
     uint8 public constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = 0x01;
+    /// @notice The Deposit Contract Address for Berachain
     address public DEPOSIT_CONTRACT;
-
-    /// @inheritdoc IInfraredBERADepositor
+    /// @notice the main InfraredBERA contract address
     address public InfraredBERA;
+    /// @notice the queued amount of BERA to be deposited
+    uint256 public reserves;
 
-    struct Slip {
-        /// block.timestamp at which deposit slip issued
-        uint96 timestamp;
-        /// fee escrow for beacon deposit request
-        uint256 fee;
-        /// amount of BERA to be deposited to deposit contract at execute
-        uint256 amount;
-    }
-
-    /// @inheritdoc IInfraredBERADepositor
-    mapping(uint256 => Slip) public slips;
-
-    /// @inheritdoc IInfraredBERADepositor
-    uint256 public fees;
-
-    /// @inheritdoc IInfraredBERADepositor
-    uint256 public nonceSlip;
-    /// @inheritdoc IInfraredBERADepositor
-    uint256 public nonceSubmit;
-
-    uint256 public queuedAmount;
+    event Queue(uint256 amount);
+    event Execute(bytes pubkey, uint256 amount);
 
     /// @notice Initialize the contract (replaces the constructor)
     /// @param _gov Address for admin / gov to upgrade
@@ -52,54 +36,42 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
         address _depositContract
     ) public initializer {
         if (
-            _gov == address(0) || _keeper == address(0) || ibera == address(0)
-                || _depositContract == address(0)
+            _gov == address(0) ||
+            _keeper == address(0) ||
+            ibera == address(0) ||
+            _depositContract == address(0)
         ) revert Errors.ZeroAddress();
         __Upgradeable_init();
-        InfraredBERA = ibera;
-        nonceSlip = 1;
-        nonceSubmit = 1;
         _grantRole(DEFAULT_ADMIN_ROLE, _gov);
         _grantRole(GOVERNANCE_ROLE, _gov);
         _grantRole(KEEPER_ROLE, _keeper);
+
+        InfraredBERA = ibera;
         DEPOSIT_CONTRACT = _depositContract;
     }
 
-    /// @inheritdoc IInfraredBERADepositor
-    function reserves() public view returns (uint256) {
-        return queuedAmount;
-    }
-
-    /// @inheritdoc IInfraredBERADepositor
-    function queue(uint256 amount) external payable returns (uint256 nonce) {
-        // @dev can be called by withdrawor when rebalancing and sweeping
+    /// @notice Queues a deposit by sending BERA to this contract and storing the amount
+    /// in the pending deposits acculimator
+    function queue() external payable {
+        /// @dev can only be called by InfraredBERA for adding to the reserves and by withdrawor for rebalancing
+        /// when validators get kicked out of the set, TODO: link the set kickout code.
         if (
-            msg.sender != InfraredBERA
-                && msg.sender != IInfraredBERA(InfraredBERA).withdrawor()
+            msg.sender != InfraredBERA &&
+            msg.sender != IInfraredBERA(InfraredBERA).withdrawor()
         ) {
             revert Errors.Unauthorized(msg.sender);
         }
 
-        if (amount == 0 || msg.value < amount) revert Errors.InvalidAmount();
-        uint256 fee = msg.value - amount;
-        if (fee < InfraredBERAConstants.MINIMUM_DEPOSIT_FEE) {
-            revert Errors.InvalidFee();
-        }
+        // @dev accumulate the amount of BERA to be deposited with `execute`
+        reserves += msg.value;
 
-        fees += fee;
-        queuedAmount += amount;
-        nonce = nonceSlip++;
-
-        slips[nonce] =
-            Slip({timestamp: uint96(block.timestamp), fee: fee, amount: amount});
-        emit Queue(nonce, amount);
+        emit Queue(msg.value);
     }
 
-    /// @inheritdoc IInfraredBERADepositor
-    function execute(bytes calldata pubkey, uint256 amount)
-        external
-        onlyKeeper
-    {
+    function execute(
+        bytes calldata pubkey,
+        uint256 amount
+    ) external onlyKeeper {
         // check if pubkey is a valid validator being tracked by InfraredBERA
         if (!IInfraredBERA(InfraredBERA).validator(pubkey)) {
             revert Errors.InvalidValidator();
@@ -112,94 +84,61 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
 
         // The validator balance + amount must not surpase MaxEffectiveBalance of 10 million BERA.
         if (
-            IInfraredBERA(InfraredBERA).stakes(pubkey) + amount
-                > InfraredBERAConstants.MAX_EFFECTIVE_BALANCE
+            IInfraredBERA(InfraredBERA).stakes(pubkey) + amount >
+            InfraredBERAConstants.MAX_EFFECTIVE_BALANCE
         ) {
             revert Errors.ExceedsMaxEffectiveBalance();
         }
 
-        // all operator addresses must be the `Infrared.sol` contract address
-        address operator = IInfraredBERA(InfraredBERA).infrared();
-        address currentOperator =
-            IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(pubkey);
+        // @dev determin what to set the operator, if the operator is not set we know this is the first deposit and we should set it to infrared.
+        // if not we know this is the second or subsequent deposit and we should set the operator to address(0).
+        address operator = IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(
+            pubkey
+        ) == address(0)
+            ? IInfraredBERA(InfraredBERA).infrared()
+            : address(0);
 
-        // if the operator is not set, this is the first deposit for the validator.
-        // set the amount to the initial deposit amount to avoid any issues and limit risk until validator is fully operational.
-        if (currentOperator == address(0)) {
-            if (amount != InfraredBERAConstants.INITIAL_DEPOSIT) {
-                revert Errors.InvalidAmount();
-            }
-        } else {
-            // do not stake into a validator that does not have infrared as operator.
-            // if accidental addValidator() call is made, it will be caught here.
-            if (currentOperator != operator) {
-                revert Errors.UnauthorizedOperator();
-            }
+        // @dev this is the first deposit, we need to set the amount to the initial deposit amount.
+        if (operator != address(0)) {
+            /// @dev if this is the first deposit, overrite the amount to the initial deposit amount.
+            amount = InfraredBERAConstants.INITIAL_DEPOSIT;
         }
 
-        // sanity check the signature.
-        bytes memory signature = IInfraredBERA(InfraredBERA).signatures(pubkey);
-        if (signature.length == 0) revert Errors.InvalidSignature();
-
-        // cache for event after the bundling while loop
-        address withdrawor = IInfraredBERA(InfraredBERA).withdrawor();
-        uint256 _nonce = nonceSubmit; // start
-        uint256 nonce; // end (inclusive)
-        uint256 fee;
-
-        // bundle nonces to meet up to amount
-        // @dev care should be taken with choice of amount parameter not to reach gas limit
-        uint256 remaining = amount;
-        while (remaining > 0) {
-            nonce = nonceSubmit;
-            Slip memory s = slips[nonce];
-            if (s.amount == 0) revert Errors.InvalidAmount();
-
-            // first time loop ever hits slip dedicate fee to this call
-            // @dev for large slip requiring multiple separate calls to execute, keeper must front fee in subsequent calls
-            // @dev but should make up for fronting via protocol fees on size
-            if (s.fee > 0) {
-                fee += s.fee;
-                s.fee = 0;
-            }
-
-            // either use all of slip amount and increment nonce if remaining > slip amount or use remaining
-            // not fully filling slip in this call
-            uint256 delta = remaining > s.amount ? s.amount : remaining;
-            s.amount -= delta;
-            if (s.amount == 0) nonceSubmit++;
-            slips[nonce] = s;
-
-            // always >= 0 due to delta ternary
-            remaining -= delta;
+        // @dev check that the minimum deposit amount is met
+        if (amount < InfraredBERAConstants.MINIMUM_DEPOSIT) {
+            revert Errors.InvalidAmount();
         }
 
-        // remove accumulated escrowed fee from each request in bundled deposits and refund to keeper
-        fees -= fee;
-        queuedAmount -= amount;
-
-        // @dev ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#eth1_address_withdrawal_prefix
-        // @dev only important on the first deposit, signatures are ignored on subsequent deposits:
+        // @notice load the signature for the pubkey. This is only used for the first deposit but can be re-used safley since this is checked only on the first deposit.
         // https://github.com/berachain/beacon-kit/blob/395085d18667e48395503a20cd1b367309fe3d11/state-transition/core/state_processor_staking.go#L101
+        bytes memory signature = IInfraredBERA(InfraredBERA).signatures(pubkey);
+        if (signature.length == 0) {
+            revert Errors.InvalidSignature();
+        }
+
+        // @notice ethereum/consensus-specs/blob/dev/specs/phase0/validator.md#eth1_address_withdrawal_prefix
+        // @dev similar to the signiture above, this is only used for the first deposit but can be re-used safley since this is checked only on the first deposit.
         bytes memory credentials = abi.encodePacked(
             ETH1_ADDRESS_WITHDRAWAL_PREFIX,
             uint88(0), // 11 zero bytes
-            withdrawor
+            IInfraredBERA(InfraredBERA).withdrawor()
         );
-        // if operator already exists on BeaconDeposit, it must be set to zero for new deposits
-        if (currentOperator == operator) {
-            operator = address(0);
-        }
+
+        /// @dev reduce the reserves by the amount deposited.
+        reserves -= amount;
+
+        /// @dev register the increase in stake to the validator.
+        IInfraredBERA(InfraredBERA).register(pubkey, int256(amount));
+
+        // @dev deposit the BERA to the deposit contract.
+        // @dev the amount being divided by 1 gwei is checked inside.
         IBeaconDeposit(DEPOSIT_CONTRACT).deposit{value: amount}(
-            pubkey, credentials, signature, operator
+            pubkey,
+            credentials,
+            signature,
+            operator
         );
 
-        // register update to stake
-        IInfraredBERA(InfraredBERA).register(pubkey, int256(amount)); // safe as max fits in uint96
-
-        // sweep fee back to keeper to cover gas
-        if (fee > 0) SafeTransferLib.safeTransferETH(msg.sender, fee);
-
-        emit Execute(pubkey, _nonce, nonce, amount);
+        emit Execute(pubkey, amount);
     }
 }
