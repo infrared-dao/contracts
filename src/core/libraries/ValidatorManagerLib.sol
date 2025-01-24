@@ -6,8 +6,7 @@ import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
 import {Errors} from "src/utils/Errors.sol";
 import {ValidatorTypes} from "./ValidatorTypes.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
-import {EnumerableSet} from
-    "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
+import {EnumerableSet} from "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 
 /// @title ValidatorManagerLib
 /// @notice Library for managing validator storage
@@ -33,21 +32,18 @@ library ValidatorManagerLib {
     /// @notice Checks if a validator is an Infrared validator, ie if the validator ID is in the set of validator IDs
     /// @param $ Storage pinter for validator storage
     /// @param pubkey The CL pubkey of validator
-    function isValidator(ValidatorStorage storage $, bytes memory pubkey)
-        external
-        view
-        returns (bool)
-    {
+    function isValidator(
+        ValidatorStorage storage $,
+        bytes memory pubkey
+    ) external view returns (bool) {
         return $.validatorIds.contains(keccak256(pubkey));
     }
 
     /// @notice Gets the validator ID for associated CL pubkey
     /// @param pubkey The CL pubkey of validator
-    function _getValidatorId(bytes memory pubkey)
-        internal
-        pure
-        returns (bytes32)
-    {
+    function _getValidatorId(
+        bytes memory pubkey
+    ) internal pure returns (bytes32) {
         return keccak256(pubkey);
     }
 
@@ -146,18 +142,36 @@ library ValidatorManagerLib {
     function queueBoosts(
         ValidatorStorage storage $,
         address bgt,
+        address ibgt,
         bytes[] memory _pubkeys,
         uint128[] memory _amts
     ) external {
         if (_pubkeys.length != _amts.length) {
             revert Errors.InvalidArrayLength();
         }
+        // check if sum of boosts is less than or equal to totalSpupply of iBGT
+        uint256 _totalBoosts = 0;
 
         for (uint256 i = 0; i < _pubkeys.length; i++) {
             if (!$.validatorIds.contains(keccak256(_pubkeys[i]))) {
                 revert Errors.InvalidValidator();
             }
             if (_amts[i] == 0) revert Errors.ZeroAmount();
+            _totalBoosts += _amts[i];
+        }
+
+        // make that new boost plus the existing boosts and queued boosts
+        // are less than or equal to the total supply of iBGT
+        if (
+            _totalBoosts >
+            IInfraredBGT(ibgt).totalSupply() -
+                (IBerachainBGT(bgt).boosts(address(this)) +
+                    IBerachainBGT(bgt).queuedBoost(address(this)))
+        ) {
+            revert Errors.BoostExceedsSupply();
+        }
+        // check if all pubkeys are valid
+        for (uint256 i = 0; i < _pubkeys.length; i++) {
             IBerachainBGT(bgt).queueBoost(_pubkeys[i], _amts[i]);
         }
     }
@@ -273,11 +287,10 @@ library ValidatorManagerLib {
     /// @param $ Storage pointer to the validator storage
     /// @param distributor address of the distributor contract
     /// @return validators array of Validator structs containing the CL public key and address of the validators fee collecting address
-    function infraredValidators(ValidatorStorage storage $, address distributor)
-        external
-        view
-        returns (ValidatorTypes.Validator[] memory validators)
-    {
+    function infraredValidators(
+        ValidatorStorage storage $,
+        address distributor
+    ) external view returns (ValidatorTypes.Validator[] memory validators) {
         bytes32[] memory ids = $.validatorIds.values();
         uint256 len = ids.length;
         validators = new ValidatorTypes.Validator[](len);
@@ -294,11 +307,9 @@ library ValidatorManagerLib {
     /// @notice Returns the number of validators in the validator storage
     /// @param $ Storage pointer to the validator storage
     /// @return number of validators
-    function numInfraredValidators(ValidatorStorage storage $)
-        external
-        view
-        returns (uint256)
-    {
+    function numInfraredValidators(
+        ValidatorStorage storage $
+    ) external view returns (uint256) {
         return $.validatorIds.length();
     }
 
@@ -306,11 +317,10 @@ library ValidatorManagerLib {
     /// @param distributor address of the distributor contract
     /// @param pubkey CL pubkey of the validator
     /// @return address of the validator fee collecting address
-    function _getValidatorAddress(address distributor, bytes memory pubkey)
-        internal
-        view
-        returns (address)
-    {
+    function _getValidatorAddress(
+        address distributor,
+        bytes memory pubkey
+    ) internal view returns (address) {
         return IInfraredDistributor(distributor).getValidator(pubkey);
     }
 }
