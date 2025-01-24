@@ -64,4 +64,5 @@ library Errors {
     error UnauthorizedOperator();
     error ValidatorForceExited();
     error CanNotCompoundAccumuldatedBERA();
+    error ExceedsMaxEffectiveBalance();
 }

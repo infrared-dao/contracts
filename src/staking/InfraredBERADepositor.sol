@@ -40,6 +40,9 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
 
     uint256 public queuedAmount;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     /// @notice Initialize the contract (replaces the constructor)
     /// @param _gov Address for admin / gov to upgrade
     /// @param _keeper Address for keeper
@@ -108,6 +111,14 @@ contract InfraredBERADepositor is Upgradeable, IInfraredBERADepositor {
         // The amount must be a multiple of 1 gwei as per the deposit contract
         if (amount == 0 || (amount % 1 gwei) != 0) {
             revert Errors.InvalidAmount();
+        }
+
+        // The validator balance + amount must not surpase MaxEffectiveBalance of 10 million BERA.
+        if (
+            IInfraredBERA(InfraredBERA).stakes(pubkey) + amount
+                > InfraredBERAConstants.MAX_EFFECTIVE_BALANCE
+        ) {
+            revert Errors.ExceedsMaxEffectiveBalance();
         }
 
         // all operator addresses must be the `Infrared.sol` contract address

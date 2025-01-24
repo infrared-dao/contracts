@@ -48,6 +48,9 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
     mapping(bytes32 pubkeyHash => bytes) internal _signatures;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     /// @inheritdoc IInfraredBERA
     function initialize(
         address _gov,
