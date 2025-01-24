@@ -3,15 +3,15 @@ pragma solidity 0.8.26;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-
 import {InfraredUpgradeable} from "src/core/InfraredUpgradeable.sol";
-
 import {IInfrared} from "src/interfaces/IInfrared.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {Errors} from "src/utils/Errors.sol";
 
 /// @title InfraredDistributor
-/// @notice A contract for distributing rewards in a single ERC20 token (iBERA) to validators
+/// @dev Distributes rewards to validators.
+/// @dev Validator pubkeys are mapped to an EVM address and the pool of rewards from which they claim is porportional to the number of validators.
+/// - for example, if there are 10 validators and 100 tokens are notified, each validator can claim 10 tokens.
 contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
     using SafeTransferLib for ERC20;
 
