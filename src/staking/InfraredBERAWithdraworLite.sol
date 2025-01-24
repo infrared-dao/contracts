@@ -2,7 +2,6 @@
 pragma solidity 0.8.26;
 
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-
 import {Errors, Upgradeable} from "src/utils/Upgradeable.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {IInfraredBERADepositor} from "src/interfaces/IInfraredBERADepositor.sol";
@@ -143,28 +142,31 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         emit Sweep(InfraredBERA, amount);
     }
 
-    /// @notice Triggered when a validator reaches max stake and is refunded
-    ///     the excess stake
+    /// @notice Handles excess stake that was refunded from a validator due to non-IBERA deposits exceeding MAX_EFFECTIVE_BALANCE
+    /// @dev RESTRICTED USAGE: This function should ONLY be called when:
+    /// - A non-IBERA entity deposits to our validator, pushing total stake above MAX_EFFECTIVE_BALANCE
+    /// - The excess stake is refunded by the CL to this contract
+    /// @dev The funds will enter the IBERA system as yield via the FeeReceivor
+    /// @dev This should NEVER be used for:
+    /// - Validators exited due to falling out of the validator set
+    /// @param amount The amount of excess stake to sweep
+    /// @custom:access Only callable by governance
     function sweepDust(uint256 amount) external onlyGovernor {
         // only callable when withdrawals are not enabled
         if (IInfraredBERA(InfraredBERA).withdrawalsEnabled()) {
             revert Errors.Unauthorized(msg.sender);
         }
 
-        // do nothing if InfraredBERA deposit would revert
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
+        // revert if amount exceeds balance
+        if (amount > address(this).balance) {
+            revert Errors.InvalidAmount();
+        }
 
-        if (amount < min) return;
-        // revert if insufficient balance
-        if (amount > address(this).balance) revert Errors.InvalidAmount();
+        address receivor = IInfraredBERA(InfraredBERA).receivor();
+        // transfer amount to ibera receivor
+        SafeTransferLib.safeTransferETH(receivor, amount);
 
-        // re-stake amount back to ibera depositor
-        IInfraredBERADepositor(IInfraredBERA(InfraredBERA).depositor()).queue{
-            value: amount
-        }(amount - InfraredBERAConstants.MINIMUM_DEPOSIT_FEE);
-
-        emit Sweep(InfraredBERA, amount);
+        emit Sweep(receivor, amount);
     }
 
     receive() external payable {}
