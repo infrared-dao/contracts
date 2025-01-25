@@ -5,7 +5,6 @@ import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IBerachainBGTStaker} from "src/interfaces/IBerachainBGTStaker.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
@@ -455,11 +454,8 @@ library RewardsLib {
             IBerachainBGTStaker(IBerachainBGT(bgt).staker());
         _token = address(_bgtStaker.rewardToken());
 
-        // claim boost reward
-        // @dev not trusting return from bgt staker in case transfer fees
-        uint256 balanceBefore = ERC20(_token).balanceOf(address(this));
-        _bgtStaker.getReward();
-        _amount = ERC20(_token).balanceOf(address(this)) - balanceBefore;
+        // @dev claim the boost rewards and use return value to calculate the amount
+        _amount = _bgtStaker.getReward();
 
         // get total and protocol fee rates
         uint256 feeTotal =
