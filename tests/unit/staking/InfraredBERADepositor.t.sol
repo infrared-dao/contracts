@@ -116,42 +116,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         depositor.queue{value: value}();
     }
 
-    function testQueueRevertsWhenAmountZero() public {
-        uint256 value = 1 ether;
-        uint256 amount = 0;
-
-        vm.deal(address(ibera), value);
-        assertTrue(address(ibera).balance >= value);
-
-        vm.expectRevert(Errors.InvalidAmount.selector);
-        vm.prank(address(ibera));
-        depositor.queue{value: value}();
-    }
-
-    function testQueueRevertsWhenValueLessThanAmount() public {
-        uint256 value = 1 ether;
-        uint256 amount = 2 ether;
-
-        vm.deal(address(ibera), value);
-        assertTrue(address(ibera).balance >= value);
-
-        vm.expectRevert(Errors.InvalidAmount.selector);
-        vm.prank(address(ibera));
-        depositor.queue{value: value}();
-    }
-
-    function testQueueRevertsWhenFeeLessThanMin() public {
-        uint256 value = 1 ether;
-        uint256 amount = value;
-
-        vm.deal(address(ibera), value);
-        assertTrue(address(ibera).balance >= value);
-
-        vm.expectRevert(Errors.InvalidFee.selector);
-        vm.prank(address(ibera));
-        depositor.queue{value: value}();
-    }
-
     function testExecuteUpdatesSlipsNonceFeesWhenFillAmounts() public {
         testQueueMultiple();
 

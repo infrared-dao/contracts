@@ -75,8 +75,8 @@ contract InfraredBERADepositor is Upgradeable {
             revert Errors.InvalidValidator();
         }
 
-        // The amount must be a multiple of 1 gwei as per the deposit contract
-        if (amount == 0 || (amount % 1 gwei) != 0) {
+        // The amount must be a multiple of 1 gwei as per the deposit contract, cannot be more eth than we have, and must be at least the minimum deposit amount.
+        if (amount == 0 || (amount % 1 gwei) != 0 || amount > reserves || amount < InfraredBERAConstants.MINIMUM_DEPOSIT) {
             revert Errors.InvalidAmount();
         }
 
@@ -97,11 +97,6 @@ contract InfraredBERADepositor is Upgradeable {
         if (operator != address(0)) {
             /// @dev if this is the first deposit, overrite the amount to the initial deposit amount.
             amount = InfraredBERAConstants.INITIAL_DEPOSIT;
-        }
-
-        // @dev check that the minimum deposit amount is met
-        if (amount < InfraredBERAConstants.MINIMUM_DEPOSIT) {
-            revert Errors.InvalidAmount();
         }
 
         // @notice load the signature for the pubkey. This is only used for the first deposit but can be re-used safley since this is checked only on the first deposit.

@@ -213,13 +213,13 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
     }
 
     function testSweepPassesBelowMin() public {
-        uint256 value = InfraredBERAConstants.MINIMUM_DEPOSIT;
+        uint256 value = InfraredBERAConstants.MINIMUM_DEPOSIT - 1;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value);
 
         (uint256 amount, uint256 fees) = receivor.distribution();
-        assertTrue(amount < InfraredBERAConstants.MINIMUM_DEPOSIT);
+        assertTrue(amount == InfraredBERAConstants.MINIMUM_DEPOSIT - 1);
         assertEq(fees, 0);
 
         uint256 balanceDepositor = address(depositor).balance;

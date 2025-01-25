@@ -11,7 +11,7 @@ import {InfraredBERABaseTest} from "./InfraredBERABase.t.sol";
 contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
     function setUp() public virtual override {
         super.setUp();
-        uint256 value = 20000 ether;
+        uint256 value = 20000 ether + 1 ether;
         ibera.mint{value: value}(alice);
 
         uint256 amount = value - InfraredBERAConstants.INITIAL_DEPOSIT;
@@ -28,7 +28,7 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
         super.testSetUp();
         assertEq(
             ibera.deposits(),
-            20000 ether + InfraredBERAConstants.MINIMUM_DEPOSIT
+            20000 ether + 1 ether
         );
         assertEq(ibera.confirmed(), 20000 ether);
         assertEq(ibera.pending(), 9000000000000000000);
