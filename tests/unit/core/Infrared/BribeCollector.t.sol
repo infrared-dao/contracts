@@ -20,7 +20,7 @@ contract BribeCollectorTest is Helper {
     function testClaimFeesSuccess() public {
         // set collectBribesWeight 50%
         vm.prank(infraredGovernance);
-        infrared.updateInfraredBERAIncentiveSplit(1e6 / 2);
+        infrared.updateInfraredBERABribeSplit(1e6 / 2);
 
         address searcher = address(777);
 

@@ -244,7 +244,7 @@ library RewardsLib {
     /// @notice Update the split ratio for iBERA and iBGT rewards
     /// @param $           The storage pointer for all rewards accumulators
     /// @param _split The ratio for splitting received bribes to be iBERA and iBGT, weighted towards iBERA
-    function updateInfraredBERAIncentiveSplit(
+    function updateInfraredBERABribeSplit(
         RewardsStorage storage $,
         uint256 _split
     ) external {
@@ -288,20 +288,26 @@ library RewardsLib {
     ///     ref - https://github.com/berachain/contracts-monorepo/blob/main/src/pol/rewards/Distributor.sol#L160
     /// @notice The BGT accumilates in the contract, therfore can check balance(this) since all other BGT rewards are claimed and harvested atomically
     /// @notice Reward paid out to validators proposing a block, MUST be forwarded to IBERA.receivor, the fees are handled there. TODO: Link here.
+    /// @param ibgt     The address of the InfraredBGT toke
     /// @param bgt      The address of the BGT token
     /// @param ibera    The address of the InfraredBERA token
     ///
     /// @return bgtAmt  The amount of BGT rewards harvested
-    function harvestBase(address bgt, address ibera)
+    function harvestBase(address ibgt, address bgt, address ibera)
         external
         returns (uint256 bgtAmt)
     {
+        // Since BGT balance has accrued to this contract, we check for what we've already accounted for
+        uint256 minted = IInfraredBGT(ibgt).totalSupply();
+
         // The balance of BGT in the contract is the rewards accumilated from base rewards since the last harvest
         // Since is paid out every block our validators propose (have a `Distributor::distibuteFor()` call)
         uint256 balance = IBerachainBGT(bgt).balanceOf(address(this));
         if (balance == 0) return 0;
 
-        IBerachainBGT(bgt).redeem(IInfraredBERA(ibera).receivor(), balance);
+        IBerachainBGT(bgt).redeem(
+            IInfraredBERA(ibera).receivor(), balance - minted
+        );
     }
 
     /// @notice Harvests the accrued BGT rewards to a vault.

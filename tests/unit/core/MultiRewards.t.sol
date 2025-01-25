@@ -148,6 +148,46 @@ contract MultiRewardsTest is Test {
         assertGt(earningsCharlieToken2, 0);
     }
 
+    function testRewardsRemainAfterWithdrawal() public {
+        vm.startPrank(alice);
+        multiRewards.addReward(address(rewardToken), alice, 3600);
+        multiRewards.notifyRewardAmount(address(rewardToken), 1e10);
+        vm.stopPrank();
+
+        stakeAndApprove(bob, 1e18);
+        skip(60);
+
+        uint256 rewardsBeforeWithdrawal =
+            multiRewards.earned(bob, address(rewardToken));
+        console.log("rewardsBeforeWithdrawal", rewardsBeforeWithdrawal);
+        assertGt(
+            rewardsBeforeWithdrawal,
+            0,
+            "Bob should have earned rewards before withdrawal"
+        );
+
+        vm.startPrank(bob);
+        multiRewards.withdraw(1e18);
+        multiRewards.getReward();
+        vm.stopPrank();
+
+        uint256 rewardsAfterWithdrawal =
+            multiRewards.earned(bob, address(rewardToken));
+        console.log("rewardsAfterWithdrawal", rewardsAfterWithdrawal);
+
+        assertEq(
+            rewardsAfterWithdrawal, 0, "Rewards do not persist after withdrawal"
+        );
+
+        vm.startPrank(bob);
+        multiRewards.getReward();
+        vm.stopPrank();
+
+        uint256 rewardsAfterClaim =
+            multiRewards.earned(bob, address(rewardToken));
+        assertEq(rewardsAfterClaim, 0, "Rewards should be zero after claiming");
+    }
+
     function testRewardPerTokenCalculation() public {
         vm.startPrank(alice);
         multiRewards.addReward(address(rewardToken), alice, 3600);

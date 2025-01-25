@@ -109,6 +109,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     bytes32 public constant REWARDS_STORAGE_LOCATION =
         0xad12e6d08cc0150709acd6eed0bf697c60a83227922ab1d254d1ca4d3072ca00;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     /// @return vs The validator storage struct
     function _validatorStorage()
         internal
@@ -412,13 +415,13 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Updates the weight for iBERA bribes
     /// @param _weight uint256 The weight value
-    function updateInfraredBERAIncentiveSplit(uint256 _weight)
+    function updateInfraredBERABribeSplit(uint256 _weight)
         external
         onlyGovernor
     {
         uint256 prevWeight = _rewardsStorage().bribeSplitRatio;
-        _rewardsStorage().updateInfraredBERAIncentiveSplit(_weight);
-        emit InfraredBERAIncentiveSplitUpdated(msg.sender, prevWeight, _weight);
+        _rewardsStorage().updateInfraredBERABribeSplit(_weight);
+        emit InfraredBERABribeSplitUpdated(msg.sender, prevWeight, _weight);
     }
 
     /// @notice Updates the fee rate charged on different harvest functions
@@ -513,7 +516,8 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Claims all the BGT base and commission rewards minted to this contract for validators.
     function harvestBase() public {
-        uint256 bgtAmt = RewardsLib.harvestBase(address(_bgt), address(ibera));
+        uint256 bgtAmt =
+            RewardsLib.harvestBase(address(ibgt), address(_bgt), address(ibera));
         emit BaseHarvested(msg.sender, bgtAmt);
     }
 

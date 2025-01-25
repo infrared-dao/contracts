@@ -25,6 +25,9 @@ contract BribeCollector is InfraredUpgradeable, IBribeCollector {
     /// @notice Payout amount is a constant value that is paid out the caller of the `claimFees` function.
     uint256 public payoutAmount;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     constructor(address _infrared) InfraredUpgradeable(_infrared) {
         if (_infrared == address(0)) revert Errors.ZeroAddress();
     }

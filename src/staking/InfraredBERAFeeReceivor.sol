@@ -23,6 +23,9 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
     /// @inheritdoc IInfraredBERAFeeReceivor
     uint256 public shareholderFees;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     /// @notice Initializer function (replaces constructor)
     /// @param _gov Address for admin / gov to upgrade
     /// @param _keeper Address for keeper

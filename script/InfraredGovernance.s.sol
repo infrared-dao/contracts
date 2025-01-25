@@ -143,7 +143,7 @@ contract InfraredGovernance is Script {
         uint256 _weight
     ) external {
         vm.startBroadcast();
-        Infrared(infrared).updateInfraredBERAIncentiveSplit(_weight);
+        Infrared(infrared).updateInfraredBERABribeSplit(_weight);
         vm.stopBroadcast();
     }
 

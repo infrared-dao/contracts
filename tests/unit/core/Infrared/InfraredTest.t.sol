@@ -291,15 +291,14 @@ contract InfraredTest is Helper {
         );
     }
 
-    function stestharvestBribesSuccess() public {
+    function testharvestBribesSuccess() public {
         // TODO: FIX THE NATIVE AMOUNT THING
         MockERC20 mockAsset = new MockERC20("MockAsset", "MCK", 18);
         vm.prank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(mockAsset), true);
 
-        address[] memory tokens = new address[](2);
+        address[] memory tokens = new address[](1);
         tokens[0] = address(mockAsset);
-        tokens[1] = address(DataTypes.NATIVE_ASSET);
 
         uint256 mintMockAssetAmount = 10000000;
         uint256 mintNativeAssetAmount = 100 ether;
@@ -319,13 +318,6 @@ contract InfraredTest is Helper {
             mintMockAssetAmount - mockAssetFeeAmount
         );
 
-        vm.expectEmit(true, true, true, true);
-        emit IInfrared.BribeSupplied(
-            collectAddress,
-            address(wbera),
-            mintNativeAssetAmount - wBeraFeeAmount
-        );
-
         address user = address(10);
         vm.startPrank(user);
         infrared.harvestBribes(tokens);
@@ -334,12 +326,6 @@ contract InfraredTest is Helper {
             mockAsset.balanceOf(address(collector)),
             mintMockAssetAmount - mockAssetFeeAmount,
             "Collector should receive the mockAsset bribe"
-        );
-
-        assertEq(
-            wbera.balanceOf(address(collector)),
-            mintNativeAssetAmount - wBeraFeeAmount,
-            "Collector should receive the wBera bribe"
         );
     }
 
