@@ -76,7 +76,10 @@ contract InfraredBERADepositor is Upgradeable {
         }
 
         // The amount must be a multiple of 1 gwei as per the deposit contract, cannot be more eth than we have, and must be at least the minimum deposit amount.
-        if (amount == 0 || (amount % 1 gwei) != 0 || amount > reserves || amount < InfraredBERAConstants.MINIMUM_DEPOSIT) {
+        if (
+            amount == 0 || (amount % 1 gwei) != 0 || amount > reserves
+                || amount < InfraredBERAConstants.MINIMUM_DEPOSIT
+        ) {
             revert Errors.InvalidAmount();
         }
 

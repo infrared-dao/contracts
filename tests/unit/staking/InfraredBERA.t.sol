@@ -902,7 +902,6 @@ contract InfraredBERATest is InfraredBERABaseTest {
         (uint256 amount,) = receivor.distribution();
         assertTrue(amount >= InfraredBERAConstants.MINIMUM_DEPOSIT);
 
-        uint256 oldFee = ibera.feeDivisorShareholders();
         uint16 newFee = 4; // 25% fee
 
         // Track initial states

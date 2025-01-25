@@ -81,7 +81,7 @@ abstract contract Helper is POLTest {
     address validator = address(888);
     address validator2 = address(999);
 
-    function setUp() public override virtual  {
+    function setUp() public virtual override {
         super.setUp();
 
         address depositContract = address(new BeaconDeposit());

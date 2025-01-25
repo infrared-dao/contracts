@@ -184,8 +184,6 @@ contract InfraredVaultTest is Helper {
         // Approve the Infrared contract to spend tokens
         newRewardToken.approve(address(infrared), rewardAmount);
 
-        uint256 residual = rewardAmount % rewardsDuration;
-
         // Call addIncentives
         infrared.addIncentives(
             address(wbera), address(newRewardToken), rewardAmount
