@@ -240,7 +240,7 @@ contract InfraredTest is Helper {
         infrared.addValidators(validators);
         vm.stopPrank();
 
-        // 2. Mint ibgt to some random address, such that total supply of ibgt is 100 ether
+        // 2. Mint ibgt to some random address, such that total supply of ibgt is 10000 ether
         vm.prank(address(infrared));
         ibgt.mint(address(12), 10000 ether);
         vm.startPrank(address(blockRewardController));
@@ -251,13 +251,15 @@ contract InfraredTest is Helper {
 
         assertTrue(
             bgt.balanceOf(address(infrared)) > ibgt.totalSupply(),
-            "Infrared should have more BERA than total supply of InfraredBGT"
+            "Infrared should have more BGT than total supply of InfraredBGT"
         );
 
         // Store initial balances
         uint256 receivorBalanceBefore = ibera.receivor().balance;
 
         // 4. Call harvestBase to distribute the rewards
+        vm.expectEmit();
+        emit IInfrared.BaseHarvested(admin, 1000 ether);
         infrared.harvestBase();
 
         // Check that ETH was sent to InfraredBERA receivor

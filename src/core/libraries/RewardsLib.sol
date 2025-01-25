@@ -304,9 +304,11 @@ library RewardsLib {
         uint256 balance = IBerachainBGT(bgt).balanceOf(address(this));
         if (balance == 0) return 0;
 
-        IBerachainBGT(bgt).redeem(
-            IInfraredBERA(ibera).receivor(), balance - minted
-        );
+        // @dev the amount that will be minted is the difference between the balance accrued since the last harvestVault and the current balance in the contract.
+        // This difference should keep getting bigger as the contract accumilates more bgt from `Distributor::distibuteFor()` calls.
+        bgtAmt = balance - minted;
+
+        IBerachainBGT(bgt).redeem(IInfraredBERA(ibera).receivor(), bgtAmt);
     }
 
     /// @notice Harvests the accrued BGT rewards to a vault.
