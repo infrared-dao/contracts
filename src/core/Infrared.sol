@@ -1,41 +1,31 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-// External dependencies.
 import {EnumerableSet} from
     "@openzeppelin/contracts/utils/structs/EnumerableSet.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
 import {IRewardVaultFactory as IBerachainRewardsVaultFactory} from
     "@berachain/pol/interfaces/IRewardVaultFactory.sol";
 import {IBerachainBGT} from "src/interfaces/IBerachainBGT.sol";
-
-// Internal dependencies.
 import {DataTypes} from "src/utils/DataTypes.sol";
 import {Errors} from "src/utils/Errors.sol";
-
 import {InfraredVaultDeployer} from "src/utils/InfraredVaultDeployer.sol";
-
 import {IVoter} from "src/voting/interfaces/IVoter.sol";
-
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-
 import {IInfraredGovernanceToken} from
     "src/interfaces/IInfraredGovernanceToken.sol";
 import {IBribeCollector} from "src/interfaces/IBribeCollector.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {ConfigTypes, IInfrared} from "src/interfaces/IInfrared.sol";
-
 import {InfraredUpgradeable} from "src/core/InfraredUpgradeable.sol";
 import {InfraredVault} from "src/core/InfraredVault.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
-
 import {ValidatorManagerLib} from "./libraries/ValidatorManagerLib.sol";
 import {ValidatorTypes} from "./libraries/ValidatorTypes.sol";
 import {VaultManagerLib} from "./libraries/VaultManagerLib.sol";
@@ -538,19 +528,23 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Claims all the bribes rewards in the contract forwarded from Berachain POL.
     /// @param _tokens address[] memory The addresses of the tokens to harvest in the contract.
+    /// @dev This should be called right before the collector `claimFees` function.
+    /// @dev 1. harvestBribes(), 2. collector.claimFees(), 3. collectBribes() (which handles the wBERA -> iBERA + fees distribution)
     function harvestBribes(address[] calldata _tokens) external {
+        /// @dev Check against the whitelisted tokens so that we dont interact with non-whitelisted transfer method.
         uint256 len = _tokens.length;
         bool[] memory whitelisted = new bool[](len);
         for (uint256 i; i < len; ++i) {
-            if (
-                whitelistedRewardTokens(_tokens[i])
-                    || _tokens[i] == DataTypes.NATIVE_ASSET
-            ) {
+            if (whitelistedRewardTokens(_tokens[i])) {
                 whitelisted[i] = true;
             }
         }
+
+        /// @dev pass down the total list of _tokens and the whitelisted status of each token returning tokens and amounts harvested.
         (address[] memory tokens, uint256[] memory _amounts) = _rewardsStorage()
             .harvestBribes(address(collector), _tokens, whitelisted);
+
+        /// @dev indexes should match for tokens,amounts, and whitelisted status.
         for (uint256 i; i < len; ++i) {
             if (whitelisted[i]) {
                 emit BribeSupplied(address(collector), tokens[i], _amounts[i]);

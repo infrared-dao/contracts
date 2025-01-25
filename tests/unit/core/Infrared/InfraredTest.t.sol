@@ -292,7 +292,6 @@ contract InfraredTest is Helper {
     }
 
     function testharvestBribesSuccess() public {
-        // TODO: FIX THE NATIVE AMOUNT THING
         MockERC20 mockAsset = new MockERC20("MockAsset", "MCK", 18);
         vm.prank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(mockAsset), true);
