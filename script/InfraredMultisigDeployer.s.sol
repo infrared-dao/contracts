@@ -355,7 +355,7 @@ contract InfraredMultisigDeployer is BatchScript {
             0,
             abi.encodePacked(
                 type(InfraredBGT).creationCode,
-                abi.encode(ibgt, proxyInfrared, _gov, _gov, _gov)
+                abi.encode(proxyInfrared, _gov, _gov, _gov)
             )
         );
         red = vm.computeCreateAddress(_gov, nonce++);

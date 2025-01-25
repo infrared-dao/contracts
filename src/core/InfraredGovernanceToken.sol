@@ -10,17 +10,14 @@ import {ERC20PresetMinterPauser} from "../vendors/ERC20PresetMinterPauser.sol";
 contract InfraredGovernanceToken is ERC20PresetMinterPauser {
     error ZeroAddress();
 
-    address public immutable ibgt;
     address public immutable infrared;
 
     /// @notice Construct the Infrared Governance Token contract
-    /// @param _ibgt The address of the IBGT contract
     /// @param _infrared The address of the Infrared contract
     /// @param _admin The address of the admin
     /// @param _minter The address of the minter
     /// @param _pauser The address of the pauser
     constructor(
-        address _ibgt,
         address _infrared,
         address _admin,
         address _minter,
@@ -34,10 +31,9 @@ contract InfraredGovernanceToken is ERC20PresetMinterPauser {
             _pauser
         )
     {
-        if (_ibgt == address(0) || _infrared == address(0)) {
+        if (_infrared == address(0)) {
             revert ZeroAddress();
         }
-        ibgt = _ibgt;
         infrared = _infrared;
 
         _grantRole(MINTER_ROLE, infrared);

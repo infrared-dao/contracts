@@ -103,7 +103,7 @@ contract InfraredDeployer is Script {
         ibgt = new InfraredBGT(data._gov, address(infrared), data._gov);
 
         ir = new InfraredGovernanceToken(
-            address(ibgt), address(infrared), data._gov, data._gov, data._gov
+            address(infrared), data._gov, data._gov, data._gov
         );
 
         infrared.setIBGT(address(ibgt));

@@ -174,7 +174,7 @@ abstract contract Helper is POLTest {
         );
 
         ir = new InfraredGovernanceToken(
-            address(ibgt), address(infrared), data._gov, data._gov, data._gov
+            address(infrared), data._gov, data._gov, data._gov
         );
 
         // ir voting
