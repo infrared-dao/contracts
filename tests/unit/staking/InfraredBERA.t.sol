@@ -766,7 +766,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
         assertGt(initialShares, 0);
 
         // Test compounding with amount between fee and min+fee
-        uint256 compoundAmount = min-1; // Amount > fee but < min+fee
+        uint256 compoundAmount = min - 1; // Amount > fee but < min+fee
         (bool success,) = address(receivor).call{value: compoundAmount}("");
         assertTrue(success);
 
