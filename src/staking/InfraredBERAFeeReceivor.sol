@@ -72,9 +72,7 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
     function sweep() external returns (uint256 amount, uint256 fees) {
         (amount, fees) = distribution();
         // do nothing if InfraredBERA deposit would revert
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        if (amount < min) return (0, 0);
+        if (amount < InfraredBERAConstants.MINIMUM_DEPOSIT) return (0, 0);
 
         // add to protocol fees and sweep amount back to ibera to deposit
         if (fees > 0) shareholderFees += fees;
@@ -85,20 +83,18 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
     /// @inheritdoc IInfraredBERAFeeReceivor
     function collect() external returns (uint256 sharesMinted) {
         if (msg.sender != InfraredBERA) revert Errors.Unauthorized(msg.sender);
-        uint256 shf = shareholderFees;
-        if (shf == 0) return 0;
-
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        if (shf < min) {
+        uint256 _shareholderFees = shareholderFees;
+        if (_shareholderFees == 0) return 0;
+        if (_shareholderFees < InfraredBERAConstants.MINIMUM_DEPOSIT) {
             return 0;
         }
 
         delete shareholderFees;
-        (, sharesMinted) =
-            IInfraredBERA(InfraredBERA).mint{value: shf}(address(infrared));
+        sharesMinted = IInfraredBERA(InfraredBERA).mint{value: _shareholderFees}(
+            address(infrared)
+        );
 
-        emit Collect(address(infrared), shf, sharesMinted);
+        emit Collect(address(infrared), _shareholderFees, sharesMinted);
     }
 
     receive() external payable {}

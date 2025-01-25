@@ -309,7 +309,6 @@ contract InfraredTest is Helper {
 
         uint256 mockAssetFeeAmount =
             infrared.protocolFeeAmounts(address(mockAsset));
-        uint256 wBeraFeeAmount = infrared.protocolFeeAmounts(address(wbera));
 
         vm.expectEmit(true, true, true, true);
         emit IInfrared.BribeSupplied(
