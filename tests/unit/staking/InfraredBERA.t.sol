@@ -1033,7 +1033,7 @@ contract InfraredBERATest is InfraredBERABaseTest {
             / initialTotalSupply * initialDeposits;
 
         // Bob mints with edge case amount
-        (, uint256 bobShares) = ibera.mint{value: targetAmount}(bob);
+        uint256 bobShares = ibera.mint{value: targetAmount}(bob);
 
         // Calculate expected return amount
         uint256 deposits = ibera.deposits();
