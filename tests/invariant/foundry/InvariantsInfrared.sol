@@ -121,7 +121,9 @@ contract InvariantsInfrared is Test {
             1 days
         );
         infrared.initialize(data); // make helper contract the admin
-        ibgt = new InfraredBGT(data._gov, address(infrared), data._gov);
+        ibgt = new InfraredBGT(
+            data._gov, address(infrared), data._gov, address(infrared)
+        );
 
         infrared.setIBGT(address(ibgt));
 

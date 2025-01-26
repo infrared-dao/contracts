@@ -78,7 +78,8 @@ contract RegisterVaultForkTest is InfraredForkTest {
             address(infrared),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
 
         // gov only (i.e. this needs to be run by gov)

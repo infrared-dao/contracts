@@ -32,7 +32,9 @@ contract InfraredGovernanceTokenDeployer is Script {
 
         voter = Voter(setupProxy(address(new Voter(address(infrared)))));
 
-        ir = new InfraredGovernanceToken(address(infrared), _gov, _gov, _gov);
+        ir = new InfraredGovernanceToken(
+            address(infrared), _gov, _gov, _gov, address(0)
+        );
 
         // gov only (i.e. this needs to be run by gov)
         infrared.setIR(address(ir));

@@ -145,7 +145,9 @@ abstract contract Helper is POLTest {
             1 days
         );
         infrared.initialize(data);
-        ibgt = new InfraredBGT(data._gov, address(infrared), data._gov);
+        ibgt = new InfraredBGT(
+            data._gov, address(infrared), data._gov, address(infrared)
+        );
 
         infrared.setIBGT(address(ibgt));
 
@@ -172,17 +174,6 @@ abstract contract Helper is POLTest {
             address(withdraworLite),
             address(receivor)
         );
-
-        // ir = new InfraredGovernanceToken(
-        //     address(ibgt), address(infrared), data._gov, data._gov, data._gov
-        // );
-
-        // // ir voting
-
-        // sIR = new VotingEscrow(
-        //     address(this), address(ir), address(voter), address(infrared)
-        // );
-        // voter.initialize(address(ir), infraredGovernance, keeper);
 
         uint16 feeShareholders = 4; // 25% of fees
 
