@@ -66,4 +66,5 @@ library Errors {
     error CanNotCompoundAccumuldatedBERA();
     error ExceedsMaxEffectiveBalance();
     error HandleForceExitsBeforeDeposits();
+    error OperatorAlreadySet();
 }
