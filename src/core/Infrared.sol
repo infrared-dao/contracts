@@ -608,8 +608,13 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         external
         onlyGovernor
     {
-        harvestBase();
-        harvestOperatorRewards();
+        /// @notice do not harvest if no validators in the system
+        /// since `Distributor::notifyRewardAmount` will revert if there are rewards.
+        if (_validatorStorage().numInfraredValidators() != 0) {
+            harvestBase();
+            harvestOperatorRewards();
+        }
+
         _validatorStorage().addValidators(address(distributor), _validators);
         emit ValidatorsAdded(msg.sender, _validators);
     }

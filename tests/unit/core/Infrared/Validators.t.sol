@@ -76,6 +76,51 @@ contract ValidatorManagment is Helper {
         infrared.addValidators(newValidators);
     }
 
+    function testAddValidatorEmptySet() public {
+        /// @notice, we are going to be donating 100 ether to the system via bgt,
+        /// simulating a claim into infrared when there are no validators set, then adding another validator.
+        /// this should skip on first then compound once vals are added.
+        /// on second add 100 ether -> current fee of 4=25%, 75 ether to users, 25 ether to operators.
+        /// this should increase the overall ether backing of the system by 100ether.
+
+        uint256 donatedAmount = 100 ether;
+        uint256 ts = ibera.totalSupply();
+        (uint256 prevBacking,) = ibera.previewBurn(ts);
+
+        // 1. simulate someone claiming their bgt to the contract causing harvest base to be called.
+        vm.prank(address(blockRewardController));
+        bgt.mint(address(infrared), donatedAmount);
+        vm.stopPrank();
+
+        // 2. call the add validators method with 1 validator, should skip the harvest methods.
+        ValidatorTypes.Validator[] memory newValidators =
+            new ValidatorTypes.Validator[](1);
+        newValidators[0] = ValidatorTypes.Validator({
+            pubkey: bytes("someValidPubKey"),
+            addr: address(this)
+        });
+        vm.startPrank(infraredGovernance);
+        infrared.addValidators(newValidators);
+        vm.stopPrank();
+
+        // 3. the balance of BGT in the `infrared` contract should be the same as the donated amount.
+        assertEq(bgt.balanceOf(address(infrared)), donatedAmount);
+
+        // 4. add another validator, calling the harvestBase and harvestOperatorRewards methods.
+        newValidators[0] = ValidatorTypes.Validator({
+            pubkey: bytes("someOtherValidPubKey2"), // diff pubkek
+            addr: address(this)
+        });
+        vm.startPrank(infraredGovernance);
+        infrared.addValidators(newValidators);
+        vm.stopPrank();
+
+        // 5. the backing of iBERA should have increased by 100 ether.
+        ts = ibera.totalSupply();
+        (uint256 currentBacking,) = ibera.previewBurn(ts);
+        assertEq(currentBacking - prevBacking, donatedAmount);
+    }
+
     function testRemoveValidators() public {
         // Set up a new mock validator
         ValidatorTypes.Validator[] memory newValidators =
