@@ -308,6 +308,12 @@ library RewardsLib {
         // This difference should keep getting bigger as the contract accumilates more bgt from `Distributor::distibuteFor()` calls.
         bgtAmt = balance - minted;
 
+        // @dev ensure that the `BGT::redeem` call won't revert if there is no BERA backing it.
+        // This is not unlikley since https://github.com/berachain/beacon-kit slots/blocks are not consistent there are times
+        // where the BGT rewards are not backed by BERA, in this case the BGT rewards are not redeemable.
+        // https://github.com/berachain/contracts-monorepo/blob/a28404635b5654b4de0627d9c0d1d8fced7b4339/src/pol/BGT.sol#L363
+        if (bgtAmt > bgt.balance) return 0;
+
         IBerachainBGT(bgt).redeem(IInfraredBERA(ibera).receivor(), bgtAmt);
     }
 

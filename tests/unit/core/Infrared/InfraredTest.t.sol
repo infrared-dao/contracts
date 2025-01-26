@@ -225,6 +225,22 @@ contract InfraredTest is Helper {
         infrared.collectBribes(address(wbera), 1 ether);
     }
 
+    function testharvestBaseNotEnoughBacking() public {
+        // 1. Mint some BGT to the Infrared contract, simulating base rewards.
+        vm.startPrank(address(blockRewardController));
+        bgt.mint(address(infrared), 100 ether);
+        vm.stopPrank();
+
+        // 2. Deal only 99 ether to the BGT contract.
+        vm.deal(address(bgt), 99 ether);
+
+        // 3. HarvestBase should have the BGT balance constant.
+        uint256 balanceBefore = bgt.balanceOf(address(infrared));
+        infrared.harvestBase();
+        uint256 balanceAfter = bgt.balanceOf(address(infrared));
+        assertEq(balanceBefore, balanceAfter);
+    }
+
     function testharvestBaseSuccess() public {
         // 1. Add a validator to the validator set
         vm.startPrank(infraredGovernance);
