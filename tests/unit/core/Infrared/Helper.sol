@@ -128,7 +128,7 @@ abstract contract Helper is POLTest {
         collector.initialize(infraredGovernance, address(wbera), 10 ether);
         infraredDistributor.initialize(infraredGovernance, address(ibera));
 
-        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+        // voter = Voter(setupProxy(address(new Voter(address(infrared)))));
 
         Infrared.InitializationData memory data = Infrared.InitializationData(
             infraredGovernance,
@@ -140,7 +140,7 @@ abstract contract Helper is POLTest {
             address(honey),
             address(collector),
             address(infraredDistributor),
-            address(voter),
+            address(0),
             address(ibera),
             1 days
         );
@@ -173,16 +173,16 @@ abstract contract Helper is POLTest {
             address(receivor)
         );
 
-        ir = new InfraredGovernanceToken(
-            address(infrared), data._gov, data._gov, data._gov
-        );
+        // ir = new InfraredGovernanceToken(
+        //     address(ibgt), address(infrared), data._gov, data._gov, data._gov
+        // );
 
-        // ir voting
+        // // ir voting
 
-        sIR = new VotingEscrow(
-            address(this), address(ir), address(voter), address(infrared)
-        );
-        voter.initialize(address(ir), infraredGovernance, keeper);
+        // sIR = new VotingEscrow(
+        //     address(this), address(ir), address(voter), address(infrared)
+        // );
+        // voter.initialize(address(ir), infraredGovernance, keeper);
 
         uint16 feeShareholders = 4; // 25% of fees
 

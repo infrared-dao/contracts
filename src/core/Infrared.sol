@@ -187,8 +187,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
                 || data.__bgt == address(0) || data._rewardsFactory == address(0)
                 || data._chef == address(0) || data._wbera == address(0)
                 || data._honey == address(0) || data._collector == address(0)
-                || data._distributor == address(0) || data._voter == address(0)
-                || data._iBERA == address(0)
+                || data._distributor == address(0) || data._iBERA == address(0)
         ) revert Errors.ZeroAddress();
         if (data._rewardsDuration == 0) revert Errors.ZeroAmount();
     }
@@ -463,7 +462,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     /// @notice Sets the address of the IR contract
     /// @dev Infrared must be granted MINTER_ROLE on IR to set the address
     /// @param _ir The address of the IR contract
-    function setIR(address _ir) external {
+    function setIR(address _ir) external onlyGovernor {
         if (_ir == address(0)) revert Errors.ZeroAddress();
         if (address(ir) != address(0)) revert Errors.AlreadySet();
         if (
@@ -476,6 +475,16 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
         ir = IInfraredGovernanceToken(_ir);
         emit IRSet(msg.sender, _ir);
+    }
+
+    /// @notice Sets the address of the Voter contract
+    /// @param _voter The address of the IR contract
+    function setVoter(address _voter) external onlyGovernor {
+        if (_voter == address(0)) revert Errors.ZeroAddress();
+        if (address(voter) != address(0)) revert Errors.AlreadySet();
+
+        voter = IVoter(_voter);
+        emit VoterSet(msg.sender, _voter);
     }
 
     /// @notice Updates the mint rate for IR

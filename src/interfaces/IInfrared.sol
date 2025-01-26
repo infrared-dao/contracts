@@ -764,4 +764,11 @@ interface IInfrared {
      * @param _ibgt The address of the iBGT token.
      */
     event IBGTSet(address _sender, address _ibgt);
+
+    /**
+     * @notice Emitted when the voter contract is set.
+     * @param _sender The address that initiated the update.
+     * @param _voter The address of the voter contract.
+     */
+    event VoterSet(address _sender, address _voter);
 }

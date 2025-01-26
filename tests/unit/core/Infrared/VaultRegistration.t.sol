@@ -3,12 +3,18 @@ pragma solidity 0.8.26;
 
 import {Helper, IAccessControl, IInfraredVault, MockERC20} from "./Helper.sol";
 import {Errors} from "src/utils/Errors.sol";
+import {ERC20PresetMinterPauser} from "src/vendors/ERC20PresetMinterPauser.sol";
+
+import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
+import {Voter} from "src/voting/Voter.sol";
+import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 
 contract InfraredRegisterVaultTest is Helper {
     /*//////////////////////////////////////////////////////////////
                 Vault Registration Tests (registerVault)
     //////////////////////////////////////////////////////////////*/
     function testSuccessfulVaultRegistration() public {
+        deployIR();
         stakingAsset = address(ir); // Assuming you have a mock iRED token
 
         // Mock data for the test
@@ -114,5 +120,27 @@ contract InfraredRegisterVaultTest is Helper {
         assertEq(balanceAfter, 0);
         uint256 balanceReceiver = honey.balanceOf(address(this));
         assertEq(balanceReceiver, amount);
+    }
+
+    function deployIR() internal {
+        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+
+        ir = new InfraredGovernanceToken(
+            address(infrared),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance
+        );
+
+        // gov only (i.e. this needs to be run by gov)
+        vm.startPrank(infraredGovernance);
+        infrared.setIR(address(ir));
+        infrared.setVoter(address(voter));
+        vm.stopPrank();
+
+        sIR = new VotingEscrow(
+            keeper, address(ir), address(voter), address(infrared)
+        );
+        voter.initialize(address(sIR), infraredGovernance, keeper);
     }
 }
