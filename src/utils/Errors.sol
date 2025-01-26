@@ -65,4 +65,5 @@ library Errors {
     error ValidatorForceExited();
     error CanNotCompoundAccumuldatedBERA();
     error ExceedsMaxEffectiveBalance();
+    error HandleForceExitsBeforeDeposits();
 }

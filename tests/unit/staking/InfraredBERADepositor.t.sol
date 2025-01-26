@@ -136,9 +136,10 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
         vm.deal(
             address(ibera),
-            InfraredBERAConstants.INITIAL_DEPOSIT
-                * InfraredBERAConstants.INITIAL_DEPOSIT
-                / InfraredBERAConstants.MINIMUM_DEPOSIT
+            (
+                InfraredBERAConstants.INITIAL_DEPOSIT
+                    * InfraredBERAConstants.INITIAL_DEPOSIT
+            ) / InfraredBERAConstants.MINIMUM_DEPOSIT
         );
         assertTrue(address(ibera).balance >= value);
 
@@ -171,7 +172,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
 
         uint256 _amount = amountSecond;
 
-        uint256 amount = ((3 * _amount / 4) / 1 gwei) * 1 gwei;
+        uint256 amount = (((3 * _amount) / 4) / 1 gwei) * 1 gwei;
         assertTrue(amount > InfraredBERAConstants.INITIAL_DEPOSIT); // min deposit for deposit contract
         assertTrue(amount % 1 gwei == 0);
 
@@ -465,6 +466,26 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         vm.expectRevert(Errors.ExceedsMaxEffectiveBalance.selector);
         vm.prank(keeper);
         depositor.execute(pubkey0, excessAmount);
+    }
+
+    function testExecuteRevertsWhenForcedExitedValidatorExists() public {
+        // Minimum amount a validator can stake.
+        uint256 minimumDeposit = InfraredBERAConstants.INITIAL_DEPOSIT;
+
+        // Queue the initial deposit amount
+        _queueFundsForDeposit(minimumDeposit);
+
+        // Set the deposit signature for the validator
+        vm.prank(infraredGovernance);
+        ibera.setDepositSignature(pubkey0, signature0);
+
+        // Deal funds to the withdrawor contract to simulate a forced exit
+        vm.deal(address(withdrawor), minimumDeposit);
+
+        // Attempt to execute a deposit.
+        vm.expectRevert(Errors.HandleForceExitsBeforeDeposits.selector);
+        vm.prank(keeper);
+        depositor.execute(pubkey0, minimumDeposit);
     }
 
     function _queueFundsForDeposit(uint256 amount) internal {

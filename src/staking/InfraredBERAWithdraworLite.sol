@@ -130,8 +130,6 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         // revert if insufficient balance
         if (amount > address(this).balance) revert Errors.InvalidAmount();
 
-        // todo: verfiy forced withdrawal against beacon roots
-
         // register new validator delta
         IInfraredBERA(InfraredBERA).register(pubkey, -int256(amount));
 

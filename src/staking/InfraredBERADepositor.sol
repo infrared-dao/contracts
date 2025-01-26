@@ -86,6 +86,16 @@ contract InfraredBERADepositor is Upgradeable {
             revert Errors.InvalidAmount();
         }
 
+        // Check if there is any forced exits on the withdrawor contract.
+        // @notice if the balance of the withdrawor is more than INITIAL_DEPOSIT, we can assume that there is a forced exit and
+        // we should sweep it before we can deposit the BERA. This stops the protocol from staking into exited validators.
+
+        // cache the withdrawor address since we will be using it multiple times.
+        address withdrawor = IInfraredBERA(InfraredBERA).withdrawor();
+        if (withdrawor.balance >= InfraredBERAConstants.INITIAL_DEPOSIT) {
+            revert Errors.HandleForceExitsBeforeDeposits();
+        }
+
         // The validator balance + amount must not surpase MaxEffectiveBalance of 10 million BERA.
         if (
             IInfraredBERA(InfraredBERA).stakes(pubkey) + amount
@@ -117,7 +127,7 @@ contract InfraredBERADepositor is Upgradeable {
         bytes memory credentials = abi.encodePacked(
             ETH1_ADDRESS_WITHDRAWAL_PREFIX,
             uint88(0), // 11 zero bytes
-            IInfraredBERA(InfraredBERA).withdrawor()
+            withdrawor
         );
 
         /// @dev reduce the reserves by the amount deposited.
