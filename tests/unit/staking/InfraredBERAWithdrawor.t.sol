@@ -1144,7 +1144,7 @@ contract InfraredBERAWithdraworTest is InfraredBERABaseTest {
         ibera.setDepositSignature(pubkey0, signature0);
 
         vm.prank(keeper);
-        vm.expectRevert(Errors.ValidatorForceExited.selector);
+        vm.expectRevert(Errors.OperatorAlreadySet.selector);
         depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
     }
 

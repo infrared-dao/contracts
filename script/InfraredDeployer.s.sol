@@ -38,7 +38,6 @@ contract InfraredDeployer is Script {
     InfraredDistributor public distributor;
     Infrared public infrared;
 
-    Voter public voter;
     VotingEscrow public sIR;
 
     function run(
@@ -82,8 +81,6 @@ contract InfraredDeployer is Script {
         collector.initialize(_gov, _wbera, _bribeCollectorPayoutAmount);
         distributor.initialize(_gov, address(ibera));
 
-        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
-
         Infrared.InitializationData memory data = Infrared.InitializationData(
             _gov,
             _keeper,
@@ -94,25 +91,17 @@ contract InfraredDeployer is Script {
             _honey,
             address(collector),
             address(distributor),
-            address(voter),
+            address(0),
             address(ibera),
             _rewardsDuration
         );
         infrared.initialize(data);
 
-        ibgt = new InfraredBGT(data._gov, address(infrared), data._gov);
-
-        ir = new InfraredGovernanceToken(
-            address(infrared), data._gov, data._gov, data._gov
+        ibgt = new InfraredBGT(
+            data._gov, address(infrared), data._gov, address(infrared)
         );
 
         infrared.setIBGT(address(ibgt));
-        infrared.setIR(address(ir));
-
-        sIR = new VotingEscrow(
-            _keeper, address(ir), address(voter), address(infrared)
-        );
-        voter.initialize(address(sIR), data._gov, data._keeper);
 
         // initialize ibera proxies
         depositor.initialize(_gov, _keeper, address(ibera), _beaconDeposit);

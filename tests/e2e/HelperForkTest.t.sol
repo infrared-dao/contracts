@@ -169,14 +169,14 @@ contract HelperForkTest is Test {
         infrared = deployer.infrared();
         collector = deployer.collector();
         infraredDistributor = deployer.distributor();
-        voter = deployer.voter();
-        sIR = deployer.sIR();
         ibgt = deployer.ibgt();
-        ir = InfraredGovernanceToken(address(deployer.ir()));
-
         ibera = deployer.ibera();
         depositor = deployer.depositor();
         receivor = deployer.receivor();
+
+        // voter = deployer.voter();
+        // sIR = deployer.sIR();
+        // ir = InfraredGovernanceToken(address(deployer.ir()));
 
         uint16 feeShareholders = 4; // 25% of fees
         vm.prank(infraredGovernance);

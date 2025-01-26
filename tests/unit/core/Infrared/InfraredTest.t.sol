@@ -513,7 +513,8 @@ contract InfraredTest is Helper {
             address(infrared),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
 
         // Grant MINTER_ROLE to infrared contract
@@ -541,7 +542,8 @@ contract InfraredTest is Helper {
             address(infrared),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
         // newIR.grantRole(newIR.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
@@ -552,7 +554,8 @@ contract InfraredTest is Helper {
             address(infrared),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
         // anotherIR.grantRole(anotherIR.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
@@ -566,7 +569,8 @@ contract InfraredTest is Helper {
             address(12),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
 
         vm.startPrank(address(123));
@@ -580,7 +584,8 @@ contract InfraredTest is Helper {
             address(12),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
         vm.prank(infraredGovernance);
         vm.expectRevert(
@@ -595,7 +600,8 @@ contract InfraredTest is Helper {
             address(infrared),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
         // newIR.grantRole(newIR.MINTER_ROLE(), address(infrared));
         vm.prank(infraredGovernance);
@@ -643,7 +649,8 @@ contract InfraredTest is Helper {
             address(infrared),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
 
         vm.startPrank(infraredGovernance);
@@ -677,7 +684,8 @@ contract InfraredTest is Helper {
             address(infrared),
             infraredGovernance,
             infraredGovernance,
-            infraredGovernance
+            infraredGovernance,
+            address(0)
         );
 
         vm.startPrank(infraredGovernance);

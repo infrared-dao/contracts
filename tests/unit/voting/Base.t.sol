@@ -75,9 +75,15 @@ abstract contract Base is Test {
         infrared = Infrared(payable(setupProxy(address(new Infrared()))));
 
         // Governance and Lock token
-        ibgt = new InfraredBGT(address(this), address(infrared), address(this));
+        ibgt = new InfraredBGT(
+            address(this), address(infrared), address(this), address(infrared)
+        );
         ir = new InfraredGovernanceToken(
-            address(infrared), address(this), address(this), address(this)
+            address(infrared),
+            address(this),
+            address(this),
+            address(this),
+            address(0)
         );
 
         address collector = address(new MockCollector(address(WBERA)));

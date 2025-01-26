@@ -90,7 +90,7 @@ contract InfraredBERADepositor is Upgradeable {
         address withdrawor = IInfraredBERA(InfraredBERA).withdrawor();
 
         // Check if there is any forced exits on the withdrawor contract.
-        // @notice if the balance of the withdrawor is more than INITIAL_DEPOSIT, we can assume that there is a forced exit and
+        // @notice if the balance of the withdrawor is more than INITIAL_DEPOSIT, we can assume that there is an unprocessed forced exit and
         // we should sweep it before we can deposit the BERA. This stops the protocol from staking into exited validators.
         if (withdrawor.balance >= InfraredBERAConstants.INITIAL_DEPOSIT) {
             revert Errors.HandleForceExitsBeforeDeposits();
@@ -105,14 +105,19 @@ contract InfraredBERADepositor is Upgradeable {
         }
 
         // @dev determin what to set the operator, if the operator is not set we know this is the first deposit and we should set it to infrared.
-        // if not we know this is the second or subsequent deposit and we should set the operator to address(0).
+        // if not we know this is the second or subsequent deposit (subject to internal test below) and we should set the operator to address(0).
         address operator = IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(pubkey)
             == address(0) ? IInfraredBERA(InfraredBERA).infrared() : address(0);
 
-        // @dev this is the first deposit, we need to set the amount to the initial deposit amount.
-        if (operator != address(0)) {
-            /// @dev if this is the first deposit, overrite the amount to the initial deposit amount.
-            amount = InfraredBERAConstants.INITIAL_DEPOSIT;
+        // check whether first deposit via internal logic to protect against bypass beacon deposit attack
+        if (!IInfraredBERA(InfraredBERA).staked(pubkey)) {
+            // @dev this is the first deposit, we need to set the amount to the initial deposit amount.
+            if (operator != address(0)) {
+                /// @dev if this is the first deposit, overrite the amount to the initial deposit amount.
+                amount = InfraredBERAConstants.INITIAL_DEPOSIT;
+            } else {
+                revert Errors.OperatorAlreadySet();
+            }
         }
 
         // @notice load the signature for the pubkey. This is only used for the first deposit but can be re-used safley since this is checked only on the first deposit.

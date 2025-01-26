@@ -32,6 +32,7 @@ contract InfraredForkTest is HelperForkTest {
             "STAKE",
             address(this),
             address(this),
+            address(this),
             address(this)
         );
 

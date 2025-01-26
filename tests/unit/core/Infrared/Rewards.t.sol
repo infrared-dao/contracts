@@ -146,6 +146,7 @@ contract InfraredRewardsTest is Helper {
     }
 
     function testHarvestVaultRedRevert() public {
+        deployIR();
         uint256 rewardsDuration = 7 days;
         vm.startPrank(address(infrared));
         for (uint160 i = 0; i < 9; i++) {
@@ -155,7 +156,7 @@ contract InfraredRewardsTest is Helper {
         // Setup: Configure RED token and mint rate
         vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(wbera), true);
-        infrared.setIR(address(ir));
+
         infrared.updateIRMintRate(1_500_000); // 1.5x RED per InfraredBGT
         vm.stopPrank();
 
@@ -328,6 +329,7 @@ contract InfraredRewardsTest is Helper {
     }
 
     function testAddRewardFailsWithZeroDuration() public {
+        deployIR();
         vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(ir), true);
         vm.expectRevert(abi.encodeWithSignature("ZeroAmount()"));
@@ -336,11 +338,35 @@ contract InfraredRewardsTest is Helper {
     }
 
     function testAddRewardFailsWithNoVault() public {
+        deployIR();
         vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(ir), true);
         vm.expectRevert(abi.encodeWithSignature("NoRewardsVault()"));
         infrared.addReward(address(1), address(ir), 7 days);
         vm.stopPrank();
+    }
+
+    function deployIR() internal {
+        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+
+        ir = new InfraredGovernanceToken(
+            address(infrared),
+            infraredGovernance,
+            infraredGovernance,
+            infraredGovernance,
+            address(0)
+        );
+
+        // gov only (i.e. this needs to be run by gov)
+        vm.startPrank(infraredGovernance);
+        infrared.setIR(address(ir));
+        infrared.setVoter(address(voter));
+        vm.stopPrank();
+
+        sIR = new VotingEscrow(
+            keeper, address(ir), address(voter), address(infrared)
+        );
+        voter.initialize(address(sIR), infraredGovernance, keeper);
     }
 
     function testAddRewardFailsWithNotAuthorized() public {
@@ -729,10 +755,11 @@ contract InfraredRewardsTest is Helper {
     */
 
     function testHarvestVaultWithRedMinting() public {
+        deployIR();
         // Setup: Configure RED token and mint rate
         vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(wbera), true);
-        infrared.setIR(address(ir));
+
         infrared.updateIRMintRate(1_500_000); // 1.5x RED per InfraredBGT
         vm.stopPrank();
 
@@ -806,10 +833,11 @@ contract InfraredRewardsTest is Helper {
     }
 
     function testHarvestVaultWithDoesNotFailWithPausedRedMinting() public {
+        deployIR();
         // Setup: Configure RED token and mint rate
         vm.startPrank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(wbera), true);
-        infrared.setIR(address(ir));
+
         infrared.updateIRMintRate(1_500_000); // 1.5x RED per InfraredBGT
         ir.pause();
         vm.stopPrank();
