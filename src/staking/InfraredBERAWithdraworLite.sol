@@ -151,7 +151,7 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
     /// - Validators exited due to falling out of the validator set
     /// @param amount The amount of excess stake to sweep
     /// @custom:access Only callable by governance
-    function sweepDust(uint256 amount) external onlyGovernor {
+    function sweepUnaccountedForFunds(uint256 amount) external onlyGovernor {
         // only callable when withdrawals are not enabled
         if (IInfraredBERA(InfraredBERA).withdrawalsEnabled()) {
             revert Errors.Unauthorized(msg.sender);
