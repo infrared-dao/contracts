@@ -100,12 +100,10 @@ contract InfraredDeployer is Script {
         );
         infrared.initialize(data);
 
-        ibgt = new InfraredBGT(
-            address(_bgt), data._gov, address(infrared), data._gov
-        );
+        ibgt = new InfraredBGT(data._gov, address(infrared), data._gov);
 
         ir = new InfraredGovernanceToken(
-            address(ibgt), address(infrared), data._gov, data._gov, data._gov
+            address(infrared), data._gov, data._gov, data._gov
         );
 
         infrared.setIBGT(address(ibgt));
@@ -123,9 +121,7 @@ contract InfraredDeployer is Script {
         receivor.initialize(_gov, _keeper, address(ibera), address(infrared));
 
         // init deposit to avoid inflation attack
-        uint256 _value = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-
+        uint256 _value = InfraredBERAConstants.MINIMUM_DEPOSIT;
         ibera.initialize{value: _value}(
             _gov,
             _keeper,

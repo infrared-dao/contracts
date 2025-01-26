@@ -97,6 +97,62 @@ contract InfraredDistributorTest is Test {
         assertEq(token.balanceOf(user), balanceUserBefore - amount);
     }
 
+    function testNotifyRewardResidual() public {
+        uint256 amount = 10;
+
+        uint256 amountsCumulativeBefore = distributor.amountsCumulative();
+        uint256 balanceDistributorBefore = token.balanceOf(address(distributor));
+        uint256 balanceUserBefore = token.balanceOf(address(user));
+
+        // add 3 validators
+        address validator3 = makeAddr("validator3");
+
+        infrared.addValidator(validator1);
+        infrared.addValidator(validator2);
+        infrared.addValidator(validator3);
+
+        // notify reward amount
+        vm.expectEmit();
+        emit Notified(amount, 3);
+
+        vm.prank(user);
+        distributor.notifyRewardAmount(amount);
+
+        // check amounts cumulative state changed
+        assertEq(
+            distributor.amountsCumulative(),
+            amountsCumulativeBefore + amount / 3
+        );
+
+        // check token transferred in to distributor from user
+        assertEq(
+            token.balanceOf(address(distributor)),
+            balanceDistributorBefore + amount
+        );
+        assertEq(token.balanceOf(user), balanceUserBefore - amount);
+
+        // second call will use residual
+        amountsCumulativeBefore = distributor.amountsCumulative();
+        balanceDistributorBefore = token.balanceOf(address(distributor));
+        balanceUserBefore = token.balanceOf(address(user));
+        amount = 14;
+        vm.prank(user);
+        distributor.notifyRewardAmount(amount);
+
+        // check amounts cumulative state changed
+        assertEq(
+            distributor.amountsCumulative(),
+            1 + amountsCumulativeBefore + amount / 3
+        );
+
+        // check token transferred in to distributor from user
+        assertEq(
+            token.balanceOf(address(distributor)),
+            balanceDistributorBefore + amount
+        );
+        assertEq(token.balanceOf(user), balanceUserBefore - amount);
+    }
+
     event Added(bytes pubkey, address validator, uint256 amountCumulative);
 
     function testAdd() public {

@@ -213,17 +213,13 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
     }
 
     function testSweepPassesBelowMin() public {
-        uint256 value = InfraredBERAConstants.MINIMUM_DEPOSIT;
+        uint256 value = InfraredBERAConstants.MINIMUM_DEPOSIT - 1;
         (bool success,) = address(receivor).call{value: value}("");
         assertTrue(success);
         assertEq(address(receivor).balance, value);
 
         (uint256 amount, uint256 fees) = receivor.distribution();
-        assertTrue(
-            amount
-                < InfraredBERAConstants.MINIMUM_DEPOSIT
-                    + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE
-        );
+        assertTrue(amount == InfraredBERAConstants.MINIMUM_DEPOSIT - 1);
         assertEq(fees, 0);
 
         uint256 balanceDepositor = address(depositor).balance;
@@ -299,8 +295,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         denominators[3] = 10; // 10%
 
         // Test with different amounts all above minimum
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
+        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
         uint256[] memory amounts = new uint256[](4);
         amounts[0] = min + 1e15; // Min + 0.001 ETH
         amounts[1] = min + 1e16; // Min + 0.01 ETH

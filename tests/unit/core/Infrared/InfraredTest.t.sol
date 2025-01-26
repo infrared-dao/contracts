@@ -240,7 +240,7 @@ contract InfraredTest is Helper {
         infrared.addValidators(validators);
         vm.stopPrank();
 
-        // 2. Mint ibgt to some random address, such that total supply of ibgt is 100 ether
+        // 2. Mint ibgt to some random address, such that total supply of ibgt is 10000 ether
         vm.prank(address(infrared));
         ibgt.mint(address(12), 10000 ether);
         vm.startPrank(address(blockRewardController));
@@ -251,13 +251,15 @@ contract InfraredTest is Helper {
 
         assertTrue(
             bgt.balanceOf(address(infrared)) > ibgt.totalSupply(),
-            "Infrared should have more BERA than total supply of InfraredBGT"
+            "Infrared should have more BGT than total supply of InfraredBGT"
         );
 
         // Store initial balances
         uint256 receivorBalanceBefore = ibera.receivor().balance;
 
         // 4. Call harvestBase to distribute the rewards
+        vm.expectEmit();
+        emit IInfrared.BaseHarvested(admin, 1000 ether);
         infrared.harvestBase();
 
         // Check that ETH was sent to InfraredBERA receivor
@@ -291,21 +293,13 @@ contract InfraredTest is Helper {
         );
     }
 
-    function testharvestBaseUnderflow() public {
-        vm.prank(address(infrared));
-        ibgt.mint(address(infrared), 100 ether);
-        vm.expectRevert(abi.encodeWithSignature("UnderFlow()"));
-        infrared.harvestBase();
-    }
-
     function testharvestBribesSuccess() public {
         MockERC20 mockAsset = new MockERC20("MockAsset", "MCK", 18);
         vm.prank(infraredGovernance);
         infrared.updateWhiteListedRewardTokens(address(mockAsset), true);
 
-        address[] memory tokens = new address[](2);
+        address[] memory tokens = new address[](1);
         tokens[0] = address(mockAsset);
-        tokens[1] = address(DataTypes.NATIVE_ASSET);
 
         uint256 mintMockAssetAmount = 10000000;
         uint256 mintNativeAssetAmount = 100 ether;
@@ -316,20 +310,12 @@ contract InfraredTest is Helper {
 
         uint256 mockAssetFeeAmount =
             infrared.protocolFeeAmounts(address(mockAsset));
-        uint256 wBeraFeeAmount = infrared.protocolFeeAmounts(address(wbera));
 
         vm.expectEmit(true, true, true, true);
         emit IInfrared.BribeSupplied(
             collectAddress,
             address(mockAsset),
             mintMockAssetAmount - mockAssetFeeAmount
-        );
-
-        vm.expectEmit(true, true, true, true);
-        emit IInfrared.BribeSupplied(
-            collectAddress,
-            address(wbera),
-            mintNativeAssetAmount - wBeraFeeAmount
         );
 
         address user = address(10);
@@ -340,12 +326,6 @@ contract InfraredTest is Helper {
             mockAsset.balanceOf(address(collector)),
             mintMockAssetAmount - mockAssetFeeAmount,
             "Collector should receive the mockAsset bribe"
-        );
-
-        assertEq(
-            wbera.balanceOf(address(collector)),
-            mintNativeAssetAmount - wBeraFeeAmount,
-            "Collector should receive the wBera bribe"
         );
     }
 
@@ -514,7 +494,6 @@ contract InfraredTest is Helper {
     function testSetRedSuccess() public {
         // Create new IR token mock
         InfraredGovernanceToken newIR = new InfraredGovernanceToken(
-            address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,
@@ -543,7 +522,6 @@ contract InfraredTest is Helper {
     function testSetRedFailsAlreadySet() public {
         // First set
         InfraredGovernanceToken newIR = new InfraredGovernanceToken(
-            address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,
@@ -555,7 +533,6 @@ contract InfraredTest is Helper {
 
         // Try to set again
         InfraredGovernanceToken anotherIR = new InfraredGovernanceToken(
-            address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,
@@ -570,7 +547,6 @@ contract InfraredTest is Helper {
     function testSetRedFailsAccessControll() public {
         // Create IR token without granting MINTER_ROLE
         InfraredGovernanceToken newIR = new InfraredGovernanceToken(
-            address(ibgt),
             address(12),
             infraredGovernance,
             infraredGovernance,
@@ -585,7 +561,6 @@ contract InfraredTest is Helper {
     function testSetRedFailsMinterUnauthorized() public {
         // Create IR token without granting MINTER_ROLE
         InfraredGovernanceToken newIR = new InfraredGovernanceToken(
-            address(ibgt),
             address(12),
             infraredGovernance,
             infraredGovernance,
@@ -601,7 +576,6 @@ contract InfraredTest is Helper {
     function testUpdateirMintRateSuccess() public {
         // Setup: First set IR token
         InfraredGovernanceToken newIR = new InfraredGovernanceToken(
-            address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,
@@ -650,7 +624,6 @@ contract InfraredTest is Helper {
     function testRedMintingRatioHalf() public {
         // Setup: Set IR token and mint rate to 0.5
         InfraredGovernanceToken newIR = new InfraredGovernanceToken(
-            address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,
@@ -685,7 +658,6 @@ contract InfraredTest is Helper {
     function testRedMintingRatioDouble() public {
         // Setup: Set IR token and mint rate to 2.0
         InfraredGovernanceToken newIR = new InfraredGovernanceToken(
-            address(ibgt),
             address(infrared),
             infraredGovernance,
             infraredGovernance,

@@ -48,6 +48,9 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
     mapping(bytes32 pubkeyHash => bytes) internal _signatures;
 
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
+
     /// @inheritdoc IInfraredBERA
     function initialize(
         address _gov,
@@ -84,23 +87,18 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         emit WithdrawalFlagSet(flag);
     }
 
-    function _deposit(uint256 value)
-        private
-        returns (uint256 nonce, uint256 amount, uint256 fee)
-    {
+    function _deposit(uint256 amount) internal {
         // @dev check at internal deposit level to prevent donations prior
         if (!_initialized) revert Errors.NotInitialized();
 
         // calculate amount as value less deposit fee
         uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
-        fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        if (value < min + fee) revert Errors.InvalidAmount();
+        if (amount < min) revert Errors.InvalidAmount();
 
-        amount = value - fee;
         // update tracked deposits with validators
         deposits += amount;
         // escrow funds to depositor contract to eventually forward to precompile
-        nonce = IInfraredBERADepositor(depositor).queue{value: value}(amount);
+        IInfraredBERADepositor(depositor).queue{value: amount}();
     }
 
     function _withdraw(address receiver, uint256 amount, uint256 fee)
@@ -162,11 +160,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
     }
 
     /// @inheritdoc IInfraredBERA
-    function mint(address receiver)
-        public
-        payable
-        returns (uint256 nonce, uint256 shares)
-    {
+    function mint(address receiver) public payable returns (uint256 shares) {
         // compound yield earned from EL rewards first
         compound();
 
@@ -175,16 +169,15 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         uint256 ts = totalSupply();
 
         // deposit bera request
-        uint256 amount;
-        uint256 fee;
-        (nonce, amount, fee) = _deposit(msg.value);
+        uint256 amount = msg.value;
+        _deposit(amount);
 
         // mint shares to receiver of ibera
         shares = (d != 0 && ts != 0) ? (ts * amount) / d : amount;
         if (shares == 0) revert Errors.InvalidShares();
         _mint(receiver, shares);
 
-        emit Mint(receiver, nonce, amount, shares, fee);
+        emit Mint(receiver, amount, shares);
     }
 
     /// @inheritdoc IInfraredBERA
@@ -249,9 +242,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         (uint256 amount,) = IInfraredBERAFeeReceivor(receivor).distribution();
 
         // If there are significant accumulated rewards, force processing them first
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT
-            + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        if (amount > 0 && amount < min) {
+        if (amount > 0 && amount < InfraredBERAConstants.MINIMUM_DEPOSIT) {
             revert Errors.CanNotCompoundAccumuldatedBERA();
         }
         compound();
@@ -283,22 +274,18 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
     function previewMint(uint256 beraAmount)
         public
         view
-        returns (uint256 shares, uint256 fee)
+        returns (uint256 shares)
     {
         if (!_initialized) {
-            return (0, 0);
+            return 0;
         }
 
         // First simulate compound effects like in actual mint
         (uint256 compoundAmount,) =
             IInfraredBERAFeeReceivor(receivor).distribution();
 
-        // Calculate fee
-        fee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
-
-        if (beraAmount < min + fee) {
-            return (0, 0);
+        if (beraAmount < InfraredBERAConstants.MINIMUM_DEPOSIT) {
+            return 0;
         }
 
         // Calculate shares considering both:
@@ -309,25 +296,17 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
         // First simulate compound effect on deposits
         if (compoundAmount > 0) {
-            uint256 compoundFee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-            if (
-                compoundAmount
-                    >= compoundFee + InfraredBERAConstants.MINIMUM_DEPOSIT
-            ) {
-                depositsAfterCompound += (compoundAmount - compoundFee);
+            if (compoundAmount >= InfraredBERAConstants.MINIMUM_DEPOSIT) {
+                depositsAfterCompound += (compoundAmount);
             }
         }
 
         // Then calculate shares based on user deposit
-        uint256 amount = beraAmount - fee;
+        uint256 amount = beraAmount;
         if (depositsAfterCompound == 0 || ts == 0) {
             shares = amount;
         } else {
             shares = (ts * amount) / depositsAfterCompound;
-        }
-
-        if (shares == 0) {
-            return (0, 0);
         }
     }
 
@@ -354,12 +333,8 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         uint256 depositsAfterCompound = deposits;
 
         if (compoundAmount > 0) {
-            uint256 compoundFee = InfraredBERAConstants.MINIMUM_DEPOSIT_FEE;
-            if (
-                compoundAmount
-                    >= compoundFee + InfraredBERAConstants.MINIMUM_DEPOSIT
-            ) {
-                depositsAfterCompound += (compoundAmount - compoundFee);
+            if (compoundAmount >= InfraredBERAConstants.MINIMUM_DEPOSIT) {
+                depositsAfterCompound += (compoundAmount);
             }
         }
 

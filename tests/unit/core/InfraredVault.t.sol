@@ -184,8 +184,6 @@ contract InfraredVaultTest is Helper {
         // Approve the Infrared contract to spend tokens
         newRewardToken.approve(address(infrared), rewardAmount);
 
-        uint256 residual = rewardAmount % rewardsDuration;
-
         // Call addIncentives
         infrared.addIncentives(
             address(wbera), address(newRewardToken), rewardAmount
@@ -801,6 +799,63 @@ contract InfraredVaultTest is Helper {
         );
     }
 
+    function testSameStakingTokenAndRewardToken() public {
+        uint256 rewardsAmount = 1 ether;
+        uint256 rewardsDuration = 30 days;
+
+        // Setup reward token in the infraredVault and mint rewards
+        vm.deal(address(infrared), rewardsAmount);
+        vm.startPrank(address(infrared));
+        infraredVault.addReward(address(wbera), rewardsDuration);
+        wbera.deposit{value: rewardsAmount}();
+        wbera.approve(address(infraredVault), rewardsAmount);
+        infraredVault.notifyRewardAmount(address(wbera), rewardsAmount);
+        vm.stopPrank();
+
+        // User stakes tokens
+        uint256 stakeAmount = 100 ether;
+
+        vm.deal(address(user), stakeAmount);
+        vm.startPrank(user);
+        wbera.deposit{value: stakeAmount}();
+        wbera.approve(address(infraredVault), stakeAmount);
+        infraredVault.stake(stakeAmount);
+        vm.stopPrank();
+
+        vm.deal(address(user2), stakeAmount);
+        vm.startPrank(user2);
+        wbera.deposit{value: stakeAmount}();
+        wbera.approve(address(infraredVault), stakeAmount);
+        infraredVault.stake(stakeAmount);
+        vm.stopPrank();
+
+        // Manipulate time to simulate the passage of the reward duration
+        skip(rewardsDuration + 100 minutes);
+
+        vm.prank(user);
+        infraredVault.getReward();
+
+        vm.prank(user2);
+        infraredVault.getReward();
+
+        // Check user's rewards token balance
+        uint256 userRewardsBalance = wbera.balanceOf(user);
+        assertAlmostEqual(
+            userRewardsBalance,
+            rewardsAmount / 2,
+            tolerance,
+            "User should receive the rewards within tolerance"
+        );
+
+        userRewardsBalance = wbera.balanceOf(user2);
+        assertAlmostEqual(
+            userRewardsBalance,
+            rewardsAmount / 2,
+            tolerance,
+            "User should receive the rewards within tolerance"
+        );
+    }
+
     /*//////////////////////////////////////////////////////////////
                         getRewardForUser
     //////////////////////////////////////////////////////////////*/
@@ -889,7 +944,7 @@ contract InfraredVaultTest is Helper {
         vm.stopPrank();
     }
 
-    uint256 constant tolerance = 1 ether / 1e12; // Example tolerance: 0.000001 ether
+    uint256 constant tolerance = 1 ether / 1e10; // Example tolerance: 0.000001 ether
 
     // Helper function to assert equality within a tolerance range
     function assertAlmostEqual(

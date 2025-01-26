@@ -5,13 +5,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 interface IInfraredBERA is IERC20, IAccessControl {
-    event Mint(
-        address indexed receiver,
-        uint256 nonce,
-        uint256 amount,
-        uint256 shares,
-        uint256 fee
-    );
+    event Mint(address indexed receiver, uint256 amount, uint256 shares);
     event Burn(
         address indexed receiver,
         uint256 nonce,
@@ -90,11 +84,10 @@ interface IInfraredBERA is IERC20, IAccessControl {
     /// @notice Previews the amount of InfraredBERA shares that would be minted for a given BERA amount
     /// @param beraAmount The amount of BERA to simulate depositing
     /// @return shares The amount of InfraredBERA shares that would be minted, returns 0 if the operation would fail
-    /// @return fee The fee that would be charged for the mint operation
     function previewMint(uint256 beraAmount)
         external
         view
-        returns (uint256 shares, uint256 fee);
+        returns (uint256 shares);
 
     /// @notice Previews the amount of BERA that would be received for burning InfraredBERA shares
     /// @param shares The amount of InfraredBERA shares to simulate burning
@@ -132,12 +125,8 @@ interface IInfraredBERA is IERC20, IAccessControl {
 
     /// @notice Mints ibera shares to receiver for bera paid in by sender
     /// @param receiver Address of the receiver of ibera
-    /// @return nonce The nonce issued to identify the credited bera funds for deposit
     /// @return shares The amount of shares of ibera minted
-    function mint(address receiver)
-        external
-        payable
-        returns (uint256 nonce, uint256 shares);
+    function mint(address receiver) external payable returns (uint256 shares);
 
     /// @notice Burns ibera shares from sender for bera to ultimately be transferred to receiver on subsequent call to claim
     /// @dev Sender must pay withdraw precompile fee upfront

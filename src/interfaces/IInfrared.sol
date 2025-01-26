@@ -257,7 +257,7 @@ interface IInfrared {
      * @notice Updates the weight for iBERA bribes
      * @param _weight uint256 The weight value
      */
-    function updateInfraredBERABribesWeight(uint256 _weight) external;
+    function updateInfraredBERABribeSplit(uint256 _weight) external;
 
     /**
      * @notice Updates the fee rate charged on different harvest functions
@@ -292,10 +292,8 @@ interface IInfrared {
      * @notice Claims accumulated protocol fees in contract
      * @param _to     address The recipient of the fees
      * @param _token  address The token to claim fees in
-     * @param _amount uint256 The amount of accumulated fees to claim
      */
-    function claimProtocolFees(address _to, address _token, uint256 _amount)
-        external;
+    function claimProtocolFees(address _to, address _token) external;
 
     /**
      * @notice Claims all the BGT base and commission rewards minted to this contract for validators.
@@ -566,7 +564,7 @@ interface IInfrared {
      * @param _oldWeight The old value of the weight.
      * @param _newWeight The new value of the weight.
      */
-    event InfraredBERABribesWeightUpdated(
+    event InfraredBERABribeSplitUpdated(
         address _sender, uint256 _oldWeight, uint256 _newWeight
     );
 

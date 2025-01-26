@@ -19,11 +19,14 @@ import {IBribeCollector} from "src/interfaces/IBribeCollector.sol";
 contract BribeCollector is InfraredUpgradeable, IBribeCollector {
     using SafeTransferLib for ERC20;
 
-    /// @inheritdoc IBribeCollector
+    /// @notice Payout token, required to be WBERA token as its unwrapped and used to compound rewards in the `iBera` system.
     address public payoutToken;
 
-    /// @inheritdoc IBribeCollector
+    /// @notice Payout amount is a constant value that is paid out the caller of the `claimFees` function.
     uint256 public payoutAmount;
+
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
 
     constructor(address _infrared) InfraredUpgradeable(_infrared) {
         if (_infrared == address(0)) revert Errors.ZeroAddress();
@@ -55,7 +58,8 @@ contract BribeCollector is InfraredUpgradeable, IBribeCollector {
     /*                       ADMIN FUNCTIONS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @inheritdoc IBribeCollector
+    /// @notice Set the payout token for the bribe collector.
+    /// @dev Only callable by the governor and should be set to WBERA token since iBERA  requires BERA to compound rewards.
     function setPayoutAmount(uint256 _newPayoutAmount) external onlyGovernor {
         if (_newPayoutAmount == 0) revert Errors.ZeroAmount();
         emit PayoutAmountSet(payoutAmount, _newPayoutAmount);

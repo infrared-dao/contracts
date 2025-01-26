@@ -3,15 +3,15 @@ pragma solidity 0.8.26;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-
 import {InfraredUpgradeable} from "src/core/InfraredUpgradeable.sol";
-
 import {IInfrared} from "src/interfaces/IInfrared.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {Errors} from "src/utils/Errors.sol";
 
 /// @title InfraredDistributor
-/// @notice A contract for distributing rewards in a single ERC20 token (iBERA) to validators
+/// @dev Distributes rewards to validators.
+/// @dev Validator pubkeys are mapped to an EVM address and the pool of rewards from which they claim is porportional to the number of validators.
+/// - for example, if there are 10 validators and 100 tokens are notified, each validator can claim 10 tokens.
 contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
     using SafeTransferLib for ERC20;
 
@@ -21,9 +21,14 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
     /// @inheritdoc IInfraredDistributor
     uint256 public amountsCumulative;
 
+    uint256 private residualAmount;
+
     mapping(bytes32 pubkeyHash => Snapshot) internal _snapshots;
 
     mapping(bytes32 pubkeyHash => address) internal _validators;
+
+    /// Reserve storage slots for future upgrades
+    uint256[50] private _gap; // slither-disable-line unused-state
 
     constructor(address _infrared) InfraredUpgradeable(_infrared) {
         if (_infrared == address(0)) revert Errors.ZeroAddress();
@@ -109,7 +114,20 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
         if (num == 0) revert Errors.InvalidValidator();
 
         unchecked {
-            amountsCumulative += amount / num;
+            uint256 sharePerValidator = amount / num;
+            uint256 residual = amount % num; // Calculate residual amount
+
+            // Accumulate the residual for future use
+            residualAmount += residual;
+
+            // If residual exceeds `num`, distribute it to validators
+            if (residualAmount >= num) {
+                uint256 extraShare = residualAmount / num;
+                sharePerValidator += extraShare;
+                residualAmount = residualAmount % num; // Update residual with leftover
+            }
+
+            amountsCumulative += sharePerValidator;
         }
         token.safeTransferFrom(msg.sender, address(this), amount);
 

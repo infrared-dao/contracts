@@ -60,9 +60,9 @@ contract InfraredMultisigDeployer is BatchScript {
 
         // deploy contracts and proxies
         deployInfrared(_gov);
-        deployBribeCollector(_gov, _wbera, _bribeCollectorPayoutAmount);
+        deployBribeCollector(_gov);
         deployDistributor(_gov);
-        deployInfraredBera(_gov, _wbera);
+        deployInfraredBera(_gov);
         deployInfraredBeraDepositor(_gov);
         deployInfraredBeraWithdrawor(_gov);
         deployInfraredBeraReceivor(_gov);
@@ -133,11 +133,7 @@ contract InfraredMultisigDeployer is BatchScript {
         addToBatch(address(0), 0, proxyBytecode); // Empty `to`, deployment bytecode in `data`
     }
 
-    function deployBribeCollector(
-        address _gov,
-        address _wbera,
-        uint256 _bribeCollectorPayoutAmount
-    ) internal {
+    function deployBribeCollector(address _gov) internal {
         // collector = BribeCollector(
         //     setupProxy(address(new BribeCollector(address(infrared))))
         // );
@@ -184,7 +180,7 @@ contract InfraredMultisigDeployer is BatchScript {
         addToBatch(address(0), 0, proxyBytecode); // Empty `to`, deployment bytecode in `data`
     }
 
-    function deployInfraredBera(address _gov, address _wbera) internal {
+    function deployInfraredBera(address _gov) internal {
         // InfraredBERA
         // ibera = InfraredBERA(setupProxy(address(new InfraredBERA())));
 
@@ -359,7 +355,7 @@ contract InfraredMultisigDeployer is BatchScript {
             0,
             abi.encodePacked(
                 type(InfraredBGT).creationCode,
-                abi.encode(ibgt, proxyInfrared, _gov, _gov, _gov)
+                abi.encode(proxyInfrared, _gov, _gov, _gov)
             )
         );
         red = vm.computeCreateAddress(_gov, nonce++);
@@ -463,8 +459,7 @@ contract InfraredMultisigDeployer is BatchScript {
 
         addToBatch(
             proxyIbera,
-            InfraredBERAConstants.MINIMUM_DEPOSIT
-                + InfraredBERAConstants.MINIMUM_DEPOSIT_FEE,
+            InfraredBERAConstants.MINIMUM_DEPOSIT,
             abi.encodeWithSelector(
                 InfraredBERA.initialize.selector,
                 _gov,

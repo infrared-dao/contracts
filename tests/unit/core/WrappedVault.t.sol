@@ -117,6 +117,34 @@ contract WrappedVaultTest is Helper {
         vm.stopPrank();
     }
 
+    function testClaimRewardsSameAsStaking() public {
+        uint256 rewardsAmount = 100 ether;
+        uint256 rewardsDuration = 30 days;
+        deal(address(ibgt), address(this), rewardsAmount);
+        ibgt.approve(address(infrared), rewardsAmount);
+        infrared.addIncentives(address(ibgt), address(ibgt), rewardsAmount);
+
+        vm.startPrank(user);
+
+        // Approve and deposit tokens
+        stakingToken.approve(address(wrappedVault), 500 ether);
+        wrappedVault.deposit(500 ether, user);
+
+        skip(rewardsDuration + 100 minutes);
+
+        // Claim rewards
+        wrappedVault.claimRewards();
+
+        // Verify reward distributor received the rewards
+        assertGt(
+            ibgt.balanceOf(rewardDistributor),
+            99.99 ether,
+            "Reward distributor should receive all rewards"
+        );
+
+        vm.stopPrank();
+    }
+
     function setUpGetReward(uint256 rewardsAmount, uint256 rewardsDuratoin)
         internal
     {
