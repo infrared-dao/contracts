@@ -472,8 +472,9 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         ) {
             revert Errors.Unauthorized(address(this));
         }
-
         ir = IInfraredGovernanceToken(_ir);
+        _vaultStorage().updateWhitelistedRewardTokens(_ir, true);
+
         emit IRSet(msg.sender, _ir);
     }
 

@@ -528,6 +528,11 @@ contract InfraredTest is Helper {
         infrared.setIR(address(newIR));
 
         assertEq(address(infrared.ir()), address(newIR));
+
+        assertTrue(
+            infrared.whitelistedRewardTokens(address(newIR)),
+            "IR token not whitelisted"
+        );
     }
 
     function testSetRedFailsZeroAddress() public {
