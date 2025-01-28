@@ -48,6 +48,10 @@ contract MultiRewardsConcrete is MultiRewards {
     function onReward() internal override {
         // Implement custom behavior for claiming rewards, if needed
     }
+
+    function rewardTokensLength() external view returns (uint256) {
+        return rewardTokens.length;
+    }
 }
 
 contract MultiRewardsTest is Test {
@@ -338,6 +342,239 @@ contract MultiRewardsTest is Test {
         assertEq(
             finalResidual, 7, "Should track residual after second notification"
         );
+    }
+
+    function testFuzz_NotifyRewardAmountCore(
+        uint256 reward,
+        uint256 rewardDuration
+    ) public {
+        vm.assume(rewardDuration > 100 && rewardDuration < 52 weeks);
+        vm.assume(reward > 0 && reward < type(uint64).max);
+
+        vm.startPrank(alice);
+
+        // Test tiny reward - separate setup
+        multiRewards.addReward(address(rewardToken), alice, rewardDuration);
+        rewardToken.mint(alice, 1);
+        rewardToken.approve(address(multiRewards), 1);
+        multiRewards.notifyRewardAmount(address(rewardToken), 1);
+        (,,, uint256 tinyRate,,, uint256 tinyResidual) =
+            multiRewards.rewardData(address(rewardToken));
+        assertEq(tinyRate, 0, "Tiny reward should result in zero rate");
+        assertEq(tinyResidual, 1, "Tiny reward should all go to residual");
+        vm.stopPrank();
+
+        // Test exact division - fresh setup
+        vm.startPrank(alice);
+        multiRewards = new MultiRewardsConcrete(address(baseToken)); // Fresh deployment
+        multiRewards.addReward(address(rewardToken), alice, rewardDuration);
+        uint256 exactReward = rewardDuration * 100;
+        rewardToken.mint(alice, exactReward);
+        rewardToken.approve(address(multiRewards), exactReward);
+        multiRewards.notifyRewardAmount(address(rewardToken), exactReward);
+        (,,, uint256 exactRate,,, uint256 exactResidual) =
+            multiRewards.rewardData(address(rewardToken));
+        assertEq(exactResidual, 0, "Exact division should have no residual");
+        assertEq(exactRate, 100, "Rate should be exactly 100");
+        vm.stopPrank();
+
+        // Test fuzzed reward - fresh setup
+        vm.startPrank(alice);
+        multiRewards = new MultiRewardsConcrete(address(baseToken));
+        multiRewards.addReward(address(rewardToken), alice, rewardDuration);
+        rewardToken.mint(alice, reward);
+        rewardToken.approve(address(multiRewards), reward);
+        multiRewards.notifyRewardAmount(address(rewardToken), reward);
+        (,,, uint256 rate,,, uint256 residual) =
+            multiRewards.rewardData(address(rewardToken));
+
+        if (reward < rewardDuration) {
+            assertEq(rate, 0, "Small reward should result in zero rate");
+            assertEq(residual, reward, "Small reward should all go to residual");
+        } else {
+            assertEq(
+                rate,
+                (reward - residual) / rewardDuration,
+                "Rate calculation incorrect"
+            );
+            assertLt(
+                residual,
+                rewardDuration,
+                "Residual should be less than duration"
+            );
+        }
+        vm.stopPrank();
+    }
+
+    function testFuzz_NotifyRewardAmountSequential(
+        uint256 initialReward,
+        uint256 additionalReward1,
+        uint256 additionalReward2,
+        uint256 rewardDuration
+    ) public {
+        vm.assume(rewardDuration > 0 && rewardDuration < 52 weeks);
+        vm.assume(initialReward > 0 && initialReward < type(uint64).max);
+        vm.assume(additionalReward1 > 0 && additionalReward1 < type(uint64).max);
+        vm.assume(additionalReward2 > 0 && additionalReward2 < type(uint64).max);
+
+        uint256 totalRewards =
+            initialReward + additionalReward1 + additionalReward2;
+
+        vm.startPrank(alice);
+        multiRewards.addReward(address(rewardToken), alice, rewardDuration);
+        rewardToken.mint(alice, totalRewards);
+        rewardToken.approve(address(multiRewards), totalRewards);
+
+        // Initial notification
+        multiRewards.notifyRewardAmount(address(rewardToken), initialReward);
+        (,,, uint256 initialRate,,,) =
+            multiRewards.rewardData(address(rewardToken));
+        assertLe(
+            initialRate * rewardDuration, initialReward, "Initial rate too high"
+        );
+
+        // First update
+        skip(rewardDuration / 3);
+        multiRewards.notifyRewardAmount(address(rewardToken), additionalReward1);
+        (,, uint256 periodFinish1, uint256 rate1,,, uint256 residual1) =
+            multiRewards.rewardData(address(rewardToken));
+        assertEq(
+            periodFinish1,
+            block.timestamp + rewardDuration,
+            "Period should extend"
+        );
+
+        // Second update
+        skip(rewardDuration / 3);
+        multiRewards.notifyRewardAmount(address(rewardToken), additionalReward2);
+        (,, uint256 periodFinish2, uint256 finalRate,,, uint256 finalResidual) =
+            multiRewards.rewardData(address(rewardToken));
+
+        assertEq(
+            periodFinish2,
+            block.timestamp + rewardDuration,
+            "Period should extend again"
+        );
+        assertLe(
+            finalRate * rewardDuration, totalRewards, "Final rate too high"
+        );
+        assertLt(finalResidual, rewardDuration, "Final residual too large");
+
+        vm.stopPrank();
+    }
+
+    function testFuzz_NotifyRewardAmountWithStaking(
+        uint256 stakeAmount,
+        uint256 rewardAmount,
+        uint256 rewardDuration
+    ) public {
+        vm.assume(stakeAmount > 0 && stakeAmount < 1e20);
+        vm.assume(rewardAmount > 0 && rewardAmount < 1e20);
+        vm.assume(rewardDuration > 1 hours);
+        vm.assume(rewardDuration < 52 weeks);
+        vm.assume(rewardAmount > rewardDuration);
+
+        vm.startPrank(alice);
+        multiRewards.addReward(address(rewardToken), alice, rewardDuration);
+
+        // Setup stake
+        baseToken.mint(alice, stakeAmount);
+        baseToken.approve(address(multiRewards), stakeAmount);
+        multiRewards.stake(stakeAmount);
+
+        // Add rewards
+        rewardToken.mint(alice, rewardAmount);
+        rewardToken.approve(address(multiRewards), rewardAmount);
+        multiRewards.notifyRewardAmount(address(rewardToken), rewardAmount);
+
+        // Check earnings after time passes
+        skip(1 hours);
+        uint256 earned = multiRewards.earned(alice, address(rewardToken));
+        assertGt(earned, 0, "Should earn rewards when staked");
+
+        // Earnings shouldn't exceed rewards
+        assertLe(earned, rewardAmount, "Cannot earn more than notified");
+
+        vm.stopPrank();
+    }
+
+    function testFuzz_UpdateReward(
+        uint256 stakeAmount,
+        uint256 rewardAmount,
+        uint256 rewardDuration
+    ) public {
+        vm.assume(stakeAmount > 0 && stakeAmount < 1e20);
+        vm.assume(rewardAmount > 0 && rewardAmount < 1e20);
+        vm.assume(rewardDuration > 1 hours); // Minimum duration
+        vm.assume(rewardDuration < 52 weeks);
+        vm.assume(rewardAmount > rewardDuration);
+
+        vm.startPrank(alice);
+        multiRewards.addReward(address(rewardToken), alice, rewardDuration);
+
+        baseToken.mint(alice, stakeAmount);
+        baseToken.approve(address(multiRewards), stakeAmount);
+        multiRewards.stake(stakeAmount);
+
+        rewardToken.mint(alice, rewardAmount);
+        rewardToken.approve(address(multiRewards), rewardAmount);
+        multiRewards.notifyRewardAmount(address(rewardToken), rewardAmount);
+
+        skip(1 hours); // Fixed skip time
+        uint256 earned = multiRewards.earned(alice, address(rewardToken));
+        assertGt(earned, 0);
+        vm.stopPrank();
+    }
+
+    function testFuzz_SetRewardsDuration(
+        uint256 initialReward,
+        uint256 initialDuration,
+        uint256 newDuration
+    ) public {
+        vm.assume(initialDuration > 0 && initialDuration < 52 weeks);
+        vm.assume(newDuration > 0 && newDuration < 52 weeks);
+        vm.assume(initialReward > 0 && initialReward < 1e20);
+        vm.assume(initialReward > initialDuration); // Ensure non-zero rate
+
+        vm.startPrank(alice);
+        multiRewards.addReward(address(rewardToken), alice, initialDuration);
+        rewardToken.mint(alice, initialReward);
+        rewardToken.approve(address(multiRewards), initialReward);
+        multiRewards.notifyRewardAmount(address(rewardToken), initialReward);
+
+        skip(initialDuration);
+        multiRewards.updateRewardsDuration(address(rewardToken), newDuration);
+        vm.stopPrank();
+    }
+
+    function testFuzz_GetReward(uint256 rewardAmount, uint256 timeElapsed)
+        public
+    {
+        vm.assume(rewardAmount > 0 && rewardAmount < type(uint64).max); // Realistic bounds
+        vm.assume(timeElapsed > 0 && timeElapsed < 52 weeks); // Realistic bounds
+
+        // Setup reward
+        vm.startPrank(alice);
+        multiRewards.addReward(address(rewardToken), alice, 3600);
+        rewardToken.mint(alice, rewardAmount);
+        rewardToken.approve(address(multiRewards), rewardAmount);
+        multiRewards.notifyRewardAmount(address(rewardToken), rewardAmount);
+        vm.stopPrank();
+
+        // Bob stakes
+        stakeAndApprove(bob, 1e18);
+
+        // Simulate time passage
+        skip(timeElapsed);
+
+        // Bob claims reward
+        vm.startPrank(bob);
+        multiRewards.getReward();
+        vm.stopPrank();
+
+        // Check Bob's reward balance
+        uint256 bobRewardBalance = rewardToken.balanceOf(bob);
+        assertGt(bobRewardBalance, 0);
     }
 }
 
