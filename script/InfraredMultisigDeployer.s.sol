@@ -459,7 +459,7 @@ contract InfraredMultisigDeployer is BatchScript {
 
         addToBatch(
             proxyIbera,
-            InfraredBERAConstants.MINIMUM_DEPOSIT,
+            10 ether,
             abi.encodeWithSelector(
                 InfraredBERA.initialize.selector,
                 _gov,

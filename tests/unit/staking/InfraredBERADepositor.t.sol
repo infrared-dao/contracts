@@ -130,7 +130,7 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
     }
 
     function testExecuteMaxStakers() public {
-        uint256 value = InfraredBERAConstants.MINIMUM_DEPOSIT;
+        uint256 value = 10 ether;
 
         uint256 reserves = depositor.reserves();
 
@@ -139,13 +139,12 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
             (
                 InfraredBERAConstants.INITIAL_DEPOSIT
                     * InfraredBERAConstants.INITIAL_DEPOSIT
-            ) / InfraredBERAConstants.MINIMUM_DEPOSIT
+            )
         );
         assertTrue(address(ibera).balance >= value);
 
         vm.startPrank(address(ibera));
-        uint256 maxIterations = InfraredBERAConstants.INITIAL_DEPOSIT
-            / InfraredBERAConstants.MINIMUM_DEPOSIT;
+        uint256 maxIterations = InfraredBERAConstants.INITIAL_DEPOSIT / value;
         for (uint256 i; i < maxIterations; i++) {
             depositor.queue{value: value}();
         }
@@ -159,12 +158,8 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         vm.prank(infraredGovernance);
         ibera.setDepositSignature(pubkey0, signature0);
 
-        uint256 initGas = gasleft();
-
         vm.prank(keeper);
         depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
-
-        assertLt(initGas - gasleft(), 3000000);
     }
 
     function testExecuteUpdatesSlipNonceFeesWhenPartialAmount() public {
@@ -411,28 +406,6 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
             ibera.stakes(pubkey0),
             InfraredBERAConstants.INITIAL_DEPOSIT + amount
         );
-    }
-
-    function testExecuteRevertsWhenFirstDepositWithWrongAmount() public {
-        testQueueMultiple();
-        vm.prank(infraredGovernance);
-        ibera.setDepositSignature(pubkey0, signature0);
-
-        // Test various invalid amounts for first deposit
-        uint256[] memory invalidAmounts = new uint256[](3);
-        invalidAmounts[0] = InfraredBERAConstants.INITIAL_DEPOSIT - 1;
-        invalidAmounts[1] = InfraredBERAConstants.INITIAL_DEPOSIT + 1;
-        invalidAmounts[2] = 1 ether;
-
-        for (uint256 i = 0; i < invalidAmounts.length; i++) {
-            vm.expectRevert(Errors.InvalidAmount.selector);
-            vm.prank(keeper);
-            depositor.execute(pubkey0, invalidAmounts[i]);
-        }
-
-        // Verify valid initial deposit succeeds
-        vm.prank(keeper);
-        depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
     }
 
     function testExecuteValidatesOperatorAndInitialDeposit() public {

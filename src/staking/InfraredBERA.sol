@@ -91,10 +91,6 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         // @dev check at internal deposit level to prevent donations prior
         if (!_initialized) revert Errors.NotInitialized();
 
-        // calculate amount as value less deposit fee
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
-        if (amount < min) revert Errors.InvalidAmount();
-
         // update tracked deposits with validators
         deposits += amount;
         // escrow funds to depositor contract to eventually forward to precompile
@@ -240,12 +236,8 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
     function setFeeDivisorShareholders(uint16 to) external onlyGovernor {
         // Get current distributable amount
         (uint256 amount,) = IInfraredBERAFeeReceivor(receivor).distribution();
-
-        // If there are significant accumulated rewards, force processing them first
-        if (amount > 0 && amount < InfraredBERAConstants.MINIMUM_DEPOSIT) {
-            revert Errors.CanNotCompoundAccumuldatedBERA();
-        }
         compound();
+
         emit SetFeeShareholders(feeDivisorShareholders, to);
         feeDivisorShareholders = to;
     }
@@ -284,10 +276,6 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         (uint256 compoundAmount,) =
             IInfraredBERAFeeReceivor(receivor).distribution();
 
-        if (beraAmount < InfraredBERAConstants.MINIMUM_DEPOSIT) {
-            return 0;
-        }
-
         // Calculate shares considering both:
         // 1. The compound effect (compoundAmount - fee)
         // 2. The new deposit (beraAmount - fee)
@@ -296,9 +284,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
 
         // First simulate compound effect on deposits
         if (compoundAmount > 0) {
-            if (compoundAmount >= InfraredBERAConstants.MINIMUM_DEPOSIT) {
-                depositsAfterCompound += (compoundAmount);
-            }
+            depositsAfterCompound += (compoundAmount);
         }
 
         // Then calculate shares based on user deposit
@@ -333,9 +319,7 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
         uint256 depositsAfterCompound = deposits;
 
         if (compoundAmount > 0) {
-            if (compoundAmount >= InfraredBERAConstants.MINIMUM_DEPOSIT) {
-                depositsAfterCompound += (compoundAmount);
-            }
+            depositsAfterCompound += (compoundAmount);
         }
 
         beraAmount = (depositsAfterCompound * shareAmount) / ts;

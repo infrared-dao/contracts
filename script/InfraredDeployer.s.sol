@@ -110,8 +110,7 @@ contract InfraredDeployer is Script {
         receivor.initialize(_gov, _keeper, address(ibera), address(infrared));
 
         // init deposit to avoid inflation attack
-        uint256 _value = InfraredBERAConstants.MINIMUM_DEPOSIT;
-        ibera.initialize{value: _value}(
+        ibera.initialize{value: 10 ether}(
             _gov,
             _keeper,
             address(infrared),

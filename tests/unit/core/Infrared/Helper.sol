@@ -164,9 +164,7 @@ abstract contract Helper is POLTest {
         );
 
         // init deposit to avoid inflation attack
-        uint256 _value = InfraredBERAConstants.MINIMUM_DEPOSIT;
-
-        ibera.initialize{value: _value}(
+        ibera.initialize{value: 10 ether}(
             infraredGovernance,
             keeper,
             address(infrared),

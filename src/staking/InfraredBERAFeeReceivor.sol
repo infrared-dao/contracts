@@ -71,8 +71,6 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
     /// @inheritdoc IInfraredBERAFeeReceivor
     function sweep() external returns (uint256 amount, uint256 fees) {
         (amount, fees) = distribution();
-        // do nothing if InfraredBERA deposit would revert
-        if (amount < InfraredBERAConstants.MINIMUM_DEPOSIT) return (0, 0);
 
         // add to protocol fees and sweep amount back to ibera to deposit
         if (fees > 0) shareholderFees += fees;
@@ -85,9 +83,6 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
         if (msg.sender != InfraredBERA) revert Errors.Unauthorized(msg.sender);
         uint256 _shareholderFees = shareholderFees;
         if (_shareholderFees == 0) return 0;
-        if (_shareholderFees < InfraredBERAConstants.MINIMUM_DEPOSIT) {
-            return 0;
-        }
 
         delete shareholderFees;
         sharesMinted = IInfraredBERA(InfraredBERA).mint{value: _shareholderFees}(

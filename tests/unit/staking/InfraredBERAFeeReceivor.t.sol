@@ -212,29 +212,6 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         receivor.sweep();
     }
 
-    function testSweepPassesBelowMin() public {
-        uint256 value = InfraredBERAConstants.MINIMUM_DEPOSIT - 1;
-        (bool success,) = address(receivor).call{value: value}("");
-        assertTrue(success);
-        assertEq(address(receivor).balance, value);
-
-        (uint256 amount, uint256 fees) = receivor.distribution();
-        assertTrue(amount == InfraredBERAConstants.MINIMUM_DEPOSIT - 1);
-        assertEq(fees, 0);
-
-        uint256 balanceDepositor = address(depositor).balance;
-        uint256 balanceReceivor = address(receivor).balance;
-        uint256 shareholderFees = receivor.shareholderFees();
-
-        (uint256 amount_, uint256 fees_) = receivor.sweep();
-        assertEq(amount_, 0);
-        assertEq(fees_, 0);
-
-        assertEq(address(depositor).balance, balanceDepositor);
-        assertEq(address(receivor).balance, balanceReceivor);
-        assertEq(shareholderFees, receivor.shareholderFees());
-    }
-
     // todo: refactor  receivor.collect();
 
     function testCollectUpdatesProtocolFees() public {
@@ -295,7 +272,7 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
         denominators[3] = 10; // 10%
 
         // Test with different amounts all above minimum
-        uint256 min = InfraredBERAConstants.MINIMUM_DEPOSIT;
+        uint256 min = 10 ether;
         uint256[] memory amounts = new uint256[](4);
         amounts[0] = min + 1e15; // Min + 0.001 ETH
         amounts[1] = min + 1e16; // Min + 0.01 ETH
@@ -311,6 +288,8 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
 
             for (uint256 j = 0; j < amounts.length; j++) {
                 uint256 amount = amounts[j];
+
+                assertEq(address(ibera), address(receivor.InfraredBERA()));
 
                 // Clear previous amount and set new one
                 vm.deal(address(receivor), 0);
@@ -352,8 +331,11 @@ contract InfraredBERAFeeReceivorTest is InfraredBERABaseTest {
                     "Rounding loss is less than one part"
                 );
 
-                // Force compound at end of each test to avoid accumulation
+                // Force compound at end of each test to avoid accumulating
                 ibera.compound();
+                vm.startPrank(address(ibera.infrared()));
+                ibera.collect();
+                vm.stopPrank();
             }
         }
     }

@@ -125,8 +125,6 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         // forced exit always withdraw entire stake of validator
         uint256 amount = IInfraredBERA(InfraredBERA).stakes(pubkey);
 
-        // do nothing if InfraredBERA deposit would revert
-        if (amount < InfraredBERAConstants.MINIMUM_DEPOSIT) return;
         // revert if insufficient balance
         if (amount > address(this).balance) revert Errors.InvalidAmount();
 
