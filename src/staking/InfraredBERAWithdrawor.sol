@@ -2,14 +2,12 @@
 pragma solidity 0.8.26;
 
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-
 import {Errors, Upgradeable} from "src/utils/Upgradeable.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {IInfraredBERADepositor} from "src/interfaces/IInfraredBERADepositor.sol";
 import {IInfraredBERAClaimor} from "src/interfaces/IInfraredBERAClaimor.sol";
 import {IInfraredBERAWithdrawor} from
     "src/interfaces/IInfraredBERAWithdrawor.sol";
-
 import {InfraredBERAConstants} from "./InfraredBERAConstants.sol";
 
 /// @title InfraredBERAWithdrawor

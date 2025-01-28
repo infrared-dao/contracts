@@ -3,7 +3,6 @@ pragma solidity 0.8.26;
 
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IBeaconDeposit} from "@berachain/pol/interfaces/IBeaconDeposit.sol";
-
 import {Errors, Upgradeable} from "src/utils/Upgradeable.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {IInfraredBERADepositor} from "src/interfaces/IInfraredBERADepositor.sol";
@@ -69,6 +68,11 @@ contract InfraredBERADepositor is Upgradeable {
         emit Queue(msg.value);
     }
 
+    /// @notice Executes a deposit to the deposit contract for the specified pubkey and amount.
+    /// @param pubkey The pubkey of the validator to deposit for
+    /// @param amount The amount of BERA to deposit
+    /// @dev Only callable by the keeper
+    /// @dev Only callable if the deposits are enabled
     function execute(bytes calldata pubkey, uint256 amount)
         external
         onlyKeeper

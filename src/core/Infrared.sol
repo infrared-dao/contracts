@@ -37,15 +37,13 @@ import {RewardsLib} from "./libraries/RewardsLib.sol";
 /// @dev The contract is upgradeable, ensuring flexibility for governance-led upgrades and chain compatibility.
 contract Infrared is InfraredUpgradeable, IInfrared {
     using SafeTransferLib for ERC20;
-
     using EnumerableSet for EnumerableSet.Bytes32Set;
-
     using ValidatorManagerLib for ValidatorManagerLib.ValidatorStorage;
     using VaultManagerLib for VaultManagerLib.VaultStorage;
     using RewardsLib for RewardsLib.RewardsStorage;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
-    /*                       STORAGE/EVENTS                        */
+    /*                       STORAGE                              */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice The Canonical BGT token Contract

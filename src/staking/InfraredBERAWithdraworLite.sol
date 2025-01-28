@@ -8,46 +8,56 @@ import {IInfraredBERADepositor} from "src/interfaces/IInfraredBERADepositor.sol"
 import {IInfraredBERAClaimor} from "src/interfaces/IInfraredBERAClaimor.sol";
 import {IInfraredBERAWithdrawor} from
     "src/interfaces/IInfraredBERAWithdrawor.sol";
-
 import {InfraredBERAConstants} from "./InfraredBERAConstants.sol";
 
 /// @title InfraredBERAWithdraworLite
-/// @notice Withdrawor Lite to be upgraded when voluntary exits are enabled
+/// @notice This contract is only responsible for handling involuntary exits from the CL. It is a light version of the InfraredBERAWithdrawor contract.
+/// @dev This contract should be upgraded once withdrawals are enabled by `https://github.com/berachain/beacon-kit`.
+/// @dev expects compliance of https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7002.md
 contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
+    /// @notice The withdrawal request type, execution layer withdrawal.
     uint8 public constant WITHDRAW_REQUEST_TYPE = 0x01;
+
+    /// @notice The address of the Withdraw Precompile settable in the next upgrade.
     address public WITHDRAW_PRECOMPILE; // @dev: EIP7002
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice The address of the `InfraredBERA.sol` contract.
     address public InfraredBERA;
 
+    /// @notice The address of the `InfraredBERAClaimor.sol` contract.
+    /// @dev This contract will be set in the next upgrade.
     address public claimor;
 
+    /// @notice The request struct for withdrawal requests.
+    /// @param receiver The address of the receiver of the withdrawn BERA funds.
+    /// @param timestamp The block.timestamp at which the withdraw request was issued.
+    /// @param fee The fee escrow for the withdraw precompile request.
+    /// @param amountSubmit The amount of withdrawn BERA funds left to submit request to withdraw precompile.
+    /// @param amountProcess The amount of withdrawn BERA funds left to process from funds received via withdraw request.
     struct Request {
-        /// receiver of withdrawn bera funds
         address receiver;
-        /// block.timestamp at which withdraw request issued
         uint96 timestamp;
-        /// fee escrow for withdraw precompile request
         uint256 fee;
-        /// amount of withdrawn bera funds left to submit request to withdraw precompile
         uint256 amountSubmit;
-        /// amount of withdrawn bera funds left to process from funds received via withdraw request
         uint256 amountProcess;
     }
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice Outstanding requests for claims on previously burnt ibera
+    /// The key = nonce associated with the claim
     mapping(uint256 => Request) public requests;
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice Amount of BERA internally set aside for withdraw precompile request fees
     uint256 public fees;
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice Amount of BERA internally rebalancing amongst Infrared validators
     uint256 public rebalancing;
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice The next nonce to issue withdraw request for
     uint256 public nonceRequest;
-    /// @inheritdoc IInfraredBERAWithdrawor
+
+    /// @notice The next nonce to submit withdraw request for
     uint256 public nonceSubmit;
+
     /// @inheritdoc IInfraredBERAWithdrawor
     uint256 public nonceProcess;
 
@@ -92,27 +102,35 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
         }
     }
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice Amount of BERA internally set aside to process withdraw compile requests from funds received on successful requests
     function reserves() public view returns (uint256) {
         return address(this).balance - fees;
     }
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice Queues a withdraw from InfraredBERA for chain withdraw precompile escrowing minimum fees for request to withdraw precompile
+    /// @dev not used until next upgrade.
     function queue(address, uint256) external payable returns (uint256) {
         revert Errors.WithdrawalsNotEnabled();
     }
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice Executes a withdraw request to withdraw precompile
+    /// @dev not used until next upgrade.
     function execute(bytes calldata, uint256) external payable {
         revert Errors.WithdrawalsNotEnabled();
     }
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice Processes the funds received from withdraw precompile to next-to-process request receiver
+    /// @dev Reverts if balance has not increased by full amount of request for next-to-process request nonce
+    /// @dev not used until next upgrade.
     function process() external pure {
         revert Errors.WithdrawalsNotEnabled();
     }
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @notice Handles Forced withdrawals from the CL.
+    /// @param pubkey The pubkey of the validator that has been forced to exit.
+    /// @dev RESTRICTED USAGE: This function should ONLY be called when:
+    /// - A validator has been forced to exit from the CL.
+    /// @dev The funds will enter the IBERA system as a deposit via the InfraredBERADepositor.
     function sweep(bytes calldata pubkey) external onlyGovernor {
         // only callable when withdrawals are not enabled
         if (IInfraredBERA(InfraredBERA).withdrawalsEnabled()) {

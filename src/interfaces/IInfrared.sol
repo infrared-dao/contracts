@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {ERC20} from "@solmate/tokens/ERC20.sol";
-
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {IRewardVaultFactory as IBerachainRewardsVaultFactory} from
     "@berachain/pol/interfaces/IRewardVaultFactory.sol";
@@ -10,16 +9,12 @@ import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {IInfraredGovernanceToken} from
     "src/interfaces/IInfraredGovernanceToken.sol";
-
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-
 import {IBribeCollector} from "src/interfaces/IBribeCollector.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
-
 import {DataTypes} from "src/utils/DataTypes.sol";
-
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 
