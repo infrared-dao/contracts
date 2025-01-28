@@ -17,7 +17,7 @@ import {Infrared} from "src/core/Infrared.sol";
 
 contract DeployIRandVoterTest is Helper {
     function testDeployments() public {
-        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+        voter = Voter(setupProxy(address(new Voter())));
 
         ir = new InfraredGovernanceToken(
             address(infrared),
@@ -36,7 +36,9 @@ contract DeployIRandVoterTest is Helper {
         sIR = new VotingEscrow(
             keeper, address(ir), address(voter), address(infrared)
         );
-        voter.initialize(address(sIR), infraredGovernance, keeper);
+        voter.initialize(
+            address(infrared), address(sIR), infraredGovernance, keeper
+        );
     }
 
     function isProxy(address proxy) internal view returns (bool) {

@@ -25,19 +25,19 @@ contract BribeCollector is InfraredUpgradeable, IBribeCollector {
     /// @notice Payout amount is a constant value that is paid out the caller of the `claimFees` function.
     uint256 public payoutAmount;
 
-    /// Reserve storage slots for future upgrades
-    uint256[50] private _gap; // slither-disable-line unused-state
-
-    constructor(address _infrared) InfraredUpgradeable(_infrared) {
-        if (_infrared == address(0)) revert Errors.ZeroAddress();
-    }
+    // Reserve storage slots for future upgrades for safety
+    uint256[40] private __gap;
 
     function initialize(
+        address _infrared,
         address _gov,
         address _payoutToken,
         uint256 _payoutAmount
     ) external initializer {
-        if (_gov == address(0) || _payoutToken == address(0)) {
+        if (
+            _infrared == address(0) || _gov == address(0)
+                || _payoutToken == address(0)
+        ) {
             revert Errors.ZeroAddress();
         }
         if (_payoutAmount == 0) revert Errors.ZeroAmount();
@@ -51,7 +51,7 @@ contract BribeCollector is InfraredUpgradeable, IBribeCollector {
         _grantRole(GOVERNANCE_ROLE, _gov);
 
         // init upgradeable components
-        __InfraredUpgradeable_init();
+        __InfraredUpgradeable_init(_infrared);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

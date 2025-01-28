@@ -69,8 +69,8 @@ contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
     /// @inheritdoc IVoter
     mapping(address => bool) public isAlive;
 
-    /// Reserve storage slots for future upgrades
-    uint256[50] private _gap; // slither-disable-line unused-state
+    /// Reserve storage slots for future upgrades for safety
+    uint256[40] private __gap;
 
     /**
      * @notice Ensures operations only occur in new epochs and outside distribution window
@@ -115,33 +115,29 @@ contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
     }
 
     /**
-     * @notice Constructor for Voter contract
-     * @dev Reverts if infrared address is zero
-     * @param _infrared Address of the Infrared contract
-     */
-    constructor(address _infrared) InfraredUpgradeable(_infrared) {
-        if (_infrared == address(0)) revert Errors.ZeroAddress();
-    }
-
-    /**
      * @notice Initializes the Voter contract with the voting escrow and fee vault
      * @dev Sets up initial state including fee vault with configured reward tokens
+     * @param _infrared Address of the Infrared contract
      * @param _ve Address of the voting escrow contract
      * @param _gov Address of the governance multisig
      * @param _keeper Address of the keeper
      */
-    function initialize(address _ve, address _gov, address _keeper)
-        external
-        initializer
-    {
-        if (_ve == address(0)) revert Errors.ZeroAddress();
+    function initialize(
+        address _infrared,
+        address _ve,
+        address _gov,
+        address _keeper
+    ) external initializer {
+        if (_ve == address(0) || _infrared == address(0)) {
+            revert Errors.ZeroAddress();
+        }
         ve = _ve;
         maxVotingNum = 30;
 
         // adaptation to create fee vault for global fees amongst all voters
         address[] memory _rewards = new address[](2);
-        _rewards[0] = address(infrared.ibgt());
-        _rewards[1] = address(infrared.honey());
+        _rewards[0] = address(IInfrared(_infrared).ibgt());
+        _rewards[1] = address(IInfrared(_infrared).honey());
 
         feeVault = address(new BribeVotingReward(address(this), _rewards));
 
@@ -151,7 +147,7 @@ contract Voter is IVoter, InfraredUpgradeable, ReentrancyGuardUpgradeable {
 
         // init upgradeable components
         __ReentrancyGuard_init();
-        __InfraredUpgradeable_init();
+        __InfraredUpgradeable_init(_infrared);
     }
 
     /// @inheritdoc IVoter

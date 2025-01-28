@@ -84,14 +84,14 @@ contract InfraredForkTest is HelperForkTest {
         address collectorImplementation = collector.currentImplementation();
         vm.expectRevert();
         BribeCollector(collectorImplementation).initialize(
-            infraredGovernance, address(wbera), 10 ether
+            address(infrared), infraredGovernance, address(wbera), 10 ether
         );
 
         address distributorImplementation =
             infraredDistributor.currentImplementation();
         vm.expectRevert();
         InfraredDistributor(distributorImplementation).initialize(
-            infraredGovernance, address(ibera)
+            address(infrared), infraredGovernance, address(ibera)
         );
     }
 }

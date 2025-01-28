@@ -61,8 +61,8 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
     /// @notice Mapping of validator pubkeyHash to their deposit signature. All validators MUST have their signiture amounts set to `INITIAL_DEPOSIT` to be valid.
     mapping(bytes32 pubkeyHash => bytes) internal _signatures;
 
-    /// @dev Reserve storage slots for future upgrades
-    uint256[50] private _gap; // slither-disable-line unused-state
+    /// @dev Reserve storage slots for future upgrades for safety
+    uint256[40] private __gap;
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       INITIALIZATION                       */
@@ -145,9 +145,6 @@ contract InfraredBERA is ERC20Upgradeable, Upgradeable, IInfraredBERA {
     /// @notice Sets the fee shareholders taken on yield from EL coinbase priority fees + MEV
     /// @param to The new fee shareholders represented as an integer denominator (1/x)%
     function setFeeDivisorShareholders(uint16 to) external onlyGovernor {
-        // Get current distributable amount
-        (uint256 amount,) = IInfraredBERAFeeReceivor(receivor).distribution();
-
         compound();
         emit SetFeeShareholders(feeDivisorShareholders, to);
         feeDivisorShareholders = to;

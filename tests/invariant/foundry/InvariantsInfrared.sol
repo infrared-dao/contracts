@@ -91,21 +91,20 @@ contract InvariantsInfrared is Test {
 
         // initialize Infrared contracts;
         infrared = Infrared(payable(setupProxy(address(new Infrared()))));
-        collector = BribeCollector(
-            setupProxy(address(new BribeCollector(address(infrared))))
-        );
-        distributor = InfraredDistributor(
-            setupProxy(address(new InfraredDistributor(address(infrared))))
-        );
+        collector = BribeCollector(setupProxy(address(new BribeCollector())));
+        distributor =
+            InfraredDistributor(setupProxy(address(new InfraredDistributor())));
 
         // IRED voting
-        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+        voter = Voter(setupProxy(address(new Voter())));
         sIR = new VotingEscrow(
             address(this), address(ir), address(voter), address(infrared)
         );
 
-        collector.initialize(address(this), address(mockWbera), 10 ether);
-        distributor.initialize(address(this), address(ibera));
+        collector.initialize(
+            address(infrared), address(this), address(mockWbera), 10 ether
+        );
+        distributor.initialize(address(infrared), address(this), address(ibera));
         Infrared.InitializationData memory data = Infrared.InitializationData(
             governance,
             keeper,
@@ -128,7 +127,7 @@ contract InvariantsInfrared is Test {
         infrared.setIBGT(address(ibgt));
 
         // @dev must initialize after infrared so address(this) has keeper role
-        voter.initialize(address(sIR), governance, keeper);
+        voter.initialize(address(infrared), address(sIR), governance, keeper);
         /* Handler Setup */
 
         // deploy the handler contracts

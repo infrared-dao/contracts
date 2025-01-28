@@ -22,8 +22,8 @@ contract InfraredBERAFeeReceivor is Upgradeable, IInfraredBERAFeeReceivor {
     /// @notice Accumulated protocol fees in contract to be claimed.
     uint256 public shareholderFees;
 
-    /// @notice Reserve storage slots for future upgrades
-    uint256[50] private _gap; // slither-disable-line unused-state
+    /// @notice Reserve storage slots for future upgrades for safety
+    uint256[40] private __gap;
 
     /// @notice Initializer function (replaces constructor)
     /// @param _gov Address for admin / gov to upgrade

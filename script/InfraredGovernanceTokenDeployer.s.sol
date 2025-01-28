@@ -30,7 +30,7 @@ contract InfraredGovernanceTokenDeployer is Script {
         infrared = Infrared(payable(_infrared));
         ibgt = infrared.ibgt();
 
-        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+        voter = Voter(setupProxy(address(new Voter())));
 
         ir = new InfraredGovernanceToken(
             address(infrared), _gov, _gov, _gov, address(0)
@@ -43,7 +43,7 @@ contract InfraredGovernanceTokenDeployer is Script {
         sIR = new VotingEscrow(
             _keeper, address(ir), address(voter), address(infrared)
         );
-        voter.initialize(address(sIR), _gov, _keeper);
+        voter.initialize(address(infrared), address(sIR), _gov, _keeper);
 
         vm.stopBroadcast();
     }

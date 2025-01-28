@@ -16,8 +16,8 @@ contract InfraredBERAClaimor is Upgradeable, IInfraredBERAClaimor {
 
     IInfraredBERA public ibera;
 
-    /// Reserve storage slots for future upgrades
-    uint256[50] private _gap; // slither-disable-line unused-state
+    /// Reserve storage slots for future upgrades for safety
+    uint256[40] private __gap;
 
     /// @notice Initializer function (replaces constructor)
     /// @param _gov Address of the initial admin / gov

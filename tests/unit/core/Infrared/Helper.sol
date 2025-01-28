@@ -118,15 +118,16 @@ abstract contract Helper is POLTest {
             payable(setupProxy(address(new InfraredBERAFeeReceivor())))
         );
 
-        collector = BribeCollector(
-            setupProxy(address(new BribeCollector(address(infrared))))
-        );
-        infraredDistributor = InfraredDistributor(
-            setupProxy(address(new InfraredDistributor(address(infrared))))
-        );
+        collector = BribeCollector(setupProxy(address(new BribeCollector())));
+        infraredDistributor =
+            InfraredDistributor(setupProxy(address(new InfraredDistributor())));
 
-        collector.initialize(infraredGovernance, address(wbera), 10 ether);
-        infraredDistributor.initialize(infraredGovernance, address(ibera));
+        collector.initialize(
+            address(infrared), infraredGovernance, address(wbera), 10 ether
+        );
+        infraredDistributor.initialize(
+            address(infrared), infraredGovernance, address(ibera)
+        );
 
         // voter = Voter(setupProxy(address(new Voter(address(infrared)))));
 

@@ -97,8 +97,8 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     bytes32 public constant REWARDS_STORAGE_LOCATION =
         0xad12e6d08cc0150709acd6eed0bf697c60a83227922ab1d254d1ca4d3072ca00;
 
-    /// Reserve storage slots for future upgrades
-    uint256[50] private _gap; // slither-disable-line unused-state
+    /// Reserve storage slots for future upgrades for safety
+    uint256[40] private __gap;
 
     /// @return vs The validator storage struct
     function _validatorStorage()
@@ -149,8 +149,6 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    constructor() InfraredUpgradeable(address(0)) {}
-
     struct InitializationData {
         address _gov;
         address _keeper;
@@ -173,7 +171,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         _validateInitializationData(data);
         _initializeCoreContracts(data);
         // init upgradeable components
-        __InfraredUpgradeable_init();
+        __InfraredUpgradeable_init(address(0));
     }
 
     function _validateInitializationData(InitializationData memory data)

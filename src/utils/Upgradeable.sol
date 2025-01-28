@@ -19,6 +19,9 @@ abstract contract Upgradeable is UUPSUpgradeable, AccessControlUpgradeable {
     bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
     bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
 
+    // Reserve storage space for upgrades
+    uint256[20] private __gap;
+
     /**
      * @notice Modifier to restrict access to KEEPER_ROLE.
      */

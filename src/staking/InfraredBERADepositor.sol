@@ -23,8 +23,8 @@ contract InfraredBERADepositor is Upgradeable {
     event Queue(uint256 amount);
     event Execute(bytes pubkey, uint256 amount);
 
-    /// Reserve storage slots for future upgrades
-    uint256[50] private _gap; // slither-disable-line unused-state
+    /// Reserve storage slots for future upgrades for safety
+    uint256[40] private __gap;
 
     /// @notice Initialize the contract (replaces the constructor)
     /// @param _gov Address for admin / gov to upgrade

@@ -36,10 +36,9 @@ contract InfraredDistributorTest is Test {
         token = new MockERC20("iBERA", "iBERA", 18);
         infrared = new MockInfrared(address(token), red, rewardsFactory);
 
-        distributor = InfraredDistributor(
-            setupProxy(address(new InfraredDistributor(address(infrared))))
-        );
-        distributor.initialize(address(this), address(token));
+        distributor =
+            InfraredDistributor(setupProxy(address(new InfraredDistributor())));
+        distributor.initialize(address(infrared), address(this), address(token));
 
         // Set up initial state for tests
         deal(address(token), user, 1000 ether);

@@ -27,15 +27,17 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
 
     mapping(bytes32 pubkeyHash => address) internal _validators;
 
-    /// Reserve storage slots for future upgrades
-    uint256[50] private _gap; // slither-disable-line unused-state
+    /// Reserve storage slots for future upgrades for safety
+    uint256[40] private __gap;
 
-    constructor(address _infrared) InfraredUpgradeable(_infrared) {
-        if (_infrared == address(0)) revert Errors.ZeroAddress();
-    }
-
-    function initialize(address _gov, address _token) external initializer {
-        if (_gov == address(0) || _token == address(0)) {
+    function initialize(address _infrared, address _gov, address _token)
+        external
+        initializer
+    {
+        if (
+            _infrared == address(0) || _gov == address(0)
+                || _token == address(0)
+        ) {
             revert Errors.ZeroAddress();
         }
 
@@ -49,7 +51,7 @@ contract InfraredDistributor is InfraredUpgradeable, IInfraredDistributor {
         _grantRole(GOVERNANCE_ROLE, _gov);
 
         // init upgradeable components
-        __InfraredUpgradeable_init();
+        __InfraredUpgradeable_init(_infrared);
     }
 
     /// @inheritdoc IInfraredDistributor

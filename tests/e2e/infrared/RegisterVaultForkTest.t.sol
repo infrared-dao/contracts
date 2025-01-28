@@ -72,7 +72,7 @@ contract RegisterVaultForkTest is InfraredForkTest {
     }
 
     function deployIR() internal {
-        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+        voter = Voter(setupProxy(address(new Voter())));
 
         ir = new InfraredGovernanceToken(
             address(infrared),
@@ -91,7 +91,9 @@ contract RegisterVaultForkTest is InfraredForkTest {
         sIR = new VotingEscrow(
             keeper, address(ir), address(voter), address(infrared)
         );
-        voter.initialize(address(sIR), infraredGovernance, keeper);
+        voter.initialize(
+            address(infrared), address(sIR), infraredGovernance, keeper
+        );
     }
 
     function setupProxy(address implementation)

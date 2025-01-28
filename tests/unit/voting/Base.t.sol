@@ -90,7 +90,7 @@ abstract contract Base is Test {
         address distributor = address(new MockDistributor(address(ibera)));
 
         // IRED voting
-        voter = Voter(setupProxy(address(new Voter(address(infrared)))));
+        voter = Voter(setupProxy(address(new Voter())));
         escrow = new VotingEscrow(
             address(this), address(ir), address(voter), address(infrared)
         );
@@ -110,7 +110,9 @@ abstract contract Base is Test {
             1 days
         );
         infrared.initialize(data);
-        voter.initialize(address(escrow), address(this), keeper);
+        voter.initialize(
+            address(infrared), address(escrow), address(this), keeper
+        );
 
         escrow.setVoterAndDistributor(address(voter), keeper);
         escrow.setAllowedManager(keeper);

@@ -56,12 +56,9 @@ contract InfraredDeployer is Script {
 
         infrared = Infrared(payable(setupProxy(address(new Infrared()))));
 
-        collector = BribeCollector(
-            setupProxy(address(new BribeCollector(address(infrared))))
-        );
-        distributor = InfraredDistributor(
-            setupProxy(address(new InfraredDistributor(address(infrared))))
-        );
+        collector = BribeCollector(setupProxy(address(new BribeCollector())));
+        distributor =
+            InfraredDistributor(setupProxy(address(new InfraredDistributor())));
 
         // InfraredBERA
         ibera = InfraredBERA(setupProxy(address(new InfraredBERA())));
@@ -78,8 +75,10 @@ contract InfraredDeployer is Script {
         );
 
         // initialize proxies
-        collector.initialize(_gov, _wbera, _bribeCollectorPayoutAmount);
-        distributor.initialize(_gov, address(ibera));
+        collector.initialize(
+            address(infrared), _gov, _wbera, _bribeCollectorPayoutAmount
+        );
+        distributor.initialize(address(infrared), _gov, address(ibera));
 
         Infrared.InitializationData memory data = Infrared.InitializationData(
             _gov,
