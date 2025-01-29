@@ -107,18 +107,24 @@ contract InfraredBERADepositor is Upgradeable {
 
         // @dev determin what to set the operator, if the operator is not set we know this is the first deposit and we should set it to infrared.
         // if not we know this is the second or subsequent deposit (subject to internal test below) and we should set the operator to address(0).
-        address operator = IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(pubkey)
-            == address(0) ? IInfraredBERA(InfraredBERA).infrared() : address(0);
-
-        // check whether first deposit via internal logic to protect against bypass beacon deposit attack
-        if (!IInfraredBERA(InfraredBERA).staked(pubkey)) {
-            // @dev this is the first deposit, we need to set the amount to the initial deposit amount.
-            if (operator != address(0)) {
-                /// @dev if this is the first deposit, overrite the amount to the initial deposit amount.
-                amount = InfraredBERAConstants.INITIAL_DEPOSIT;
-            } else {
+        address operatorBeacon =
+            IBeaconDeposit(DEPOSIT_CONTRACT).getOperator(pubkey);
+        address operator = IInfraredBERA(InfraredBERA).infrared();
+        // check if first beacon deposit by checking if the registered operator is set
+        if (operatorBeacon != address(0)) {
+            // Not first deposit. Ensure the correct operator is set for subsequent deposits
+            if (operatorBeacon != operator) {
+                revert Errors.UnauthorizedOperator();
+            }
+            // check whether first deposit via internal logic to protect against bypass beacon deposit attack
+            if (!IInfraredBERA(InfraredBERA).staked(pubkey)) {
                 revert Errors.OperatorAlreadySet();
             }
+            // A nuance of berachain is that subsequent deposits set operator to address(0)
+            operator = address(0);
+        } else {
+            /// First deposit, overwrite the amount to the initial deposit amount.
+            amount = InfraredBERAConstants.INITIAL_DEPOSIT;
         }
 
         // @notice load the signature for the pubkey. This is only used for the first deposit but can be re-used safley since this is checked only on the first deposit.

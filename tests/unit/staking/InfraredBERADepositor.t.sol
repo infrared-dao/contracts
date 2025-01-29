@@ -254,6 +254,40 @@ contract InfraredBERADepositorTest is InfraredBERABaseTest {
         );
     }
 
+    function testOperatorAttackInitDepositReverts() public {
+        vm.prank(infraredGovernance);
+        ibera.setDepositSignature(pubkey0, signature0);
+
+        assertEq(ibera.signatures(pubkey0), signature0);
+        address user = address(560);
+        deal(address(user), InfraredBERAConstants.INITIAL_DEPOSIT);
+        vm.prank(user);
+        ibera.mint{value: InfraredBERAConstants.INITIAL_DEPOSIT}(user);
+
+        address DEPOSIT_CONTRACT = depositor.DEPOSIT_CONTRACT();
+        uint256 balanceZero = address(0).balance;
+
+        // bypass attack
+        address attacker = address(690);
+        deal(attacker, InfraredBERAConstants.INITIAL_DEPOSIT);
+        bytes memory credFaulty = abi.encodePacked(
+            depositor.ETH1_ADDRESS_WITHDRAWAL_PREFIX(), uint88(0), attacker
+        );
+        vm.prank(attacker);
+        BeaconDeposit(DEPOSIT_CONTRACT).deposit{
+            value: InfraredBERAConstants.INITIAL_DEPOSIT
+        }(pubkey0, credFaulty, signature1, attacker);
+
+        vm.prank(keeper);
+        vm.expectRevert(Errors.UnauthorizedOperator.selector);
+        depositor.execute(pubkey0, InfraredBERAConstants.INITIAL_DEPOSIT);
+
+        assertEq(
+            address(0).balance,
+            balanceZero + InfraredBERAConstants.INITIAL_DEPOSIT
+        );
+    }
+
     function testExecuteRegistersDeposit() public {
         testExecuteUpdatesSlipsNonceFeesWhenFillAmounts();
 
