@@ -9,4 +9,6 @@ interface IInfraredGovernanceToken is IERC20Mintable, IAccessControl {
     function ibgt() external view returns (address);
     /// @notice The address of the Infrared contract
     function infrared() external view returns (address);
+    /// @notice returns paused status of the contract
+    function paused() external view returns (bool);
 }

@@ -6,11 +6,10 @@
 pragma solidity ^0.8.0;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ERC20Pausable} from
-    "@openzeppelin/contracts/token/ERC20/extensions/ERC20Pausable.sol";
 import {AccessControlEnumerable} from
     "@openzeppelin/contracts/access/extensions/AccessControlEnumerable.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {CustomPausable} from "./CustomPausable.sol";
 
 /**
  * @dev {ERC20} token, including:
@@ -31,7 +30,7 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 contract ERC20PresetMinterPauser is
     Context,
     AccessControlEnumerable,
-    ERC20Pausable
+    CustomPausable
 {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
@@ -69,7 +68,7 @@ contract ERC20PresetMinterPauser is
      *
      * - the caller must have the `MINTER_ROLE`.
      */
-    function mint(address to, uint256 amount) public virtual {
+    function mint(address to, uint256 amount) public virtual whenNotPaused {
         require(
             hasRole(MINTER_ROLE, _msgSender()),
             "ERC20PresetMinterPauser: must have minter role to mint"
@@ -86,7 +85,7 @@ contract ERC20PresetMinterPauser is
      *
      * - the caller must have the `BURNER_ROLE`.
      */
-    function burn(uint256 amount) public virtual {
+    function burn(uint256 amount) public virtual whenNotPaused {
         require(
             hasRole(BURNER_ROLE, _msgSender()),
             "ERC20PresetMinterPauser: must have burner role to burn"
@@ -131,8 +130,7 @@ contract ERC20PresetMinterPauser is
     function _update(address from, address to, uint256 value)
         internal
         virtual
-        override(ERC20Pausable)
-        whenNotPaused
+        override(CustomPausable)
     {
         super._update(from, to, value);
     }

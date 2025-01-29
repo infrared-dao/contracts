@@ -978,4 +978,59 @@ contract InfraredRewardsTest is Helper {
             "Infrared should have claimed the lost rewards"
         );
     }
+
+    function testHarvestVaultWithPausedIRToken() public {
+        deployIR();
+
+        // Setup: Configure IR token and mint rate
+        vm.startPrank(infraredGovernance);
+        infrared.updateWhiteListedRewardTokens(address(wbera), true);
+        infrared.updateIRMintRate(1_500_000); // 1.5x IR per InfraredBGT
+
+        // Pause IR token
+        ir.pause();
+        vm.stopPrank();
+
+        // Setup vault and user stake
+        address user = address(10);
+        vm.deal(user, 1000 ether);
+        uint256 stakeAmount = 1000 ether;
+        vm.startPrank(user);
+        wbera.deposit{value: stakeAmount}();
+        wbera.approve(address(infraredVault), stakeAmount);
+        infraredVault.stake(stakeAmount);
+        vm.stopPrank();
+
+        // Setup rewards in BerachainRewardsVault
+        address vaultWbera = factory.getVault(address(wbera));
+        vm.startPrank(address(blockRewardController));
+        bgt.mint(address(distributor), 100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(address(distributor));
+        bgt.approve(address(vaultWbera), 100 ether);
+        IBerachainRewardsVault(vaultWbera).notifyRewardAmount(
+            abi.encodePacked(bytes32("v0"), bytes16("")), 100 ether
+        );
+        vm.stopPrank();
+
+        // Advance time to accrue rewards
+        vm.warp(block.timestamp + 10 days);
+
+        uint256 vaultIRBefore = ir.balanceOf(address(infraredVault));
+
+        // Perform harvest
+        vm.startPrank(keeper);
+        infrared.harvestVault(address(wbera));
+        vm.stopPrank();
+
+        uint256 vaultIRAfter = ir.balanceOf(address(infraredVault));
+
+        // Verify no IR tokens were minted while paused
+        assertEq(
+            vaultIRAfter,
+            vaultIRBefore,
+            "No IR tokens should be minted while paused"
+        );
+    }
 }

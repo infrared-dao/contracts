@@ -381,7 +381,8 @@ library RewardsLib {
         if (ir != address(0) && mintRate > 0) {
             // Calculate the amount of IR tokens to mint = BGT rewards * mint rate
             uint256 irAmt = (bgtAmt * mintRate) / UNIT_DENOMINATOR;
-            try IInfraredGovernanceToken(ir).mint(address(this), irAmt) {
+            if (!IInfraredGovernanceToken(ir).paused()) {
+                IInfraredGovernanceToken(ir).mint(address(this), irAmt);
                 {
                     // Check if IR is already a reward token in the vault
                     (, uint256 IRRewardsDuration,,,,,) = vault.rewardData(ir);
@@ -396,7 +397,7 @@ library RewardsLib {
                     ERC20(ir).safeApprove(address(vault), irAmt);
                     vault.notifyRewardAmount(ir, irAmt);
                 }
-            } catch {
+            } else {
                 // @dev Misconfigured Role or Hit Supply Cap
                 emit ErrorMisconfiguredIRMinting(irAmt);
             }
