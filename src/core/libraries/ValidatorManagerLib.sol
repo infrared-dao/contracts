@@ -183,12 +183,10 @@ library ValidatorManagerLib {
     }
 
     /// @notice Cancels boosts for validators in the BGT smart contract before they are activated
-    /// @param $ Storage pointer to the validator storage
     /// @param bgt address of the BGT contract
     /// @param _pubkeys array of public keys of validators
     /// @param _amts array of amounts of boosts to cancel
     function cancelBoosts(
-        ValidatorStorage storage $,
         address bgt,
         bytes[] memory _pubkeys,
         uint128[] memory _amts
@@ -198,10 +196,10 @@ library ValidatorManagerLib {
         }
         for (uint256 i = 0; i < _pubkeys.length; i++) {
             bytes memory pubkey = _pubkeys[i];
-            bytes32 id = keccak256(pubkey);
-            if (!$.validatorIds.contains(id)) {
-                revert Errors.InvalidValidator();
-            }
+
+            // We don't need to verify the validator exists to cancel its boosts, this is a trusted function
+            // and the validator could already be exited
+
             if (_amts[i] == 0) revert Errors.ZeroAmount();
             IBerachainBGT(bgt).cancelBoost(pubkey, _amts[i]);
         }
@@ -225,12 +223,10 @@ library ValidatorManagerLib {
     }
 
     /// @notice Queues to drop the boosts for validators in the BGT smart contract
-    /// @param $ Storage pointer to the validator storage
     /// @param bgt address of the BGT contract
     /// @param _pubkeys array of public keys of validators
     /// @param _amts array of amounts of boosts to drop
     function queueDropBoosts(
-        ValidatorStorage storage $,
         address bgt,
         bytes[] memory _pubkeys,
         uint128[] memory _amts
@@ -239,9 +235,9 @@ library ValidatorManagerLib {
             revert Errors.InvalidArrayLength();
         }
         for (uint256 i = 0; i < _pubkeys.length; i++) {
-            if (!$.validatorIds.contains(keccak256(_pubkeys[i]))) {
-                revert Errors.InvalidValidator();
-            }
+            // We don't need to verify the validator exists to drop its boosts, this is a trusted function
+            // and the validator could already be exited
+
             if (_amts[i] == 0) revert Errors.ZeroAmount();
             IBerachainBGT(bgt).queueDropBoost(_pubkeys[i], _amts[i]);
         }
@@ -262,29 +258,23 @@ library ValidatorManagerLib {
             revert Errors.InvalidArrayLength();
         }
         for (uint256 i = 0; i < _pubkeys.length; i++) {
-            bytes memory pubkey = _pubkeys[i];
-            bytes32 id = keccak256(pubkey);
-            if (!$.validatorIds.contains(id)) {
+            if (!$.validatorIds.contains(keccak256(_pubkeys[i]))) {
                 revert Errors.InvalidValidator();
             }
+
             if (_amts[i] == 0) revert Errors.ZeroAmount();
             IBerachainBGT(bgt).cancelDropBoost(_pubkeys[i], _amts[i]);
         }
     }
 
     /// @notice Activates drop boosts for validators in the BGT smart contract
-    /// @param $ Storage pointer to the validator storage
     /// @param bgt address of the BGT contract
     /// @param _pubkeys array of public keys of validators
-    function dropBoosts(
-        ValidatorStorage storage $,
-        address bgt,
-        bytes[] memory _pubkeys
-    ) external {
+    function dropBoosts(address bgt, bytes[] memory _pubkeys) external {
         for (uint256 i = 0; i < _pubkeys.length; i++) {
-            if (!$.validatorIds.contains(keccak256(_pubkeys[i]))) {
-                revert Errors.InvalidValidator();
-            }
+            // We don't need to verify the validator exists to drop its boosts, this is a trusted function
+            // and the validator could already be exited
+
             IBerachainBGT(bgt).dropBoost(address(this), _pubkeys[i]);
         }
     }

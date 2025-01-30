@@ -734,7 +734,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         external
         onlyKeeper
     {
-        _validatorStorage().cancelBoosts(address(_bgt), _pubkeys, _amts);
+        ValidatorManagerLib.cancelBoosts(address(_bgt), _pubkeys, _amts);
         emit CancelledBoosts(msg.sender, _pubkeys, _amts);
     }
 
@@ -753,7 +753,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         bytes[] calldata _pubkeys,
         uint128[] calldata _amts
     ) external onlyKeeper {
-        _validatorStorage().queueDropBoosts(address(_bgt), _pubkeys, _amts);
+        ValidatorManagerLib.queueDropBoosts(address(_bgt), _pubkeys, _amts);
         emit QueueDropBoosts(msg.sender, _pubkeys, _amts);
     }
 
@@ -771,7 +771,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     /// @notice Drops an amount of BGT from an existing boost of validators by user.
     /// @param _pubkeys bytes[] memory The pubkeys of the validators to remove boost from.
     function dropBoosts(bytes[] calldata _pubkeys) external {
-        _validatorStorage().dropBoosts(address(_bgt), _pubkeys);
+        ValidatorManagerLib.dropBoosts(address(_bgt), _pubkeys);
         emit DroppedBoosts(msg.sender, _pubkeys);
     }
 
