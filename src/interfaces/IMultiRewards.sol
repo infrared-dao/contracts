@@ -34,6 +34,11 @@ interface IMultiRewards {
     event RewardAdded(address indexed rewardsToken, uint256 reward);
 
     /**
+     * @notice Emitted when a reward is removed from the contract
+     */
+    event RewardRemoved(address indexed rewardsToken);
+
+    /**
      * @notice Emitted when a rewards distributor is updaRewardAddedd
      * @param rewardsToken The address of the reward token
      * @param newDistributor The address of the new distributor

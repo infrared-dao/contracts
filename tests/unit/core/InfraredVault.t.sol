@@ -1203,4 +1203,116 @@ contract InfraredVaultTest is Helper {
             balanceAfter - balanceBefore > 0, "Rewards should be claimable"
         );
     }
+
+    /*//////////////////////////////////////////////////////////////
+                        removing rewards
+    //////////////////////////////////////////////////////////////*/
+
+    // Test removing rewards from InfraredVault
+    function testSuccessfulRemoveReward() public {
+        // Setup: Add a new reward token
+        MockERC20 rewardToken = new MockERC20("Reward Token", "RWD", 18);
+        uint256 rewardsDuration = 7 days;
+
+        vm.startPrank(address(infrared));
+        infraredVault.addReward(address(rewardToken), rewardsDuration);
+
+        // Verify reward token was added
+        address[] memory rewardTokensBefore = infraredVault.getAllRewardTokens();
+        assertTrue(
+            contains(rewardTokensBefore, address(rewardToken)),
+            "Reward token should be in the list before removal"
+        );
+
+        // Remove the reward token
+        infraredVault.removeReward(address(rewardToken));
+        vm.stopPrank();
+
+        // Verify reward token was removed
+        address[] memory rewardTokensAfter = infraredVault.getAllRewardTokens();
+        assertFalse(
+            contains(rewardTokensAfter, address(rewardToken)),
+            "Reward token should not be in the list after removal"
+        );
+    }
+
+    function testRevertRemoveRewardWithZeroAddress() public {
+        vm.startPrank(address(infrared));
+        vm.expectRevert(Errors.ZeroAddress.selector);
+        infraredVault.removeReward(address(0));
+        vm.stopPrank();
+    }
+
+    function testRevertRemoveRewardUnauthorized() public {
+        // Try to remove reward token from unauthorized address
+        address unauthorizedCaller = address(0x123);
+        MockERC20 rewardToken = new MockERC20("Reward Token", "RWD", 18);
+
+        vm.startPrank(unauthorizedCaller);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                Errors.Unauthorized.selector, unauthorizedCaller
+            )
+        );
+        infraredVault.removeReward(address(rewardToken));
+        vm.stopPrank();
+    }
+
+    function testRemoveRewardAndAddBack() public {
+        // Setup: Add a new reward token
+        MockERC20 rewardToken = new MockERC20("Reward Token", "RWD", 18);
+        uint256 rewardsDuration = 7 days;
+
+        vm.startPrank(address(infrared));
+        infraredVault.addReward(address(rewardToken), rewardsDuration);
+
+        // Remove the reward token
+        infraredVault.removeReward(address(rewardToken));
+
+        // Add it back
+        infraredVault.addReward(address(rewardToken), rewardsDuration);
+        vm.stopPrank();
+
+        // Verify reward token was added back successfully
+        address[] memory rewardTokens = infraredVault.getAllRewardTokens();
+        assertTrue(
+            contains(rewardTokens, address(rewardToken)),
+            "Reward token should be in the list after adding back"
+        );
+    }
+
+    function testRemoveRewardWithActiveRewards() public {
+        // Setup: Add a new reward token and distribute some rewards
+        MockERC20 rewardToken = new MockERC20("Reward Token", "RWD", 18);
+        uint256 rewardsDuration = 7 days;
+        uint256 rewardAmount = 1000 ether;
+
+        // Add reward token
+        vm.startPrank(address(infrared));
+        infraredVault.addReward(address(rewardToken), rewardsDuration);
+
+        // Setup rewards
+        deal(address(rewardToken), address(infrared), rewardAmount);
+        rewardToken.approve(address(infraredVault), rewardAmount);
+        infraredVault.notifyRewardAmount(address(rewardToken), rewardAmount);
+
+        // Remove reward token while rewards are active
+        vm.expectRevert();
+        infraredVault.removeReward(address(rewardToken));
+        vm.stopPrank();
+    }
+
+    // Helper function to check if an address exists in an array
+    function contains(address[] memory addresses, address target)
+        internal
+        pure
+        returns (bool)
+    {
+        for (uint256 i = 0; i < addresses.length; i++) {
+            if (addresses[i] == target) {
+                return true;
+            }
+        }
+        return false;
+    }
 }

@@ -99,6 +99,19 @@ library VaultManagerLib {
         vault.addReward(_rewardsToken, _rewardsDuration);
     }
 
+    function removeReward(
+        VaultStorage storage $,
+        address _stakingToken,
+        address _rewardsToken
+    ) external {
+        IInfraredVault vault = $.vaultRegistry[_stakingToken];
+        if (address(vault) == address(0)) {
+            revert Errors.NoRewardsVault();
+        }
+
+        vault.removeReward(_rewardsToken);
+    }
+
     /// @notice Updates the global rewards duration for new vaults.
     /// @param $ Storage pointer to the VaultStorage struct.
     /// @param newDuration New rewards duration.

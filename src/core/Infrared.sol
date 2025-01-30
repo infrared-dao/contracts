@@ -284,7 +284,6 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         emit NewVault(msg.sender, _asset, address(vault));
     }
 
-    ///////
     /// @notice Adds a new reward token to a specific staking vault
     /// @dev Only callable by governance when contract is initialized
     /// @param _stakingToken The address of the staking token associated with the vault
@@ -293,7 +292,6 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     /// @custom:error ZeroAmount if _rewardsDuration is 0
     /// @custom:error RewardTokenNotWhitelisted if _rewardsToken is not whitelisted
     /// @custom:error NoRewardsVault if vault doesn't exist for _stakingToken
-    ////
     function addReward(
         address _stakingToken,
         address _rewardsToken,
@@ -302,6 +300,17 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         _vaultStorage().addReward(
             _stakingToken, _rewardsToken, _rewardsDuration
         );
+    }
+
+    /// @notice Removes a malicious or failing reward token from a specific staking vault
+    /// @dev Only callable by governance when contract is initialized
+    /// @param _stakingToken The address of the staking token associated with the vault
+    /// @param _rewardsToken The address of the token to be removed as a reward
+    function removeReward(address _stakingToken, address _rewardsToken)
+        external
+        onlyGovernor
+    {
+        _vaultStorage().removeReward(_stakingToken, _rewardsToken);
     }
 
     /// @notice Adds reward incentives to a specific staking vault

@@ -75,6 +75,13 @@ interface IInfraredVault is IMultiRewards {
         external;
 
     /**
+     * @notice Used to remove malicious or unused reward tokens
+     * @param _rewardsToken The reward token to remove
+     * @custom:access-control Requires INFRARED_ROLE
+     */
+    function removeReward(address _rewardsToken) external;
+
+    /**
      * @notice Notifies the vault of newly added rewards
      * @dev Updates internal reward rate calculations
      * @param _rewardToken The reward token address

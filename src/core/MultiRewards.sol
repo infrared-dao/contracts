@@ -294,6 +294,25 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
     }
 
     /**
+     * @notice Removes a reward token from the contract.
+     * @param _rewardsToken address The address of the reward token.
+     */
+    function _removeReward(address _rewardsToken) internal {
+        require(block.timestamp >= rewardData[_rewardsToken].periodFinish);
+        // Remove from the array
+        for (uint256 i; i < rewardTokens.length; i++) {
+            if (rewardTokens[i] == _rewardsToken) {
+                rewardTokens[i] = rewardTokens[rewardTokens.length - 1];
+                rewardTokens.pop();
+                break;
+            }
+        }
+
+        delete rewardData[_rewardsToken];
+        emit RewardRemoved(_rewardsToken);
+    }
+
+    /**
      * @notice Notifies the contract that reward tokens is being sent to the contract.
      * @param _rewardsToken address The address of the reward token.
      * @param reward        uint256 The amount of reward tokens is being sent to the contract.

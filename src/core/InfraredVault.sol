@@ -149,6 +149,12 @@ contract InfraredVault is MultiRewards, IInfraredVault {
     }
 
     /// @inheritdoc IInfraredVault
+    function removeReward(address _rewardsToken) external onlyInfrared {
+        if (_rewardsToken == address(0)) revert Errors.ZeroAddress();
+        _removeReward(_rewardsToken);
+    }
+
+    /// @inheritdoc IInfraredVault
     function notifyRewardAmount(address _rewardToken, uint256 _reward)
         external
         onlyInfrared
