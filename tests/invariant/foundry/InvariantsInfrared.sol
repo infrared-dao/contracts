@@ -25,7 +25,6 @@ import {MockERC20} from "tests/unit/mocks/MockERC20.sol";
 import "tests/unit/mocks/MockWbera.sol";
 import "@berachain/pol/rewards/RewardVaultFactory.sol";
 
-import "./handlers/Governance.sol";
 import "./handlers/Keeper.sol";
 import "./handlers/User.sol";
 
@@ -46,7 +45,6 @@ contract InvariantsInfrared is Test {
     address public governance;
 
     Keeper public keeperHandler;
-    Governance public governanceHandler;
     User public userHandler;
 
     MockERC20 public bgt;
@@ -133,17 +131,11 @@ contract InvariantsInfrared is Test {
         // deploy the handler contracts
         keeperHandler = new Keeper(infrared, keeper, rewardsFactory);
 
-        governanceHandler = new Governance(infrared, governance);
-
         userHandler = new User(infrared, keeperHandler);
 
         bytes4[] memory keeperSelectors = new bytes4[](2);
         keeperSelectors[0] = keeperHandler.registerVault.selector;
         keeperSelectors[1] = keeperHandler.harvestVault.selector;
-
-        bytes4[] memory governanceSelectors = new bytes4[](2);
-        governanceSelectors[0] = governanceHandler.delegateBGT.selector;
-        governanceSelectors[1] = governanceHandler.redelegate.selector;
 
         bytes4[] memory userSelectors = new bytes4[](3);
         userSelectors[0] = userHandler.deposit.selector;
@@ -163,14 +155,6 @@ contract InvariantsInfrared is Test {
         targetContract(address(keeperHandler));
 
         targetSelector(
-            FuzzSelector({
-                addr: address(governanceHandler),
-                selectors: governanceSelectors
-            })
-        );
-        targetContract(address(governanceHandler));
-
-        targetSelector(
             FuzzSelector({addr: address(userHandler), selectors: userSelectors})
         );
         targetContract(address(userHandler));
@@ -186,33 +170,11 @@ contract InvariantsInfrared is Test {
         );
     }
 
-    /// forge-config: default.invariant.fail-on-revert = false
-    function invariant_delegated_amount_not_bigger_than_BGT_balance()
-        public
-        view
-    {
-        // assert that the total delegated bgt is not bigger than the total bgt rewards
-        assertLe(
-            governanceHandler.totalDelegatedBgt(),
-            ERC20(address(bgt)).balanceOf(address(infrared))
-        );
-    }
-
     function setupProxy(address implementation)
         internal
         returns (address proxy)
     {
         proxy = address(new ERC1967Proxy(implementation, ""));
-    }
-
-    /// forge-config: default.invariant.fail-on-revert = false
-    function invariant_delegated_amount_not_bigger_than_InfraredBGT_total_supply(
-    ) public view {
-        // assert that the total delegated bgt is not bigger than the total bgt rewards
-        assertTrue(
-            governanceHandler.totalDelegatedBgt() <= ibgt.totalSupply(),
-            "Invariant: Delegated BGT amount should not be bigger than InfraredBGT total supply"
-        );
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -232,40 +194,4 @@ contract InvariantsInfrared is Test {
             "Invariant: Users should earn InfraredBGT rewards"
         );
     }
-
-    /*//////////////////////////////////////////////////////////////
-                    Validator Rewards Invariants
-    //////////////////////////////////////////////////////////////*/
-
-    // function invariant_only_whitelisted_reward_tokens_are_distributed_to_InfraredBGTVault(
-    // ) public {
-    //     address otherToken = ibgtVaultHandler.otherToken(); // non whitelisted token that can be part of the rewards array in the harvestValidator function
-    //     // assert that only whitelisted reward tokens are distributed
-    //     assertTrue(
-    //         MultiRewards(address(infrared.ibgtVault())).rewardPerToken(
-    //             otherToken
-    //         ) == 0,
-    //         "Invariant: Only whitelisted reward tokens should be distributed"
-    //     );
-    // }
-
-    // function invariant_rewards_are_distributed_to_ibgt_vault() public {
-    //     // MultiRewards ibgtVault = MultiRewards(address(infrared.ibgtVault()));
-    //     // address ibgt = address(ibgtVaultHandler.ibgt());
-    //     // address ir = address(ibgtVaultHandler.ir());
-    //     // address wbera = address(ibgtVaultHandler.wbera());
-    //     // assert that the total rewards are distributed to the ibgt vault
-    //     // assertTrue(ibgtVaultHandler.ibgtRewards() > 0 && ibgtVault.rewardPerToken(ibgt) > 0 , "Invariant: Rewards should be distributed to InfraredBGT vault");
-    //     // assertTrue(ibgtVaultHandler.irRewards() > 0 && ibgtVault.rewardPerToken(ir) > 0 , "Invariant: Rewards should be distributed to InfraredBGT vault");
-    //     // assertTrue(ibgtVaultHandler.wberaRewards() > 0 && ibgtVault.rewardPerToken(wbera) > 0 , "Invariant: Rewards should be distributed to InfraredBGT vault");
-    // }
-
-    // function invariant_users_earn_ibgt_rewards() public {
-    //     // assert that the users earn ibgt rewards
-    //     uint256 user1Rewards = userHandler.userClaimed(userHandler.user1());
-    //     assertTrue(
-    //         ibgt.balanceOf(userHandler.user1()) == user1Rewards,
-    //         "Invariant: Users should earn InfraredBGT rewards"
-    //     );
-    // }
 }

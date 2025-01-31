@@ -574,8 +574,6 @@ contract InfraredBERATest is InfraredBERABaseTest {
         (bool success,) = address(receivor).call{value: 12 ether}("");
         assertTrue(success);
 
-        (uint256 compAmount,) = receivor.distribution();
-
         uint256 value = 20000 ether;
 
         // Get compound preview before any state changes
@@ -786,9 +784,6 @@ contract InfraredBERATest is InfraredBERABaseTest {
         uint256 rewardsAmount = 12 ether; // > MINIMUM_DEPOSIT + MINIMUM_DEPOSIT_FEE (11 ether)
         (bool success,) = address(receivor).call{value: rewardsAmount}("");
         assertTrue(success);
-
-        // Verify we have enough to compound
-        (uint256 amount,) = receivor.distribution();
 
         uint16 newFee = 4; // 25% fee
 
