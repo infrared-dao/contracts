@@ -313,10 +313,18 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         );
     }
 
-    /// @notice Removes a malicious or failing reward token from a specific staking vault
-    /// @dev Only callable by governance when contract is initialized
+    /// @notice Removes a malicious or failing reward token from a staking vault
+    /// @dev CAUTION: This is an emergency function that will result in loss of unclaimed rewards.
+    /// @dev Only callable by governance when:
+    ///      1. The reward token is malfunctioning (e.g., transfers failing)
+    ///      2. The reward token is malicious
+    ///      3. The reward distribution needs to be forcefully terminated
+    /// @dev Consequences:
+    ///      - All unclaimed rewards will be permanently lost
+    ///      - Users will not be able to claim outstanding rewards
+    ///      - Remaining reward tokens will need to be recovered separately
     /// @param _stakingToken The address of the staking token associated with the vault
-    /// @param _rewardsToken The address of the token to be removed as a reward
+    /// @param _rewardsToken The address of the reward token to be removed
     function removeReward(address _stakingToken, address _rewardsToken)
         external
         onlyGovernor
