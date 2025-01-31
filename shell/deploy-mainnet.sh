@@ -1,0 +1,31 @@
+set -euo pipefail
+
+# expect PRIVATE_KEY in `.env`
+source .env
+
+# Change these to correct params
+ADMIN_ADDRESS="0x182a31A27A0D39d735b31e80534CFE1fCd92c38f"
+VOTING_KEEPER="0x242D55c9404E0Ed1fD37dB1f00D60437820fe4f0"
+REWARDS_DURATION=86400
+BRIBE_COLLECTOR_PAYOUT_AMOUNT=10000000000000000000000
+
+# Berachain deployments
+BGT="0x656b95E550C07a9ffe548bd4085c72418Ceb1dba"
+BERACHAIN_REWARDS_FACTORY="0x94Ad6Ac84f6C6FbA8b8CCbD71d9f4f101def52a8"
+BERA_CHEF="0xdf960E8F3F19C481dDE769edEDD439ea1a63426a"
+BEACON_DEPOSIT="0x4242424242424242424242424242424242424242"
+WBERA="0x6969696969696969696969696969696969696969"
+HONEY="0xFCBD14DC51f0A4d49d5E53C2E0950e0bC26d0Dce"
+
+# Cartio RPC URL
+RPC_URL="http://35.203.86.197:8545/"
+
+VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan'
+
+forge script script/InfraredDeployer.s.sol:InfraredDeployer \
+    --sig "run(address,address,address,address,address,address,address,address,uint256,uint256)" $ADMIN_ADDRESS $VOTING_KEEPER $BGT $BERACHAIN_REWARDS_FACTORY $BERA_CHEF $BEACON_DEPOSIT $WBERA $HONEY $REWARDS_DURATION $BRIBE_COLLECTOR_PAYOUT_AMOUNT \
+    --broadcast  --rpc-url $RPC_URL \
+    --private-key $PRIVATE_KEY \
+    --verifier-url $VERIFYER_URL \
+    --etherscan-api-key "verifyContract" 
+    
