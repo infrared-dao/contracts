@@ -253,7 +253,7 @@ contract InfraredBERAWithdrawor is Upgradeable, IInfraredBERAWithdrawor {
         uint256 amount = IInfraredBERA(InfraredBERA).stakes(pubkey);
 
         // revert if insufficient balance
-        if (amount > address(this).balance) revert Errors.InvalidAmount();
+        if (amount > reserves()) revert Errors.InvalidAmount();
 
         // todo: verfiy forced withdrawal against beacon roots
 
