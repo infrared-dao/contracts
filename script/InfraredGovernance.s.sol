@@ -93,9 +93,39 @@ contract InfraredGovernance is Script {
         vm.stopBroadcast();
     }
 
-    function toggleVault(address payable infrared, address _asset) external {
+    function grantHypernativePauserRole(
+        address payable infrared,
+        address hypernative
+    ) external {
+        bytes32 role = Infrared(infrared).PAUSER_ROLE();
         vm.startBroadcast();
-        Infrared(infrared).toggleVault(_asset);
+        Infrared(infrared).grantRole(role, hypernative);
+        vm.stopBroadcast();
+    }
+
+    function revokeHypernativePauserRole(
+        address payable infrared,
+        address hypernative
+    ) external {
+        bytes32 role = Infrared(infrared).PAUSER_ROLE();
+        vm.startBroadcast();
+        Infrared(infrared).revokeRole(role, hypernative);
+        vm.stopBroadcast();
+    }
+
+    function pauseVaultStaking(address payable infrared, address _asset)
+        external
+    {
+        vm.startBroadcast();
+        Infrared(infrared).pauseStaking(_asset);
+        vm.stopBroadcast();
+    }
+
+    function unpauseVaultStaking(address payable infrared, address _asset)
+        external
+    {
+        vm.startBroadcast();
+        Infrared(infrared).unpauseStaking(_asset);
         vm.stopBroadcast();
     }
 

@@ -58,11 +58,16 @@ interface IInfraredVault is IMultiRewards {
     ) external;
 
     /**
-     * @notice Toggles pause state of the vault
-     * @dev Affects all vault operations when paused
+     * @notice Pauses staking functionality on a specific vault
      * @custom:access-control Requires INFRARED_ROLE
      */
-    function togglePause() external;
+    function pauseStaking() external;
+
+    /**
+     * @notice Un-pauses staking functionality on a specific vault
+     * @custom:access-control Requires INFRARED_ROLE
+     */
+    function unpauseStaking() external;
 
     /**
      * @notice Adds a new reward token to the vault

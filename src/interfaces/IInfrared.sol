@@ -208,9 +208,16 @@ interface IInfrared {
     /**
      * @notice Pauses staking functionality on a specific vault
      * @param _asset The address of the staking asset associated with the vault to pause
-     * @dev Only callable by governance, will revert if vault doesn't exist
+     * @dev Only callable by pauser or governance, will revert if vault doesn't exist
      */
-    function toggleVault(address _asset) external;
+    function pauseStaking(address _asset) external;
+
+    /**
+     * @notice Un-pauses staking functionality on a specific vault
+     * @param _asset The address of the staking asset associated with the vault to pause
+     * @dev Only callable by gov, will revert if vault doesn't exist
+     */
+    function unpauseStaking(address _asset) external;
 
     /**
      * @notice Claims lost rewards on a specific vault

@@ -126,10 +126,15 @@ contract InfraredVault is MultiRewards, IInfraredVault {
     }
 
     /// @inheritdoc IInfraredVault
-    function togglePause() external onlyInfrared {
-        bool isPaused = paused();
-        if (isPaused) _unpause();
-        else _pause();
+    function unpauseStaking() external onlyInfrared {
+        if (!paused()) return;
+        _unpause();
+    }
+
+    /// @inheritdoc IInfraredVault
+    function pauseStaking() external onlyInfrared {
+        if (paused()) return;
+        _pause();
     }
 
     /// @inheritdoc IInfraredVault

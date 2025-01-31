@@ -40,9 +40,6 @@ interface IInfraredBERADepositor {
         address _depositContract
     ) external;
 
-    /// @notice Update governance controlled deposit enabled flag
-    function toggleDepositsEnabledFlag() external;
-
     /// @notice The Deposit Contract Address for Berachain
     function DEPOSIT_CONTRACT() external view returns (address);
 

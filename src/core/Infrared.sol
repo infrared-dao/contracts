@@ -232,6 +232,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         _grantRole(DEFAULT_ADMIN_ROLE, data._gov);
         _grantRole(KEEPER_ROLE, data._keeper);
         _grantRole(GOVERNANCE_ROLE, data._gov);
+        _grantRole(PAUSER_ROLE, data._gov);
 
         wbera = IWBERA(data._wbera);
         honey = ERC20(data._honey);
@@ -282,6 +283,16 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     {
         vault = IInfraredVault(_vaultStorage().registerVault(_asset));
         emit NewVault(msg.sender, _asset, address(vault));
+    }
+
+    /// @notice Sets new vault registration paused or not
+    /// @param pause True to pause, False to un pause
+    function setVaultRegistrationPauseStatus(bool pause)
+        external
+        onlyGovernor
+    {
+        _vaultStorage().setVaultRegistrationPauseStatus(pause);
+        emit VaultRegistrationPauseStatus(pause);
     }
 
     /// @notice Adds a new reward token to a specific staking vault
@@ -386,9 +397,16 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Pauses staking functionality on a specific vault
     /// @param _asset The address of the staking asset associated with the vault to pause
-    /// @dev Only callable by governance, will revert if vault doesn't exist
-    function toggleVault(address _asset) external onlyGovernor {
-        _vaultStorage().toggleVault(_asset);
+    /// @dev Only callable by pauser, will revert if vault doesn't exist
+    function pauseStaking(address _asset) external onlyPauser {
+        _vaultStorage().pauseStaking(_asset);
+    }
+
+    /// @notice Un-pauses staking functionality on a specific vault
+    /// @param _asset The address of the staking asset associated with the vault to unpause
+    /// @dev Only callable by gov, will revert if vault doesn't exist
+    function unpauseStaking(address _asset) external onlyGovernor {
+        _vaultStorage().unpauseStaking(_asset);
     }
 
     /// @notice Claims lost rewards on a specific vault
@@ -555,7 +573,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @notice Claims all the BGT base and commission rewards minted to this contract for validators.
-    function harvestBase() public {
+    function harvestBase() public whenNotPaused {
         uint256 bgtAmt =
             RewardsLib.harvestBase(address(ibgt), address(_bgt), address(ibera));
         emit BaseHarvested(msg.sender, bgtAmt);
@@ -563,7 +581,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Claims all the BGT rewards for the vault associated with the given staking token.
     /// @param _asset address The address of the staking asset that the vault is for.
-    function harvestVault(address _asset) external {
+    function harvestVault(address _asset) external whenNotPaused {
         IInfraredVault vault = vaultRegistry(_asset);
         uint256 bgtAmt = _rewardsStorage().harvestVault(
             vault,
@@ -580,7 +598,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     /// @param _tokens address[] memory The addresses of the tokens to harvest in the contract.
     /// @dev This should be called right before the collector `claimFees` function.
     /// @dev 1. harvestBribes(), 2. collector.claimFees(), 3. collectBribes() (which handles the wBERA -> iBERA + fees distribution)
-    function harvestBribes(address[] calldata _tokens) external {
+    function harvestBribes(address[] calldata _tokens) external whenNotPaused {
         /// @dev Check against the whitelisted tokens so that we dont interact with non-whitelisted transfer method.
         uint256 len = _tokens.length;
         bool[] memory whitelisted = new bool[](len);
@@ -629,7 +647,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
     }
 
     /// @notice Credits all accumulated rewards to the operator
-    function harvestOperatorRewards() public {
+    function harvestOperatorRewards() public whenNotPaused {
         uint256 _amt = _rewardsStorage().harvestOperatorRewards(
             address(ibera), address(voter), address(distributor)
         );
@@ -640,7 +658,7 @@ contract Infrared is InfraredUpgradeable, IInfrared {
 
     /// @notice Claims all the BGT staker rewards from boosting validators.
     /// @dev Sends rewards to iBGT vault.
-    function harvestBoostRewards() external {
+    function harvestBoostRewards() external whenNotPaused {
         (address _token, uint256 _amount) = _rewardsStorage()
             .harvestBoostRewards(
             address(_bgt), address(ibgtVault), address(voter), rewardsDuration()
@@ -831,16 +849,6 @@ contract Infrared is InfraredUpgradeable, IInfrared {
         returns (IInfraredVault vault)
     {
         vault = _vaultStorage().vaultRegistry[_stakingToken];
-    }
-
-    /// @notice Sets new vault registration paused or not
-    /// @param pause True to pause, False to un pause
-    function setVaultRegistrationPauseStatus(bool pause)
-        external
-        onlyGovernor
-    {
-        _vaultStorage().setVaultRegistrationPauseStatus(pause);
-        emit VaultRegistrationPauseStatus(pause);
     }
 
     /// @notice The rewards duration

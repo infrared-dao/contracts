@@ -1033,4 +1033,178 @@ contract InfraredRewardsTest is Helper {
             "No IR tokens should be minted while paused"
         );
     }
+
+    function testPauseAndUnpauseHarvestFunctions() public {
+        // Setup initial state
+        vm.startPrank(infraredGovernance);
+        infrared.grantRole(infrared.PAUSER_ROLE(), address(123)); // Grant PAUSER_ROLE to a third party
+        vm.stopPrank();
+
+        // Test 1: Any harvest function should work before pausing
+        infrared.harvestBase();
+        infrared.harvestVault(address(wbera));
+        infrared.harvestBoostRewards();
+        infrared.harvestOperatorRewards();
+
+        // Test 2: PAUSER_ROLE can pause
+        vm.startPrank(address(123));
+        infrared.pause();
+        vm.stopPrank();
+
+        // Test 3: All harvest functions should revert when paused
+        vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
+        infrared.harvestBase();
+
+        vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
+        infrared.harvestVault(address(wbera));
+
+        vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
+        infrared.harvestBoostRewards();
+
+        vm.expectRevert(abi.encodeWithSignature("EnforcedPause()"));
+        infrared.harvestOperatorRewards();
+
+        // Test 4: Only governor can unpause
+        vm.startPrank(address(123));
+        vm.expectRevert(
+            abi.encodeWithSignature(
+                "AccessControlUnauthorizedAccount(address,bytes32)",
+                address(123),
+                infrared.GOVERNANCE_ROLE()
+            )
+        );
+        infrared.unpause();
+        vm.stopPrank();
+
+        // Test 5: Governor can unpause
+        vm.startPrank(infraredGovernance);
+        infrared.unpause();
+        vm.stopPrank();
+
+        // Test 6: Functions work again after unpause
+        infrared.harvestBase();
+        infrared.harvestVault(address(wbera));
+        infrared.harvestBoostRewards();
+        infrared.harvestOperatorRewards();
+    }
+
+    function testOnlyGovernorAndPauserCanPause() public {
+        // Test 1: Random address cannot pause
+        vm.startPrank(address(456));
+        vm.expectRevert(abi.encodeWithSignature("NotPauser()"));
+        infrared.pause();
+        vm.stopPrank();
+
+        // Test 2: Governor can pause without PAUSER_ROLE
+        vm.startPrank(infraredGovernance);
+        infrared.pause();
+        infrared.unpause();
+        vm.stopPrank();
+
+        // Test 3: Address with PAUSER_ROLE can pause
+        vm.startPrank(infraredGovernance);
+        infrared.grantRole(infrared.PAUSER_ROLE(), address(789));
+        vm.stopPrank();
+
+        vm.startPrank(address(789));
+        infrared.pause();
+        vm.stopPrank();
+
+        // Cleanup: unpause for other tests
+        vm.startPrank(infraredGovernance);
+        infrared.unpause();
+        vm.stopPrank();
+    }
+
+    function testPauserRoleManagement() public {
+        // Test 1: Only governor can grant PAUSER_ROLE
+        bytes32 pauserRole = infrared.PAUSER_ROLE();
+
+        vm.startPrank(address(123));
+        vm.expectRevert(
+            abi.encodeWithSignature(
+                "AccessControlUnauthorizedAccount(address,bytes32)",
+                address(123),
+                infrared.DEFAULT_ADMIN_ROLE()
+            )
+        );
+        infrared.grantRole(pauserRole, address(456));
+        vm.stopPrank();
+
+        // Test 2: Governor can grant and revoke PAUSER_ROLE
+        vm.startPrank(infraredGovernance);
+        infrared.grantRole(pauserRole, address(456));
+        assertTrue(infrared.hasRole(pauserRole, address(456)));
+
+        infrared.revokeRole(pauserRole, address(456));
+        assertFalse(infrared.hasRole(pauserRole, address(456)));
+        vm.stopPrank();
+
+        // Test 3: Revoked pauser cannot pause
+        vm.startPrank(address(456));
+        vm.expectRevert(abi.encodeWithSignature("NotPauser()"));
+        infrared.pause();
+        vm.stopPrank();
+    }
+
+    function testRewardsContinueAfterPause() public {
+        // Setup rewards in BerachainRewardsVault
+        address vaultWbera = factory.getVault(address(stakingAsset));
+        vm.startPrank(address(blockRewardController));
+        bgt.mint(address(distributor), 100 ether);
+        vm.stopPrank();
+
+        vm.startPrank(address(distributor));
+        bgt.approve(address(vaultWbera), 100 ether);
+        IBerachainRewardsVault(vaultWbera).notifyRewardAmount(
+            abi.encodePacked(bytes32("v0"), bytes16("")), 100 ether
+        );
+        vm.stopPrank();
+
+        address user = address(123);
+        stakeInVault(address(infraredVault), stakingAsset, user, 100 ether);
+
+        // Advance time to accrue rewards
+        vm.warp(2 days);
+
+        // Perform harvest
+        infrared.harvestVault(stakingAsset);
+
+        // Record initial earned amount
+        uint256 initialEarned = infraredVault.earned(user, address(ibgt));
+
+        // Pause the contract
+        address hypernative = address(101);
+        bytes32 pauser = infrared.PAUSER_ROLE();
+
+        vm.prank(infraredGovernance);
+        infrared.grantRole(pauser, hypernative);
+
+        vm.prank(hypernative);
+        infrared.pause();
+
+        // Skip forward time within reward period
+        vm.warp(block.timestamp + 2 days);
+
+        // Check rewards still accrued during pause
+        uint256 earnedDuringPause = infraredVault.earned(user, address(ibgt));
+        assertTrue(
+            earnedDuringPause > initialEarned,
+            "Rewards should accrue during pause"
+        );
+
+        // Unpause and harvest
+        vm.prank(infraredGovernance);
+        infrared.unpause();
+
+        infrared.harvestVault(stakingAsset);
+
+        // Skip more time and verify rewards continue to accrue
+        vm.warp(block.timestamp + 2 days);
+        uint256 earnedAfterUnpause = infraredVault.earned(user, address(ibgt));
+        assertTrue(
+            earnedAfterUnpause > earnedDuringPause,
+            "Rewards should continue accruing after unpause"
+        );
+    }
 }

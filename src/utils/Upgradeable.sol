@@ -3,6 +3,8 @@ pragma solidity 0.8.26;
 
 import {AccessControlUpgradeable} from
     "@openzeppelin-upgradeable/access/AccessControlUpgradeable.sol";
+import {PausableUpgradeable} from
+    "@openzeppelin-upgradeable/utils/PausableUpgradeable.sol";
 import {
     UUPSUpgradeable,
     ERC1967Utils
@@ -14,10 +16,15 @@ import {Errors} from "./Errors.sol";
  * @title Upgradeable
  * @notice Provides base upgradeability functionality using UUPS and access control.
  */
-abstract contract Upgradeable is UUPSUpgradeable, AccessControlUpgradeable {
+abstract contract Upgradeable is
+    UUPSUpgradeable,
+    PausableUpgradeable,
+    AccessControlUpgradeable
+{
     // Access control constants.
     bytes32 public constant KEEPER_ROLE = keccak256("KEEPER_ROLE");
     bytes32 public constant GOVERNANCE_ROLE = keccak256("GOVERNANCE_ROLE");
+    bytes32 public constant PAUSER_ROLE = keccak256("PAUSER_ROLE");
 
     // Reserve storage space for upgrades
     uint256[20] private __gap;
@@ -35,6 +42,14 @@ abstract contract Upgradeable is UUPSUpgradeable, AccessControlUpgradeable {
      */
     modifier onlyGovernor() {
         _checkRole(GOVERNANCE_ROLE);
+        _;
+    }
+
+    /**
+     * @notice Modifier to restrict access to PAUSER_ROLE.
+     */
+    modifier onlyPauser() {
+        _checkRole(PAUSER_ROLE);
         _;
     }
 
@@ -57,6 +72,21 @@ abstract contract Upgradeable is UUPSUpgradeable, AccessControlUpgradeable {
     function __Upgradeable_init() internal onlyInitializing {
         __UUPSUpgradeable_init();
         __AccessControl_init();
+        __Pausable_init();
+    }
+
+    function pause() public {
+        if (
+            !hasRole(PAUSER_ROLE, msg.sender)
+                && !hasRole(GOVERNANCE_ROLE, msg.sender)
+        ) {
+            revert Errors.NotPauser();
+        }
+        _pause();
+    }
+
+    function unpause() public onlyGovernor {
+        _unpause();
     }
 
     /**

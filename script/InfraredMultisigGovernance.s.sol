@@ -125,9 +125,50 @@ contract InfraredGovernance is BatchScript {
         vm.stopBroadcast();
     }
 
-    function toggleVault(address payable infrared, address _asset) external {
+    function pauseVaultStaking(address payable infrared, address _asset)
+        external
+    {
         bytes memory data =
-            abi.encodeWithSignature("toggleVault(address)", _asset);
+            abi.encodeWithSignature("pauseStaking(address)", _asset);
+        addToBatch(infrared, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function unpauseVaultStaking(address payable infrared, address _asset)
+        external
+    {
+        bytes memory data =
+            abi.encodeWithSignature("unpauseStaking(address)", _asset);
+        addToBatch(infrared, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function grantHypernativePauserRole(
+        address payable infrared,
+        address hypernative
+    ) external {
+        bytes32 role = Infrared(infrared).PAUSER_ROLE();
+        bytes memory data = abi.encodeWithSignature(
+            "grantRole(bytes32,address)", role, hypernative
+        );
+        addToBatch(infrared, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function revokeHypernativePauserRole(
+        address payable infrared,
+        address hypernative
+    ) external {
+        bytes32 role = Infrared(infrared).PAUSER_ROLE();
+        bytes memory data = abi.encodeWithSignature(
+            "revoke(bytes32,address)", role, hypernative
+        );
         addToBatch(infrared, 0, data);
         vm.startBroadcast();
         executeBatch(true);

@@ -40,7 +40,7 @@ library VaultManagerLib {
 
     /// @notice Modifier to check if vault registration is paused.
     /// @param $ Storage pointer to the VaultStorage struct.
-    modifier notPaused(VaultStorage storage $) {
+    modifier vaultRegistrationNotPaused(VaultStorage storage $) {
         if ($.pausedVaultRegistration) {
             revert Errors.RegistrationPaused();
         }
@@ -51,14 +51,24 @@ library VaultManagerLib {
     /*                       ADMIN                                */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Toggles the pause status of a vault.
+    /// @notice Pauses staking functionality on a specific vault
     /// @param $ Storage pointer to the VaultStorage struct.
-    /// @param asset address of the asset to toggle the vault for.
-    function toggleVault(VaultStorage storage $, address asset) external {
+    /// @param asset address of the asset to pause the vault for.
+    function pauseStaking(VaultStorage storage $, address asset) external {
         IInfraredVault vault = $.vaultRegistry[asset];
         if (address(vault) == address(0)) revert Errors.NoRewardsVault();
 
-        vault.togglePause();
+        vault.pauseStaking();
+    }
+
+    /// @notice Un-pauses staking functionality on a specific vault
+    /// @param $ Storage pointer to the VaultStorage struct.
+    /// @param asset address of the asset to un-pause the vault for.
+    function unpauseStaking(VaultStorage storage $, address asset) external {
+        IInfraredVault vault = $.vaultRegistry[asset];
+        if (address(vault) == address(0)) revert Errors.NoRewardsVault();
+
+        vault.unpauseStaking();
     }
 
     /// @notice Updates the whitelist status of a reward token.
@@ -257,7 +267,7 @@ library VaultManagerLib {
     /// @return address of the newly created vault.
     function registerVault(VaultStorage storage $, address asset)
         external
-        notPaused($)
+        vaultRegistrationNotPaused($)
         returns (address)
     {
         if (asset == address(0)) revert Errors.ZeroAddress();

@@ -455,7 +455,7 @@ contract InfraredVaultTest is Helper {
 
         // pause infraredVault
         vm.startPrank(address(infrared));
-        infraredVault.togglePause();
+        infraredVault.pauseStaking();
         vm.stopPrank();
 
         // check now paused
@@ -467,7 +467,7 @@ contract InfraredVaultTest is Helper {
     function testSuccessfulUnpause() public {
         // set up so paused
         vm.startPrank(address(infrared));
-        infraredVault.togglePause();
+        infraredVault.pauseStaking();
         vm.stopPrank();
         assertTrue(infraredVault.paused());
 
@@ -477,7 +477,7 @@ contract InfraredVaultTest is Helper {
 
         // unpause infraredVault
         vm.startPrank(address(infrared));
-        infraredVault.togglePause();
+        infraredVault.unpauseStaking();
         vm.stopPrank();
 
         // check now unpaused
@@ -488,7 +488,9 @@ contract InfraredVaultTest is Helper {
         address unauthorizedUser = address(4);
         vm.startPrank(unauthorizedUser);
         vm.expectRevert();
-        infraredVault.togglePause();
+        infraredVault.pauseStaking();
+        vm.expectRevert();
+        infraredVault.unpauseStaking();
         vm.stopPrank();
     }
 
