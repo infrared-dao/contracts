@@ -19,14 +19,14 @@ contract MultiRewardsInvariants is Test {
     }
 
     // Check totalSupply vs. ghost totalStaked
-    function invariant_totalSupplyMatches() external {
+    function invariant_totalSupplyMatches() external view {
         assertEq(
             mr.totalSupply(), handler.totalStaked(), "totalSupply mismatch"
         );
     }
 
     // Per-user balanceOf vs. handler's userStaked
-    function invariant_userBalances() external {
+    function invariant_userBalances() external view {
         address[] memory arr = handler.actorList();
         for (uint256 i; i < arr.length; i++) {
             assertEq(
@@ -38,7 +38,7 @@ contract MultiRewardsInvariants is Test {
     }
 
     // Example: residual < duration and periodFinish >= lastUpdateTime
-    function invariant_rewardDataChecks() external {
+    function invariant_rewardDataChecks() external view {
         uint256 n = mr.rewardTokensLength();
         for (uint256 i; i < n; i++) {
             address rt = mr.rewardTokens(i);
@@ -53,7 +53,7 @@ contract MultiRewardsInvariants is Test {
     }
 
     // Basic reward conservation: minted >= (claimed + leftover)
-    function invariant_rewardConservation() external {
+    function invariant_rewardConservation() external view {
         uint256 n = mr.rewardTokensLength();
         address[] memory arr = handler.actorList();
         for (uint256 i; i < n; i++) {
@@ -70,7 +70,7 @@ contract MultiRewardsInvariants is Test {
     }
 
     // Formal check of notifyRewardAmount math
-    function invariant_notifyRewardMath() external {
+    function invariant_notifyRewardMath() external view {
         MultiRewardsHandler.NotifyRecord[] memory logs =
             handler.getNotifyRecords();
         for (uint256 i; i < logs.length; i++) {

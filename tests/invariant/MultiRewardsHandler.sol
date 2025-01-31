@@ -104,7 +104,7 @@ contract MultiRewardsHandler is Test {
         // Pre-state
         (
             ,
-            uint256 dur,
+            ,
             uint256 pfBefore,
             uint256 rrBefore,
             uint256 luBefore,
@@ -122,7 +122,7 @@ contract MultiRewardsHandler is Test {
             // Post-state
             (
                 ,
-                uint256 dur2,
+                ,
                 uint256 pfAfter,
                 uint256 rrAfter,
                 uint256 luAfter,

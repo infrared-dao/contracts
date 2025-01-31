@@ -436,7 +436,7 @@ contract MultiRewardsTest is Test {
         // First update
         skip(rewardDuration / 3);
         multiRewards.notifyRewardAmount(address(rewardToken), additionalReward1);
-        (,, uint256 periodFinish1, uint256 rate1,,, uint256 residual1) =
+        (,, uint256 periodFinish1,,,,) =
             multiRewards.rewardData(address(rewardToken));
         assertEq(
             periodFinish1,

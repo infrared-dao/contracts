@@ -799,11 +799,11 @@ contract VoterTest is Base {
 
         vm.prank(user1);
         skip(7 days - 1 hours);
-        uint256 sid = vm.snapshot();
+        uint256 sid = vm.snapshotState();
         voter.vote(tokenId, _stakingTokens, weights);
 
         vm.prank(user1);
-        vm.revertTo(sid);
+        vm.revertToState(sid);
         skip(1);
         vm.expectRevert(IVoter.NotWhitelistedNFT.selector);
         voter.vote(tokenId, _stakingTokens, weights);
