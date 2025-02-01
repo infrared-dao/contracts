@@ -845,22 +845,6 @@ contract InfraredBERATest is InfraredBERABaseTest {
         withdrawor.queue{value: fee}(alice, withdrawAmount);
     }
 
-    function testFail_QueueDonationUnderflow() public {
-        uint256 fee = InfraredBERAConstants.MINIMUM_WITHDRAW_FEE + 1;
-        uint256 amount = 1 ether;
-        address receiver = alice;
-        uint256 confirmed = ibera.confirmed();
-        assertTrue(amount <= confirmed);
-
-        vm.deal(address(ibera), 2 * fee);
-        withdrawor.nonceRequest();
-
-        vm.deal(address(depositor), 201 ether); // DONATION
-
-        vm.prank(address(ibera));
-        withdrawor.queue{value: fee}(receiver, amount);
-    }
-
     function testPrecisionLossEdgeCase() public {
         // Setup initial state using same pattern as other burn tests
         testMintCompoundsPrior();

@@ -150,7 +150,6 @@ contract WrappedVaultTest is Helper {
     {
         // Setup reward token in the infraredVault and mint rewards
         vm.startPrank(address(infrared));
-        ibgtVault.addReward(address(wbera), rewardsDuratoin);
         deal(address(wbera), address(infrared), rewardsAmount);
         wbera.approve(address(wrappedVault.iVault()), rewardsAmount);
         wrappedVault.iVault().notifyRewardAmount(address(wbera), rewardsAmount);

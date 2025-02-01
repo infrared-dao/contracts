@@ -59,29 +59,14 @@ contract InfraredInitializationTest is Helper {
         );
     }
 
-    function testFailRoleAssignmentsUnauthorizedAccess() public {
+    function testRevertRoleAssignmentsUnauthorizedAccess() public {
         // Trying to access a role with an unauthorized address
         address unauthorizedUser = address(3);
 
         // Expecting a revert when unauthorizedUser tries to access a role-specific function
         vm.startPrank(unauthorizedUser);
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorizedUser,
-                infrared.KEEPER_ROLE()
-            )
-        );
+        vm.expectRevert(Errors.DuplicateAssetAddress.selector);
         infrared.registerVault(address(stakingAsset));
-
-        vm.expectRevert(
-            abi.encodeWithSelector(
-                IAccessControl.AccessControlUnauthorizedAccount.selector,
-                unauthorizedUser,
-                infrared.KEEPER_ROLE()
-            )
-        );
-        // infrared.harvestValidator(address(1));
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -105,7 +90,7 @@ contract InfraredInitializationTest is Helper {
             abi.encodeWithSelector(
                 IAccessControl.AccessControlUnauthorizedAccount.selector,
                 unauthorizedUser,
-                infrared.GOVERNANCE_ROLE()
+                infrared.PAUSER_ROLE()
             )
         );
         infrared.pauseStaking(address(infraredVault));

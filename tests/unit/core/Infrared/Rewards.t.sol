@@ -571,14 +571,14 @@ contract InfraredRewardsTest is Helper {
         );
     }
 
-    function testFailHarvestVaultInvalidPool() public {
+    function testRevertHarvestVaultInvalidPool() public {
         // factory.increaseRewardsForVault(stakingAsset, 100 ether);
         address user = address(123);
         stakeInVault(address(infraredVault), stakingAsset, user, 100 ether);
 
         vm.warp(10 days);
-        infrared.harvestVault(address(123));
         vm.expectRevert(Errors.VaultNotSupported.selector);
+        infrared.harvestVault(address(123));
     }
 
     function testHarvestVaultWithRedMinting() public {

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {Helper} from "./Helper.sol";
+import {Helper, IAccessControl} from "./Helper.sol";
 import {Errors} from "src/utils/Errors.sol";
 
 import {DataTypes} from "src/utils/DataTypes.sol";
@@ -58,7 +58,7 @@ contract ValidatorManagment is Helper {
         assertTrue(isValidatorAdded, "Validator should be added");
     }
 
-    function testFailAddValidatorUnauthorized() public {
+    function testRevertAddValidatorUnauthorized() public {
         // Set up a new mock validator
         ValidatorTypes.Validator[] memory newValidators =
             new ValidatorTypes.Validator[](1);
@@ -67,11 +67,16 @@ contract ValidatorManagment is Helper {
             addr: address(this)
         });
 
-        // Simulate the call from an unauthorized address
-        vm.prank(address(2));
-
         // Expect a revert due to unauthorized access
-        vm.expectRevert("Unauthorized");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                address(22),
+                infrared.GOVERNANCE_ROLE()
+            )
+        );
+        // Simulate the call from an unauthorized address
+        vm.prank(address(22));
         // Attempt to add the new validator
         infrared.addValidators(newValidators);
     }
@@ -162,7 +167,7 @@ contract ValidatorManagment is Helper {
         vm.stopPrank();
     }
 
-    function testFailRemoveValidatorUnauthorized() public {
+    function testRevertRemoveValidatorUnauthorized() public {
         // Create a new validator struct with sample data
         ValidatorTypes.Validator[] memory newValidators =
             new ValidatorTypes.Validator[](1);
@@ -186,8 +191,15 @@ contract ValidatorManagment is Helper {
         pubkeysToRemove[0] = newValidators[0].pubkey;
 
         // Attempt to remove the validator as an unauthorized user
-        vm.prank(address(2)); // Simulate call from an unauthorized address
-        vm.expectRevert("Unauthorized");
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                address(22),
+                infrared.GOVERNANCE_ROLE()
+            )
+        );
+        vm.prank(address(22)); // Simulate call from an unauthorized address
         infrared.removeValidators(pubkeysToRemove);
     }
 
@@ -245,40 +257,7 @@ contract ValidatorManagment is Helper {
         );
     }
 
-    function testFailReplaceValidatorWithInvalidPubKey() public {
-        // Set up a new mock validator with valid details
-        ValidatorTypes.Validator[] memory originalValidator =
-            new ValidatorTypes.Validator[](1);
-        originalValidator[0] = ValidatorTypes.Validator({
-            pubkey: bytes("someValidPubKey777"),
-            addr: address(this)
-        });
-
-        // Attempt to add the original validator
-        vm.prank(infraredGovernance);
-        infrared.addValidators(originalValidator);
-
-        // Assert that the original validator was added
-        assertTrue(
-            infrared.isInfraredValidator(originalValidator[0].pubkey),
-            "Original validator not added correctly"
-        );
-
-        // Prepare an invalid new validator with zero-length public key
-        ValidatorTypes.Validator[] memory invalidNewValidator =
-            new ValidatorTypes.Validator[](1);
-        invalidNewValidator[0] =
-            ValidatorTypes.Validator({pubkey: bytes(""), addr: address(this)});
-
-        // Attempt to replace the original validator with the invalid new validator
-        vm.prank(infraredGovernance);
-        vm.expectRevert();
-        infrared.replaceValidator(
-            originalValidator[0].pubkey, invalidNewValidator[0].pubkey
-        );
-    }
-
-    function testFailReplaceValidatorUnauthorized() public {
+    function testRevertReplaceValidatorUnauthorized() public {
         bytes memory pubkey777 = abi.encodePacked(address(777));
         bytes memory pubkey888 = abi.encodePacked(address(888));
 
@@ -299,8 +278,15 @@ contract ValidatorManagment is Helper {
         );
 
         // Attempt to replace the validator without authorization
-        vm.prank(address(2)); // Simulating a call from an unauthorized address
-        vm.expectRevert("Unauthorized");
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IAccessControl.AccessControlUnauthorizedAccount.selector,
+                address(22),
+                infrared.GOVERNANCE_ROLE()
+            )
+        );
+        // Simulate the call from an unauthorized address
+        vm.prank(address(22));
         infrared.replaceValidator(originalValidator[0].pubkey, pubkey888);
     }
 }

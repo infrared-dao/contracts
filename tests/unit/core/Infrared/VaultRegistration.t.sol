@@ -47,21 +47,17 @@ contract InfraredRegisterVaultTest is Helper {
         );
     }
 
-    function testFailVaultRegistrationWithZeroAsset() public {
+    function testRevertVaultRegistrationWithZeroAsset() public {
         // Define reward tokens assuming you have them set up for the test
         address[] memory _rewardTokens = new address[](1); // Modify as per your test setup
         _rewardTokens[0] = address(ir); // Example reward token address
 
         // Expect a revert due to passing a zero asset address to registerVault
         vm.expectRevert(Errors.ZeroAddress.selector);
-        try infrared.registerVault(address(0)) {
-            revert("Zero address should revert");
-        } catch {
-            revert();
-        }
+        infrared.registerVault(address(0));
     }
 
-    function testFailVaultRegistrationWithInvalid_rewardTokens() public {
+    function testRevertVaultRegistrationWithInvalid_rewardTokens() public {
         MockERC20 mockAsset = new MockERC20("MockAsset", "MAS", 18); // Mock asset token
         // Setup for the asset and reward tokens
         address assetAddress = address(mockAsset); // Your mock asset address
@@ -71,14 +67,16 @@ contract InfraredRegisterVaultTest is Helper {
         // Pre-define the reward tokens as unsupported in your contract setup or mock accordingly
         // This step depends on your contract's logic for whitelisting reward tokens
 
-        // Expect a revert due to invalid (unsupported) reward tokens
-        vm.expectRevert(Errors.RewardTokenNotSupported.selector);
         infrared.registerVault(assetAddress);
-        vm.expectRevert(Errors.RewardTokenNotSupported.selector);
+
+        // Expect a revert due to invalid (unsupported) reward tokens
+        vm.expectRevert(Errors.RewardTokenNotWhitelisted.selector);
+        vm.prank(infraredGovernance);
+        infrared.addReward(assetAddress, _rewardTokens[0], 7 days);
     }
 
-    function testFailVaultRegistrationDuplicateAsset() public {
-        address[] memory _rewardTokens; // Assuming you've defined _rewardTokens somewhere
+    function testRevertVaultRegistrationDuplicateAsset() public {
+        address[] memory _rewardTokens = new address[](2); // Assuming you've defined _rewardTokens somewhere
         _rewardTokens[0] = address(ibgt); // Example reward token address
         _rewardTokens[1] = address(ir);
 
