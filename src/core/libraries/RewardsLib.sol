@@ -314,7 +314,12 @@ library RewardsLib {
         // https://github.com/berachain/contracts-monorepo/blob/a28404635b5654b4de0627d9c0d1d8fced7b4339/src/pol/BGT.sol#L363
         if (bgtAmt > bgt.balance) return 0;
 
-        IBerachainBGT(bgt).redeem(IInfraredBERA(ibera).receivor(), bgtAmt);
+        // catch try can be used for additional security
+        try IBerachainBGT(bgt).redeem(IInfraredBERA(ibera).receivor(), bgtAmt) {
+            return bgtAmt;
+        } catch {
+            return 0;
+        }
     }
 
     /// @notice Harvests the accrued BGT rewards to a vault.
