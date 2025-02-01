@@ -4,14 +4,14 @@ pragma solidity ^0.8.19;
 import "forge-std/Script.sol";
 
 import {BatchScript} from "@forge-safe/BatchScript.sol";
-
+import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 import {Infrared, ValidatorTypes} from "src/core/Infrared.sol";
 import {BribeCollector} from "src/core/BribeCollector.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {Voter} from "src/voting/Voter.sol";
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 
-contract InfraredGovernance is BatchScript {
+contract InfraredMultisigGovernance is BatchScript {
     // Validator Management
 
     function addValidator(
@@ -356,6 +356,81 @@ contract InfraredGovernance is BatchScript {
         bytes memory data =
             abi.encodeWithSignature("killBribeVault(address)", _stakingToken);
         addToBatch(voter, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function setFees(
+        address safe,
+        address payable infrared,
+        address ibera,
+        uint16 feeDivisorShareholders,
+        uint256 operatorWeight,
+        uint256 harvestOperatorFeeRate,
+        uint256 harvestVaultFeeRate,
+        uint256 harvestBribesFeeRate,
+        uint256 harvestBoostFeeRate
+    ) external isBatch(safe) {
+        bytes memory data = abi.encodeWithSignature(
+            "setFeeDivisorShareholders(uint16)", feeDivisorShareholders
+        );
+        addToBatch(ibera, 0, data);
+
+        data = abi.encodeWithSignature(
+            "updateInfraredBERABribeSplit(uint256)", operatorWeight
+        );
+        addToBatch(infrared, 0, data);
+
+        data = abi.encodeWithSignature(
+            "updateFee(uint8,uint256)",
+            ConfigTypes.FeeType.HarvestOperatorProtocolRate,
+            1e6
+        );
+        addToBatch(infrared, 0, data);
+        data = abi.encodeWithSignature(
+            "updateFee(uint8,uint256)",
+            ConfigTypes.FeeType.HarvestVaultProtocolRate,
+            1e6
+        );
+        addToBatch(infrared, 0, data);
+        data = abi.encodeWithSignature(
+            "updateFee(uint8,uint256)",
+            ConfigTypes.FeeType.HarvestBribesProtocolRate,
+            1e6
+        );
+        addToBatch(infrared, 0, data);
+        data = abi.encodeWithSignature(
+            "updateFee(uint8,uint256)",
+            ConfigTypes.FeeType.HarvestBoostProtocolRate,
+            1e6
+        );
+        addToBatch(infrared, 0, data);
+        data = abi.encodeWithSignature(
+            "updateFee(uint8,uint256)",
+            ConfigTypes.FeeType.HarvestOperatorFeeRate,
+            harvestOperatorFeeRate
+        );
+        addToBatch(infrared, 0, data);
+        data = abi.encodeWithSignature(
+            "updateFee(uint8,uint256)",
+            ConfigTypes.FeeType.HarvestVaultFeeRate,
+            harvestVaultFeeRate
+        );
+        addToBatch(infrared, 0, data);
+        data = abi.encodeWithSignature(
+            "updateFee(uint8,uint256)",
+            ConfigTypes.FeeType.HarvestBribesFeeRate,
+            harvestBribesFeeRate
+        );
+        addToBatch(infrared, 0, data);
+        data = abi.encodeWithSignature(
+            "updateFee(uint8,uint256)",
+            ConfigTypes.FeeType.HarvestBoostFeeRate,
+            harvestBoostFeeRate
+        );
+        addToBatch(infrared, 0, data);
+
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();

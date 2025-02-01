@@ -114,21 +114,6 @@ contract AddSafeDelegate is Script {
         console2.log(string(response));
     }
 
-    // // Helper: Convert address to ASCII string
-    // function toAsciiString(address x) internal pure returns (string memory) {
-    //     bytes memory s = new bytes(42);
-    //     s[0] = "0";
-    //     s[1] = "x";
-    //     for (uint256 i = 0; i < 20; i++) {
-    //         bytes1 b = bytes1(uint8(uint256(uint160(x)) / (2 ** (8 * (19 - i)))));
-    //         bytes1 hi = bytes1(uint8(b) / 16);
-    //         bytes1 lo = bytes1(uint8(b) - 16 * uint8(hi));
-    //         s[2 + 2 * i] = char(hi);
-    //         s[3 + 2 * i] = char(lo);
-    //     }
-    //     return string(s);
-    // }
-
     function toAsciiString(address addr)
         internal
         pure
