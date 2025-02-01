@@ -42,7 +42,6 @@ remappings = [
 
 [profile.production]
 optimizer = true
-via_ir = true
 optimizer_runs = 200
 
 [profile.production.optimizer_details]

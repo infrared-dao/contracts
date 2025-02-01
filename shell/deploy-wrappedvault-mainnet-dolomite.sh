@@ -65,7 +65,7 @@ for STAKING_TOKEN in "${STAKING_ASSETS[@]}"; do
     echo "NAME: $NAME, SYMBOL: $SYMBOL"
 
     # Run the deployment script
-    forge script script/WrappedVaultDeployer.s.sol:WrappedVaultDeployer \
+    FOUNDRY_PROFILE=production forge script script/WrappedVaultDeployer.s.sol:WrappedVaultDeployer \
         --sig "run(address,address,address,string,string)" $MULTISIG_ADDRESS $INFRARED $STAKING_TOKEN "$NAME" "$SYMBOL" \
         --rpc-url $RPC_URL \
         --private-key $PRIVATE_KEY \

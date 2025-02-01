@@ -22,7 +22,7 @@ RPC_URL="http://35.203.86.197:8545/"
 
 VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan'
 
-forge script script/InfraredDeployer.s.sol:InfraredDeployer \
+FOUNDRY_PROFILE=production forge script script/InfraredDeployer.s.sol:InfraredDeployer \
     --sig "run(address,address,address,address,address,address,address,address,uint256,uint256)" $ADMIN_ADDRESS $VOTING_KEEPER $BGT $BERACHAIN_REWARDS_FACTORY $BERA_CHEF $BEACON_DEPOSIT $WBERA $HONEY $REWARDS_DURATION $BRIBE_COLLECTOR_PAYOUT_AMOUNT \
     --broadcast  --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
