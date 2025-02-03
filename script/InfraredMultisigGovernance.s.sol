@@ -15,10 +15,11 @@ contract InfraredMultisigGovernance is BatchScript {
     // Validator Management
 
     function addValidator(
+        address safe,
         address payable infrared,
         address addr,
         bytes calldata pubkey
-    ) public {
+    ) public isBatch(safe) {
         ValidatorTypes.Validator[] memory _validators =
             new ValidatorTypes.Validator[](1);
         _validators[0] = ValidatorTypes.Validator({pubkey: pubkey, addr: addr});
@@ -307,10 +308,11 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function setDepositSignature(
+        address safe,
         address ibera,
         bytes calldata pubkey,
         bytes calldata signature
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
             "setDepositSignature(bytes,bytes)", pubkey, signature
         );

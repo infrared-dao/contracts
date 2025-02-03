@@ -4,17 +4,16 @@ set -euo pipefail
 source .env
 
 # Change these to correct params
-SAFE="0x94092182D03fE8517A0345c455caA8047f9feb5b"
-ADMIN_ADDRESS="0xA3A771A7c4AFA7f0a3f88Cc6512542241851C926"
-SAFE_TX_SERVICE="https://transaction-bartio.safe.berachain.com/"
+SAFE="0x182a31A27A0D39d735b31e80534CFE1fCd92c38f"
+ADMIN_ADDRESS="<One Safe Owner address>"
+DELEGATE_ADDRESS="<delegate account for running scripts to propose txs>"
+SAFE_TX_SERVICE="https://transaction.bp.w3us.site/api/v1/safes/"
 
-# Cartio RPC URL
-# RPC_URL="https://amberdew-eth-cartio.berachain.com"
-RPC_URL="https://bartio.rpc.berachain.com"
+RPC_URL="http://35.203.86.197:8545/"
 
 
 forge script script/AddSafeDelegate.s.sol:AddSafeDelegate \
-    --sig "run(address,address,address,string)" $SAFE $ADMIN_ADDRESS $ADMIN_ADDRESS "$SAFE_TX_SERVICE" \
+    --sig "run(address,address,address,string)" $SAFE $DELEGATE_ADDRESS $ADMIN_ADDRESS "$SAFE_TX_SERVICE" \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     --ffi \
