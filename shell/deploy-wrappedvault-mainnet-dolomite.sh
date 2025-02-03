@@ -43,7 +43,7 @@ STAKING_ASSETS=(
 
 # Change these to correct params
 MULTISIG_ADDRESS="0x03915AaeF5fEb997E130fdeF03f4946A9d3d79d2"
-INFRARED="0x2fd43a16F5F5F0D8BFBEf59a8cE11640939F1f9C"
+INFRARED="0xb71b3daea39012fb0f2b14d2a9c86da9292fc126"
 RPC_URL="http://35.203.86.197:8545/"
 VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan'
 
@@ -56,11 +56,11 @@ for STAKING_TOKEN in "${STAKING_ASSETS[@]}"; do
     # remove quotes
     TOKEN_NAME=$(echo $TOKEN_NAME | tr -d '"')
     TOKEN_SYMBOL=$(echo $TOKEN_SYMBOL | tr -d '"')
-    
+
     # Construct the vault's NAME and SYMBOL
     NAME="Wrapped Infrared Vault ${TOKEN_NAME}"
     SYMBOL="wiv-${TOKEN_SYMBOL}"
-    
+
     echo "Deploying vault for ${TOKEN_NAME}..."
     echo "NAME: $NAME, SYMBOL: $SYMBOL"
 
@@ -70,7 +70,7 @@ for STAKING_TOKEN in "${STAKING_ASSETS[@]}"; do
         --rpc-url $RPC_URL \
         --private-key $PRIVATE_KEY \
         --verifier-url $VERIFYER_URL \
-        --etherscan-api-key $ETHERSCAN_API_KEY \
+        --etherscan-api-key "verifyContract" \
         --broadcast
 done
 
