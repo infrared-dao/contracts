@@ -9,62 +9,39 @@ import {Infrared} from "src/core/Infrared.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {IBGT as IBerachainBGT} from "@berachain/pol/interfaces/IBGT.sol";
+import {BatchScript} from "@forge-safe/BatchScript.sol";
 
-contract InfraredKeeperScript is Script {
+contract InfraredKeeperScript is BatchScript {
     // cArtio addresses
     Infrared infrared =
-        Infrared(payable(0xEb68CBA7A04a4967958FadFfB485e89fE8C5f219));
+        Infrared(payable(0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126));
     IBerachainBGT bgt =
-        IBerachainBGT(0x289274787bAF083C15A45a174b7a8e44F0720660);
+        IBerachainBGT(0x656b95E550C07a9ffe548bd4085c72418Ceb1dba);
     InfraredBERAWithdrawor iberaWithdrawer = InfraredBERAWithdrawor(
-        payable(0xb4fe1c9a7068586f377eCaD40632347be2372E6C)
+        payable(0x8c0E122960dc2E97dc0059c07d6901Dce72818E1)
     );
     InfraredBERAFeeReceivor rec = InfraredBERAFeeReceivor(
-        payable(0x7bbe85eC33EdBD1F875C887b44d9dAa28a8141B6)
+        payable(0xf6a4A6aCECd5311327AE3866624486b6179fEF97)
     );
 
-    address[] stakingAssets = [0x7D6e08fe0d56A7e8f9762E9e65daaC491A0B475b];
-
-    address[] rewardTokens = [
-        0x5bDc3CAE6fB270ef07579c428bb630E73C8d623b,
-        0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE
-    ];
-
-    bytes[] pubkeys;
-
-    function setUp() public {
-        pubkeys.push(
-            hex"ad8af2d381461965e08126e48bc95646c2ca74867255381397dc70e711bab07015551a8904c167459f5e6da4db436300"
-        );
-    }
-
-    function harvest() external {
+    function harvest(address[] calldata _stakingTokens) external {
         vm.startBroadcast();
 
-        // iBERA rewards compound
-        rec.sweep();
-
-        // loop over infrared vaults and call harvestVault on infrared with address
-        for (uint256 i = 0; i < stakingAssets.length; i++) {
-            infrared.harvestVault(stakingAssets[i]);
+        // Harvest each vault
+        for (uint256 i = 0; i < _stakingTokens.length; i++) {
+            infrared.harvestVault(_stakingTokens[i]);
         }
 
+        // Harvest base rewards
         infrared.harvestBase();
 
-        // iBERA rewards compound
+        // Second sweep to compound additional iBERA rewards
         rec.sweep();
 
+        // Harvest operator rewards
         infrared.harvestOperatorRewards();
-        // infrared.harvestBribes(rewardTokens);
 
-        uint128[] memory amounts = new uint128[](1);
-        amounts[0] = uint128(bgt.balanceOf(address(infrared)))
-            - bgt.queuedBoost(address(infrared)) - bgt.boosts(address(infrared));
-
-        if (amounts[0] > uint128(0)) {
-            infrared.queueBoosts(pubkeys, amounts);
-        }
-
+        // Harvest boost rewards
         infrared.harvestBoostRewards();
 
         vm.stopBroadcast();
@@ -73,46 +50,132 @@ contract InfraredKeeperScript is Script {
     function queueNewCuttingBoard(
         bytes calldata _pubkey,
         uint64 _startBlock,
-        IBeraChef.Weight[] calldata _weights
-    ) external {
-        infrared.queueNewCuttingBoard(_pubkey, _startBlock, _weights);
+        IBeraChef.Weight[] calldata _weights,
+        address _safe
+    ) external isBatch(_safe) {
+        bytes memory data = abi.encodeWithSelector(
+            infrared.queueNewCuttingBoard.selector,
+            _pubkey,
+            _startBlock,
+            _weights
+        );
+        addToBatch(address(infrared), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
     }
 
-    function queueBoosts(bytes[] calldata _pubkeys, uint128[] calldata _amts)
+    function queueBoosts(
+        bytes[] calldata _pubkeys,
+        uint128[] calldata _amts,
+        address _safe
+    ) external isBatch(_safe) {
+        bytes memory data = abi.encodeWithSelector(
+            infrared.queueBoosts.selector, _pubkeys, _amts
+        );
+        addToBatch(address(infrared), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function cancelBoosts(
+        bytes[] calldata _pubkeys,
+        uint128[] calldata _amts,
+        address _safe
+    ) external isBatch(_safe) {
+        bytes memory data = abi.encodeWithSelector(
+            infrared.cancelBoosts.selector, _pubkeys, _amts
+        );
+        addToBatch(address(infrared), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function activateBoosts(bytes[] calldata _pubkeys, address _safe)
         external
+        isBatch(_safe)
     {
-        infrared.queueBoosts(_pubkeys, _amts);
+        bytes memory data =
+            abi.encodeWithSelector(infrared.activateBoosts.selector, _pubkeys);
+        addToBatch(address(infrared), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
     }
 
-    function cancelBoosts(bytes[] calldata _pubkeys, uint128[] calldata _amts)
-        external
-    {
-        infrared.cancelBoosts(_pubkeys, _amts);
-    }
+    function activateAndBoost(
+        bytes[] calldata _pubkeys,
+        uint128[] calldata _amts,
+        address _safe
+    ) external isBatch(_safe) {
+        // First add activateBoosts to batch
+        bytes memory activateData =
+            abi.encodeWithSelector(infrared.activateBoosts.selector, _pubkeys);
+        addToBatch(address(infrared), 0, activateData);
 
-    function activateBoosts(bytes[] calldata _pubkeys) external {
-        infrared.activateBoosts(_pubkeys);
+        // Then add queueBoosts to batch
+        bytes memory boostData = abi.encodeWithSelector(
+            infrared.queueBoosts.selector, _pubkeys, _amts
+        );
+        addToBatch(address(infrared), 0, boostData);
+
+        // Execute both transactions in the batch
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
     }
 
     function queueDropBoosts(
         bytes[] calldata _pubkeys,
-        uint128[] calldata _amts
-    ) external {
-        infrared.queueDropBoosts(_pubkeys, _amts);
+        uint128[] calldata _amts,
+        address _safe
+    ) external isBatch(_safe) {
+        bytes memory data = abi.encodeWithSelector(
+            infrared.queueDropBoosts.selector, _pubkeys, _amts
+        );
+        addToBatch(address(infrared), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
     }
 
     function cancelDropBoosts(
         bytes[] calldata _pubkeys,
-        uint128[] calldata _amts
-    ) external {
-        infrared.cancelDropBoosts(_pubkeys, _amts);
+        uint128[] calldata _amts,
+        address _safe
+    ) external isBatch(_safe) {
+        bytes memory data = abi.encodeWithSelector(
+            infrared.cancelDropBoosts.selector, _pubkeys, _amts
+        );
+        addToBatch(address(infrared), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
     }
 
-    function dropBoosts(bytes[] calldata _pubkeys) external {
-        infrared.dropBoosts(_pubkeys);
+    function dropBoosts(bytes[] calldata _pubkeys, address _safe)
+        external
+        isBatch(_safe)
+    {
+        bytes memory data =
+            abi.encodeWithSelector(infrared.dropBoosts.selector, _pubkeys);
+        addToBatch(address(infrared), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
     }
 
-    function sweep(bytes calldata pubkey) external {
-        iberaWithdrawer.sweep(pubkey);
+    function sweep(bytes calldata pubkey, address _safe)
+        external
+        isBatch(_safe)
+    {
+        bytes memory data =
+            abi.encodeWithSelector(iberaWithdrawer.sweep.selector, pubkey);
+        addToBatch(address(iberaWithdrawer), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
     }
 }
