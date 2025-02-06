@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 // OpenZeppelin Contracts (last updated v4.5.0)
 // (token/ERC20/presets/ERC20PresetMinterPauser.sol)
 
