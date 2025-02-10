@@ -7,4 +7,5 @@ forge script $SCRIPT \
     --sig "sweep(bytes,address)" $PUBKEY $SAFE \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
+    --ffi \
     --broadcast

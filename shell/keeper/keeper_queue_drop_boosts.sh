@@ -12,4 +12,5 @@ forge script $SCRIPT \
     --sig "queueDropBoosts(bytes[],uint128[],address)" "${PUBKEYS[@]}" "${AMOUNTS[@]}" $SAFE \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
+    --ffi \
     --broadcast

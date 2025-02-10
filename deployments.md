@@ -17,6 +17,14 @@
 
 ---
 
+## BeraSwap Pools
+
+| Contract                   | Implementation Address                       | Proxy Address                                |
+|----------------------------|----------------------------------------------|----------------------------------------------|
+| iBERARateProvider                       | `0x776fD57Bbeb752BDeEB200310faFAe9A155C50a0` | 
+| WBERA / iBERA                       | `0x4d0aC0ea757F0bb338457C7A135C41FC732CA67d` | 
+| WBERA / iBGT                        | `0x1207C619086A52edEf4a4b7Af881B5dDd367a919` |
+
 ## Wrapped Infrared Vault Kodiak (Boyco Vaults) (Count: 37)
 
 | Name                                                                  | Symbol                              | Address                                      |

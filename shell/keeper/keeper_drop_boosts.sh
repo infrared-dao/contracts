@@ -9,4 +9,5 @@ forge script $SCRIPT \
     --sig "dropBoosts(bytes[],address)" "${PUBKEYS[@]}" $SAFE \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
+    --ffi \
     --broadcast

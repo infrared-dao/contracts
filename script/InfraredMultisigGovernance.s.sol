@@ -96,9 +96,10 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function updateRewardsDuration(
+        address safe,
         address payable infrared,
         uint256 _rewardsDuration
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
             "updateRewardsDuration(uint256)", _rewardsDuration
         );
@@ -109,11 +110,12 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function updateRewardsDurationForVault(
+        address safe,
         address payable infrared,
         address _stakingToken,
         address _rewardsToken,
         uint256 _rewardsDuration
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
             "updateRewardsDurationForVault(address,address,uint256)",
             _stakingToken,
@@ -121,6 +123,35 @@ contract InfraredMultisigGovernance is BatchScript {
             _rewardsDuration
         );
         addToBatch(infrared, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function updateRewardDurationsForAllVaults(
+        address safe,
+        address payable infrared,
+        address[] calldata _stakingTokens,
+        address _rewardsToken,
+        uint256 _rewardsDuration
+    ) external isBatch(safe) {
+        // update infrared reward duration
+        bytes memory data = abi.encodeWithSignature(
+            "updateRewardsDuration(uint256)", _rewardsDuration
+        );
+        addToBatch(infrared, 0, data);
+        // update vaults
+        for (uint256 i; i < _stakingTokens.length; i++) {
+            address _stakingToken = _stakingTokens[i];
+            data = abi.encodeWithSignature(
+                "updateRewardsDurationForVault(address,address,uint256)",
+                _stakingToken,
+                _rewardsToken,
+                _rewardsDuration
+            );
+            addToBatch(infrared, 0, data);
+        }
+
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
@@ -171,6 +202,40 @@ contract InfraredMultisigGovernance is BatchScript {
             "revoke(bytes32,address)", role, hypernative
         );
         addToBatch(infrared, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    /// @dev grant new keeper role on infrared and ibera
+    function grantKeeperRole(
+        address safe,
+        address payable infrared,
+        address ibera,
+        address keeper
+    ) external isBatch(safe) {
+        bytes32 role = Infrared(infrared).KEEPER_ROLE();
+        bytes memory data =
+            abi.encodeWithSignature("grantRole(bytes32,address)", role, keeper);
+        addToBatch(infrared, 0, data);
+        addToBatch(ibera, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    /// @dev revoke keeper role on infrared and ibera
+    function revokeKeeperRole(
+        address safe,
+        address payable infrared,
+        address ibera,
+        address keeper
+    ) external isBatch(safe) {
+        bytes32 role = Infrared(infrared).KEEPER_ROLE();
+        bytes memory data =
+            abi.encodeWithSignature("revoke(bytes32,address)", role, keeper);
+        addToBatch(infrared, 0, data);
+        addToBatch(ibera, 0, data);
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
@@ -247,10 +312,11 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function updateFee(
+        address safe,
         address payable infrared,
         ConfigTypes.FeeType _t,
         uint256 _fee
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data =
             abi.encodeWithSignature("updateFee(uint8,uint256)", _t, _fee);
         addToBatch(infrared, 0, data);
@@ -260,13 +326,13 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function claimProtocolFees(
+        address safe,
         address payable infrared,
         address _to,
-        address _token,
-        uint256 _amount
-    ) external {
+        address _token
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
-            "claimProtocolFees(address,address,uint256)", _to, _token, _amount
+            "claimProtocolFees(address,address)", _to, _token
         );
         addToBatch(infrared, 0, data);
         vm.startBroadcast();
