@@ -14,7 +14,9 @@ import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {IBGT as IBerachainBGT} from "@berachain/pol/interfaces/IBGT.sol";
 
 contract InfraredKeeperScriptEOA is Script {
-    // cArtio addresses
+    /// @dev The length of the history buffer in the EIP-4788 Beacon Roots contract.
+    uint64 private constant HISTORY_BUFFER_LENGTH = 8191;
+
     Infrared infrared =
         Infrared(payable(0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126));
     IBerachainBGT bgt =
@@ -58,20 +60,44 @@ contract InfraredKeeperScriptEOA is Script {
     }
 
     function activateAndMaxBoost(bytes[] calldata _pubkeys) external {
+        (uint32 blockNumberLast,) =
+            bgt.boostedQueue(address(infrared), _pubkeys[0]);
+
         vm.startBroadcast();
-        infrared.activateBoosts(_pubkeys);
 
-        uint256 maxBoost = ibgt.totalSupply()
-            - (bgt.boosts(address(infrared)) + bgt.queuedBoost(address(infrared)));
+        if (_checkEnoughTimePassed(blockNumberLast)) {
+            infrared.activateBoosts(_pubkeys);
 
-        uint256 len = _pubkeys.length;
-        uint128[] memory amts = new uint128[](len);
-        for (uint256 i; i < len; i++) {
-            amts[i] = uint128(maxBoost / len);
+            uint256 maxBoost = ibgt.totalSupply()
+                - (
+                    bgt.boosts(address(infrared))
+                        + bgt.queuedBoost(address(infrared))
+                );
+
+            uint256 len = _pubkeys.length;
+            uint128[] memory amts = new uint128[](len);
+            for (uint256 i; i < len; i++) {
+                amts[i] = uint128(maxBoost / len);
+            }
+
+            infrared.queueBoosts(_pubkeys, amts);
         }
-
-        infrared.queueBoosts(_pubkeys, amts);
-
         vm.stopBroadcast();
+    }
+
+    function _checkEnoughTimePassed(uint32 blockNumberLast)
+        private
+        view
+        returns (bool)
+    {
+        unchecked {
+            uint32 delta = uint32(block.number) - blockNumberLast;
+            // roughly 5 hours with a 2 second block time
+            if (delta <= HISTORY_BUFFER_LENGTH) {
+                return false;
+            } else {
+                return true;
+            }
+        }
     }
 }
