@@ -1,4 +1,4 @@
-name: Run Foundry Script
+name: Activate and Queue boosts
 
 on:
   schedule:
