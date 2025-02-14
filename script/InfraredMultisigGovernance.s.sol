@@ -168,6 +168,23 @@ contract InfraredMultisigGovernance is BatchScript {
         vm.stopBroadcast();
     }
 
+    function pauseMultipleVaultStaking(
+        address safe,
+        address payable infrared,
+        address[] calldata _assets
+    ) external isBatch(safe) {
+        for (uint256 i; i < _assets.length; i++) {
+            address _asset = _assets[i];
+            bytes memory data =
+                abi.encodeWithSignature("pauseStaking(address)", _asset);
+            addToBatch(infrared, 0, data);
+        }
+
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
     function unpauseVaultStaking(address payable infrared, address _asset)
         external
     {

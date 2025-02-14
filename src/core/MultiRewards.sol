@@ -78,10 +78,6 @@ abstract contract MultiRewards is ReentrancyGuard, Pausable, IMultiRewards {
         for (uint256 i; i < rewardTokens.length; i++) {
             address token = rewardTokens[i];
 
-            if (rewardData[token].lastUpdateTime == block.timestamp) {
-                continue;
-            }
-
             uint256 latestRewardPerToken = rewardPerToken(token);
             rewardData[token].rewardPerTokenStored = latestRewardPerToken;
             rewardData[token].lastUpdateTime = lastTimeRewardApplicable(token);

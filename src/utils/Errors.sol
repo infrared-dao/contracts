@@ -53,6 +53,7 @@ library Errors {
     error ETHTransferFailed();
     error TokensReservedForProtocolFees();
     error NoRewardsToClaim();
+    error VaultAlreadyUpToDate();
 
     // iBERA erros
     error InvalidAmount();

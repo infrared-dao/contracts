@@ -409,6 +409,62 @@ library RewardsLib {
         }
     }
 
+    /// @notice Harvests the accrued BGT rewards to a vault.
+    /// @notice BGT transferred here directly to the user https://github.com/berachain/contracts-monorepo/blob/c374de32077ede0147985cf2bf6ed89570244a7e/src/pol/rewards/RewardVault.sol#L404
+    /// @param vault            The address of the InfraredRewardVault, wrapping an underlying RewardVault
+    /// @param bgt              The address of the BGT token
+    /// @param ibgt             The address of the InfraredBGT token
+    /// @param voter            The address of the voter (0 until IR token is live)
+    ///
+    /// @return bgtAmt The amount of BGT rewards harvested
+    function harvestOldVault(
+        RewardsStorage storage $,
+        IInfraredVault vault,
+        IInfraredVault newVault,
+        address bgt,
+        address ibgt,
+        address voter
+    ) external returns (uint256 bgtAmt) {
+        // Ensure the vault is valid
+        if (vault == IInfraredVault(address(0))) {
+            revert Errors.VaultNotSupported();
+        }
+
+        // Record the BGT balance before claiming rewards since there could be base rewards that are in the balance.
+        uint256 balanceBefore = IBerachainBGT(bgt).balanceOf(address(this));
+
+        // Get the underlying Berachain RewardVault and claim the BGT rewards.
+        IBerachainRewardsVault rewardsVault = vault.rewardsVault();
+        rewardsVault.getReward(address(vault), address(this));
+
+        // Calculate the amount of BGT rewards received
+        bgtAmt = IBerachainBGT(bgt).balanceOf(address(this)) - balanceBefore;
+
+        // If no BGT rewards were received, exit early
+        if (bgtAmt == 0) return bgtAmt;
+
+        // Mint InfraredBGT tokens equivalent to the BGT rewards
+        IInfraredBGT(ibgt).mint(address(this), bgtAmt);
+
+        // Calculate the voter and protocol fees to charge on the rewards
+        (uint256 _amt, uint256 _amtVoter, uint256 _amtProtocol) =
+        chargedFeesOnRewards(
+            bgtAmt,
+            $.fees[uint256(ConfigTypes.FeeType.HarvestVaultFeeRate)],
+            $.fees[uint256(ConfigTypes.FeeType.HarvestVaultProtocolRate)]
+        );
+
+        // Distribute the fees on the rewards.
+        _distributeFeesOnRewards(
+            $.protocolFeeAmounts, voter, ibgt, _amtVoter, _amtProtocol
+        );
+
+        if (_amt > 0) {
+            ERC20(ibgt).safeApprove(address(newVault), _amt);
+            newVault.notifyRewardAmount(ibgt, _amt);
+        }
+    }
+
     /// @notice Harvest Bribes in tokens from RewardVault, sent to us via processIncentive
     /// ref - https://github.com/berachain/contracts-monorepo/blob/c374de32077ede0147985cf2bf6ed89570244a7e/src/pol/rewards/RewardVault.sol#L421
     /// @param $            The storage pointer for all rewards accumulators

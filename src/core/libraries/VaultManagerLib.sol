@@ -32,6 +32,7 @@ library VaultManagerLib {
         mapping(address => IInfraredVault) vaultRegistry; // Maps asset to its vault
         EnumerableSet.AddressSet whitelistedRewardTokens; // Set of whitelisted reward tokens
         uint256 rewardsDuration; // Default duration for rewards
+        mapping(address => uint8) vaultVersions;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -69,6 +70,18 @@ library VaultManagerLib {
         if (address(vault) == address(0)) revert Errors.NoRewardsVault();
 
         vault.unpauseStaking();
+    }
+
+    /// @notice Pauses staking functionality on an old vault
+    /// @param _vault address of the vault to pause
+    function pauseOldStaking(address _vault) external {
+        IInfraredVault(_vault).pauseStaking();
+    }
+
+    /// @notice Un-pauses staking functionality on an old vault
+    /// @param _vault address of the vault to un-pause
+    function unpauseOldStaking(address _vault) external {
+        IInfraredVault(_vault).unpauseStaking();
     }
 
     /// @notice Updates the whitelist status of a reward token.
@@ -153,6 +166,33 @@ library VaultManagerLib {
 
         IInfraredVault vault = $.vaultRegistry[_asset];
         vault.recoverERC20(_to, _token, _amount);
+    }
+
+    /// @notice Recovers ERC20 tokens from old vault.
+    /// @dev removes reward token, cutting user claims. This should be a one time last ditch call for recovery after all users exited
+    /// @param _vault address of the asset to recover from.
+    /// @param _to address to recover the tokens to.
+    /// @param _token address of the token to recover.
+    /// @param _amount uint256 amount of tokens to recover.
+    function recoverERC20FromOldVault(
+        address _vault,
+        address _to,
+        address _token,
+        uint256 _amount
+    ) external {
+        if (_vault == address(0) || _to == address(0) || _token == address(0)) {
+            revert Errors.ZeroAddress();
+        }
+        (bool success,) = _vault.call(
+            abi.encodeWithSignature("removeReward(address)", _token)
+        );
+
+        (success,) = _vault.call(
+            abi.encodeWithSignature(
+                "recoverERC20(address,address,uint256)", _to, _token, _amount
+            )
+        );
+        if (!success) revert();
     }
 
     /// @notice Updates the rewards duration for a specific reward token on a vault.
