@@ -15,10 +15,18 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Create Short Working Directory Symlink
+        run: |
+          # Remove any existing symlink
+          rm -rf /tmp/project
+          # Create a symlink so /tmp/project points to the checked-out repo ($GITHUB_WORKSPACE)
+          ln -s "$GITHUB_WORKSPACE" /tmp/project
+          echo "Created symlink: /tmp/project -> $GITHUB_WORKSPACE"
+
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
-          version: v0.3.0
+          version: nightly
 
       - name: Mask Secrets
         run: |
@@ -32,6 +40,7 @@ jobs:
           chmod 600 /dev/shm/keystore.json
 
       - name: Run Foundry Script
+        working-directory: /tmp/project
         env:
           RPC_URL: ${{ secrets.RPC_URL }}
           PUBKEY: ${{ secrets.PUBKEY }}
