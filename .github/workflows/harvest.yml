@@ -10,18 +10,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clone main repository
-        uses: actions/checkout@v4
-        with:
-          submodules: recursive
-
-      - name: Create Short Working Directory Symlink
+      - name: Clone repository to short path
         run: |
-          # Remove any existing symlink
-          rm -rf /tmp/project
-          # Create a symlink so /tmp/project points to the checked-out repo ($GITHUB_WORKSPACE)
-          ln -s "$GITHUB_WORKSPACE" /tmp/project
-          echo "Created symlink: /tmp/project -> $GITHUB_WORKSPACE"
+          rm -rf /tmp/repo
+          git clone --recurse-submodules https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} /tmp/repo
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -40,7 +32,7 @@ jobs:
           chmod 600 /dev/shm/keystore.json
 
       - name: Run Foundry Script
-        working-directory: /tmp/project
+        working-directory: /tmp/repo
         env:
           RPC_URL: ${{ secrets.RPC_URL }}
           PUBKEY: ${{ secrets.PUBKEY }}
