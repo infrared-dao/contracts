@@ -33,9 +33,11 @@ contract InfraredMultisigGovernance is BatchScript {
         vm.stopBroadcast();
     }
 
-    function removeValidator(address payable infrared, bytes calldata pubkey)
-        external
-    {
+    function removeValidator(
+        address safe,
+        address payable infrared,
+        bytes calldata pubkey
+    ) external isBatch(safe) {
         bytes[] memory pubkeys = new bytes[](1);
         pubkeys[0] = pubkey;
 
@@ -516,6 +518,21 @@ contract InfraredMultisigGovernance is BatchScript {
         );
         addToBatch(infrared, 0, data);
 
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function migrateVault(
+        address safe,
+        address infrared,
+        address _asset,
+        uint8 versionToUpgradeTo
+    ) external isBatch(safe) {
+        bytes memory data = abi.encodeWithSignature(
+            "migrateVault(address,uint8)", _asset, versionToUpgradeTo
+        );
+        addToBatch(infrared, 0, data);
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();

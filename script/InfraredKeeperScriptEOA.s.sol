@@ -63,24 +63,90 @@ contract InfraredKeeperScriptEOA is Script {
         (uint32 blockNumberLast,) =
             bgt.boostedQueue(address(infrared), _pubkeys[0]);
 
+        uint256 len = _pubkeys.length;
+        if (len == 0) return; // Avoid errors with empty input
+
+        // queue boost strategy is to bring all boosts up to max then equally distribute
+        uint256 maxBoost = ibgt.totalSupply()
+            - (bgt.boosts(address(infrared)) + bgt.queuedBoost(address(infrared)));
+
         vm.startBroadcast();
 
         if (_checkEnoughTimePassed(blockNumberLast)) {
             infrared.activateBoosts(_pubkeys);
 
-            uint256 maxBoost = ibgt.totalSupply()
-                - (
-                    bgt.boosts(address(infrared))
-                        + bgt.queuedBoost(address(infrared))
-                );
-
-            uint256 len = _pubkeys.length;
-            uint128[] memory amts = new uint128[](len);
+            // find max boostedValidator
+            uint256 highestBoost;
+            uint256[] memory currentBoosts = new uint256[](len);
             for (uint256 i; i < len; i++) {
-                amts[i] = uint128(maxBoost / len);
+                currentBoosts[i] = bgt.boosted(address(infrared), _pubkeys[i]);
+                if (currentBoosts[i] > highestBoost) {
+                    highestBoost = currentBoosts[i];
+                }
             }
 
-            infrared.queueBoosts(_pubkeys, amts);
+            // assign amounts
+            uint256 cumulativeBoost;
+            uint128[] memory amts = new uint128[](len);
+            // first iteration for levelling amounts
+            for (uint256 i; i < len; i++) {
+                uint256 amt = highestBoost - currentBoosts[i];
+                if (amt == 0) continue;
+                if (amt + cumulativeBoost > maxBoost) {
+                    amt = maxBoost - cumulativeBoost;
+                }
+                cumulativeBoost += amt;
+                amts[i] = uint128(amt);
+                if (cumulativeBoost == maxBoost) break;
+            }
+            if (cumulativeBoost < maxBoost) {
+                maxBoost -= cumulativeBoost;
+                // second iteration for equal distribution
+                for (uint256 i; i < len; i++) {
+                    amts[i] += uint128(maxBoost / len);
+                }
+            }
+
+            // Filter out zero amounts before queuing boosts
+            uint256 count = 0;
+            // Count non-zero amounts
+            for (uint256 i; i < len; i++) {
+                if (amts[i] != 0) {
+                    count++;
+                }
+            }
+
+            // Only proceed if there are non-zero amounts
+            if (count > 0) {
+                // Create filtered arrays
+                bytes[] memory filteredPubkeys = new bytes[](count);
+                uint128[] memory filteredAmts = new uint128[](count);
+
+                // Populate filtered arrays with non-zero entries
+                uint256 index = 0;
+                for (uint256 i; i < len; i++) {
+                    if (amts[i] != 0) {
+                        filteredPubkeys[index] = _pubkeys[i];
+                        filteredAmts[index] = amts[i];
+                        index++;
+                    }
+                }
+
+                // Queue boosts with filtered arrays
+                infrared.queueBoosts(filteredPubkeys, filteredAmts);
+            }
+        }
+        vm.stopBroadcast();
+    }
+
+    function activateBoost(bytes[] calldata _pubkeys) external {
+        (uint32 blockNumberLast,) =
+            bgt.boostedQueue(address(infrared), _pubkeys[0]);
+
+        vm.startBroadcast();
+
+        if (_checkEnoughTimePassed(blockNumberLast)) {
+            infrared.activateBoosts(_pubkeys);
         }
         vm.stopBroadcast();
     }

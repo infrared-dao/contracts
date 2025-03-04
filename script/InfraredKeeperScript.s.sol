@@ -58,6 +58,19 @@ contract InfraredKeeperScript is BatchScript {
         vm.stopBroadcast();
     }
 
+    function harvestOldVault(address safe, address _vault, address _asset)
+        external
+        isBatch(safe)
+    {
+        bytes memory data = abi.encodeWithSignature(
+            "harvestOldVault(address,address)", _vault, _asset
+        );
+        addToBatch(address(infrared), 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
     function queueNewCuttingBoard(
         bytes calldata _pubkey,
         uint64 _startBlock,

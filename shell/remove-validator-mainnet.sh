@@ -9,16 +9,9 @@ INFRARED="0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126"
 
 # Figment
 PUBKEY="0x8007e88a66ad54839375b012eb602b798b59a507dc78dc966040458553de82c0fce583932121d539ae00ae73f5ed54e8"
-ADDR="0xD06982B60818bd6e1E840f589407B37FbBF4B5B0"
-
-# ADDR="0x36f159e20F1e53b915BDf6b108B43B8D1CdE0407"
-# PUBKEY="0x928d6f66bfd9cb1ef18da6843ad9db6c1b6ec7e3093705c95224e8f20232f243e7a627d09144360d4c1775d8fafdb0e7"
-
-# ADDR=""
-# PUBKEY="0x928d6f66bfd9cb1ef18da6843ad9db6c1b6ec7e3093705c95224e8f20232f243e7a627d09144360d4c1775d8fafdb0e7"
 
 forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
-    --sig "addValidator(address,address,address,bytes)" $SAFE $INFRARED $ADDR $PUBKEY \
+    --sig "removeValidator(address,address,bytes)" $SAFE $INFRARED $PUBKEY \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     --ffi \
