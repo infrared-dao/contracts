@@ -7,7 +7,7 @@ import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {BatchScript} from "@forge-safe/BatchScript.sol";
 
-import {InfraredV1_2} from "src/core/InfraredV1_2.sol";
+import {InfraredV1_2} from "src/core/upgrades/InfraredV1_2.sol";
 
 contract UpgradeInfrared is BatchScript {
     /// @dev requires InfraredV1.2 implementation to be deployed separately

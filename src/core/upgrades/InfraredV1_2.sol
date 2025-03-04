@@ -26,10 +26,10 @@ import {ConfigTypes, IInfraredV1_2} from "src/interfaces/IInfraredV1_2.sol";
 import {InfraredUpgradeable} from "src/core/InfraredUpgradeable.sol";
 import {InfraredVault} from "src/core/InfraredVault.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
-import {ValidatorManagerLib} from "./libraries/ValidatorManagerLib.sol";
-import {ValidatorTypes} from "./libraries/ValidatorTypes.sol";
-import {VaultManagerLib} from "./libraries/VaultManagerLib.sol";
-import {RewardsLib} from "./libraries/RewardsLib.sol";
+import {ValidatorManagerLib} from "src/core/libraries/ValidatorManagerLib.sol";
+import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
+import {VaultManagerLib} from "src/core/libraries/VaultManagerLib.sol";
+import {RewardsLib} from "src/core/libraries/RewardsLib.sol";
 
 /*
 

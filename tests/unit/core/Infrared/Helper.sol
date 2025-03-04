@@ -23,6 +23,7 @@ import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {BribeCollector} from "src/core/BribeCollector.sol";
+import {BribeCollectorV1_2} from "src/core/upgrades/BribeCollectorV1_2.sol";
 
 // internal
 import {ERC20, Infrared} from "src/core/Infrared.sol";
@@ -54,7 +55,8 @@ abstract contract Helper is POLTest {
     InfraredBERAClaimor public claimor;
     InfraredBERAFeeReceivor public receivor;
 
-    BribeCollector internal collector;
+    BribeCollector internal collector0;
+    BribeCollectorV1_2 internal collector;
     InfraredDistributor internal infraredDistributor;
 
     address internal admin;
@@ -118,11 +120,11 @@ abstract contract Helper is POLTest {
             payable(setupProxy(address(new InfraredBERAFeeReceivor())))
         );
 
-        collector = BribeCollector(setupProxy(address(new BribeCollector())));
+        collector0 = BribeCollector(setupProxy(address(new BribeCollector())));
         infraredDistributor =
             InfraredDistributor(setupProxy(address(new InfraredDistributor())));
 
-        collector.initialize(
+        collector0.initialize(
             address(infrared), infraredGovernance, address(wbera), 10 ether
         );
         infraredDistributor.initialize(
@@ -139,7 +141,7 @@ abstract contract Helper is POLTest {
             address(beraChef),
             payable(address(wbera)),
             address(honey),
-            address(collector),
+            address(collector0),
             address(infraredDistributor),
             address(0),
             address(ibera),
@@ -189,6 +191,20 @@ abstract contract Helper is POLTest {
         ibgtVault = infrared.ibgtVault();
 
         labelContracts();
+
+        // upgrade bribe collector
+        // deploy new implementation
+        collector = new BribeCollectorV1_2();
+
+        // perform proxy upgrade
+        vm.prank(infraredGovernance);
+        (bool success,) = address(collector0).call(
+            abi.encodeWithSignature(
+                "upgradeToAndCall(address,bytes)", address(collector), ""
+            )
+        );
+        require(success, "Upgrade failed");
+        collector = BribeCollectorV1_2(address(collector0));
     }
 
     function labelContracts() public {

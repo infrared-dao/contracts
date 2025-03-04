@@ -38,7 +38,7 @@ contract BribeCollectorTest is Helper {
         // Arrange
         address recipient = address(3);
         address[] memory feeTokens = new address[](2);
-        feeTokens[0] = address(wbera);
+        feeTokens[0] = address(ibgt);
         feeTokens[1] = address(honey);
 
         uint256[] memory feeAmounts = new uint256[](2);
@@ -46,7 +46,7 @@ contract BribeCollectorTest is Helper {
         feeAmounts[1] = 2 ether;
 
         // simulate bribes collected by the collector contract
-        deal(address(wbera), address(collector), 1 ether);
+        deal(address(ibgt), address(collector), 1 ether);
         deal(address(honey), address(collector), 2 ether);
 
         address payoutToken = collector.payoutToken();
@@ -69,7 +69,43 @@ contract BribeCollectorTest is Helper {
         assertEq(wbera.balanceOf(address(ibgtVault)), payoutAmount / 2);
         assertEq(address(receivor).balance, payoutAmount / 2);
         assertEq(honey.balanceOf(recipient), 2 ether);
-        assertEq(wbera.balanceOf(recipient), 1 ether);
+        assertEq(ibgt.balanceOf(recipient), 1 ether);
+    }
+
+    function testClaimFeesRejectsPayoutTokenAndSweepPayoutToken() public {
+        // now test
+        address recipient = address(3);
+        address[] memory feeTokens = new address[](1);
+        feeTokens[0] = collector.payoutToken(); // Malicious attempt
+
+        deal(address(wbera), address(collector), 10 ether);
+        deal(address(wbera), address(this), collector.payoutAmount());
+
+        uint256[] memory feeAmounts = new uint256[](1);
+        feeAmounts[0] = 10 ether;
+
+        wbera.approve(address(collector), collector.payoutAmount());
+
+        vm.expectRevert(Errors.RewardTokenNotSupported.selector);
+        collector.claimFees(recipient, feeTokens, feeAmounts);
+
+        // update bribe split to test better
+        uint256 balBefore = address(receivor).balance;
+        deal(address(wbera), collector.payoutAmount() / 2);
+        vm.prank(infraredGovernance);
+        infrared.updateInfraredBERABribeSplit(500000);
+
+        vm.prank(infraredGovernance);
+        collector.sweepPayoutToken();
+
+        assertEq(
+            wbera.balanceOf(address(infrared.ibgtVault())),
+            collector.payoutAmount() / 2
+        );
+        assertEq(
+            address(receivor).balance, balBefore + collector.payoutAmount() / 2
+        );
+        assertEq(wbera.balanceOf(address(collector)), 0);
     }
 
     function testUpgrades() public {

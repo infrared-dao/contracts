@@ -17,7 +17,7 @@ import {IFeeCollector as IBerachainFeeCollector} from
     "@berachain/pol/interfaces/IFeeCollector.sol";
 
 import {Infrared} from "src/core/Infrared.sol";
-import {InfraredV1_2} from "src/core/InfraredV1_2.sol";
+import {InfraredV1_2} from "src/core/upgrades/InfraredV1_2.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {Voter} from "src/voting/Voter.sol";
 import {VotingEscrow} from "src/voting/VotingEscrow.sol";
