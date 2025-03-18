@@ -6,8 +6,8 @@ source .env
 RPC_URL="https://rpc.berachain.com"
 SAFE="0x182a31A27A0D39d735b31e80534CFE1fCd92c38f"
 IBERA="0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5"
-SIG="0xa58cf9d41726f3f7cdf47003b427072daa6228045efffb568b0bea6c168f1c91e3cdc332733779a78e1da5631cab1a7708289dd0089527d20b1f5dc639321fb2f325296a4537a09bf2b0e4b60013ca775450927a1a4b742bca2b97f78ece1b2e"
-PUBKEY="0x875aaf00241b14ccd86176e4baed170df6735529afd0f38f01ecfe881cbb613058922a0372814b967e3ae9e880d88658"
+SIG="0x832212414fcd12ee62b017b21b28220377da901516019838a8fe01d2e4852199ced7aaa69353cadb7877f83ab82ef4b307c0c61e67d6cfb686169551320570493301069669396ebd113c4ecd268e1c1ae2354be5f733d9aadab4d41e8925f72e"
+PUBKEY="0xaddc88b5a74211b80ed2b8c5169b85380b7428a8b0a3381a4470d52203eb230f136b423370308783082866f716b06651"
 
 
 forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
@@ -15,4 +15,4 @@ forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance 
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     --ffi \
-    --broadcast 
+    --broadcast -vvvv
