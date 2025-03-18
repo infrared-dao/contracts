@@ -44,7 +44,7 @@ STAKING_ASSETS=(
 # Change these to correct params
 MULTISIG_ADDRESS="0x03915AaeF5fEb997E130fdeF03f4946A9d3d79d2"
 INFRARED="0xb71b3daea39012fb0f2b14d2a9c86da9292fc126"
-RPC_URL="http://35.203.86.197:8545/"
+RPC_URL="https://rpc.berachain.com"
 VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan'
 
 # Iterate through staking assets and deploy vaults

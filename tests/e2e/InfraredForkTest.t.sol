@@ -27,6 +27,41 @@ contract InfraredForkTest is HelperForkTest {
     function setUp() public virtual override {
         super.setUp();
 
+        uint256 _rewardsDuration = 30 days;
+        uint256 _bribeCollectorPayoutAmount = 10 ether;
+
+        // deploy
+        deployer = new InfraredDeployer();
+        deployer.run(
+            infraredGovernance,
+            keeper,
+            address(bgt),
+            address(factory),
+            address(beraChef),
+            address(beaconDepositContract),
+            address(wbera),
+            address(honey),
+            _rewardsDuration,
+            _bribeCollectorPayoutAmount
+        );
+
+        // retreive addersses
+        infrared = deployer.infrared();
+        collector = deployer.collector();
+        infraredDistributor = deployer.distributor();
+        ibgt = deployer.ibgt();
+        ibera = deployer.ibera();
+        depositor = deployer.depositor();
+        receivor = deployer.receivor();
+
+        // voter = deployer.voter();
+        // sIR = deployer.sIR();
+        // ir = InfraredGovernanceToken(address(deployer.ir()));
+
+        uint16 feeShareholders = 4; // 25% of fees
+        vm.prank(infraredGovernance);
+        ibera.setFeeDivisorShareholders(feeShareholders);
+
         stakingToken = new ERC20PresetMinterPauser(
             "Staking Token",
             "STAKE",

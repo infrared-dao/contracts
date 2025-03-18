@@ -3,7 +3,7 @@ set -euo pipefail
 # expect PRIVATE_KEY in `.env`
 source .env
 
-# Cartio RPC URL
+# RPC URL
 RPC_URL="https://rpc.berachain.com"
 
 # VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan'

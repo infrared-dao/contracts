@@ -6,7 +6,7 @@ source .env
 
 # Change these to correct params
 IBERA="0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5"
-RPC_URL="http://35.203.86.197:8545/"
+RPC_URL="https://rpc.berachain.com"
 VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan'
 
 # Run the deployment script

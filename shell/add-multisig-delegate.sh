@@ -9,7 +9,7 @@ ADMIN_ADDRESS="0x1eCF087ea1194AB182A53De849d61deB917D733F"
 DELEGATE_ADDRESS="0x54a4c29196aAD6FA77F9b4e35288E5234ac4F31a"
 SAFE_TX_SERVICE="https://transaction.bp.w3us.site/"
 
-# RPC_URL="http://35.203.86.197:8545/"
+# RPC_URL="https://rpc.berachain.com"
 RPC_URL="https://rpc.berachain.com"
 
 

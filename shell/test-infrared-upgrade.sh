@@ -3,7 +3,7 @@ set -euo pipefail
 # expect PRIVATE_KEY in `.env`
 source .env
 
-# Cartio RPC URL
+#  RPC URL
 FORK_RPC_URL="https://rpc.berachain.com"
 RPC_URL="http://127.0.0.1:8545"
 

@@ -15,14 +15,12 @@ contract MultiRewardsForkTest is InfraredForkTest {
         deal(address(honey), alice, 1e20);
         deal(address(weth), alice, 1e20);
         deal(address(usdc), alice, 1e20);
-        deal(address(usdt), alice, 1e20);
 
         // Set up users
         vm.startPrank(alice);
         honey.approve(address(infrared), type(uint256).max);
         weth.approve(address(infrared), type(uint256).max);
         usdc.approve(address(infrared), type(uint256).max);
-        usdt.approve(address(infrared), type(uint256).max);
 
         vm.stopPrank();
     }
@@ -34,15 +32,12 @@ contract MultiRewardsForkTest is InfraredForkTest {
         infrared.addReward(address(stakingToken), address(weth), 3600);
         infrared.updateWhiteListedRewardTokens(address(usdc), true);
         infrared.addReward(address(stakingToken), address(usdc), 3600);
-        infrared.updateWhiteListedRewardTokens(address(usdt), true);
-        infrared.addReward(address(stakingToken), address(usdt), 3600);
         vm.stopPrank();
 
         vm.startPrank(alice);
         infrared.addIncentives(address(stakingToken), address(honey), 1e20);
         infrared.addIncentives(address(stakingToken), address(weth), 1e20);
         infrared.addIncentives(address(stakingToken), address(usdc), 1e20);
-        infrared.addIncentives(address(stakingToken), address(usdt), 1e20);
         vm.stopPrank();
 
         stakeAndApprove(alice, 1e18);
@@ -67,7 +62,6 @@ contract MultiRewardsForkTest is InfraredForkTest {
         assertGt(honey.balanceOf(alice), 0);
         assertGt(weth.balanceOf(alice), 0);
         assertGt(usdc.balanceOf(alice), 0);
-        assertGt(usdt.balanceOf(alice), 0);
     }
 
     function stakeAndApprove(address user, uint256 amount) internal {

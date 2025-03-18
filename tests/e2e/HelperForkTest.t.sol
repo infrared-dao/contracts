@@ -38,172 +38,208 @@ import {InfraredDeployer} from "script/InfraredDeployer.s.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 
 contract HelperForkTest is Test {
-    string constant CARTIO_RPC_URL = "https://amberdew-eth-cartio.berachain.com";
+    string constant MAINNET_RPC_URL = "https://rpc.berachain.com";
 
     uint64 internal constant HISTORY_BUFFER_LENGTH = 8191;
 
+    // Validator data struct which will hold proof data for POL distribution
+    struct ValData {
+        uint64 nextTimestamp;
+        uint64 proposerIndex;
+        bytes pubkey;
+        bytes32[] proposerIndexProof;
+        bytes32[] pubkeyProof;
+    }
+
+    // InfraredDeployer instance
     InfraredDeployer public deployer;
 
+    // Infrared core contracts
     Infrared public infrared;
     InfraredBGT public ibgt;
     InfraredGovernanceToken public ir;
-
     Voter public voter;
     VotingEscrow public sIR;
 
+    // Infrared staking contracts
     InfraredBERA public ibera;
     InfraredBERADepositor public depositor;
     InfraredBERAWithdrawor public withdrawor;
     InfraredBERAClaimor public claimor;
     InfraredBERAFeeReceivor public receivor;
 
+    // Infrared system contracts
     BribeCollector internal collector;
     InfraredDistributor internal infraredDistributor;
 
+    // Addresses
     address internal admin;
     address internal keeper;
     address internal infraredGovernance;
+    address internal stakingAsset;
+    address internal poolAddress;
 
-    address stakingAsset;
-    address poolAddress;
-
+    // Vaults
     IInfraredVault internal ibgtVault;
     InfraredVault internal infraredVault;
 
+    // Berachain POL contracts
     BeraChef internal beraChef;
     IBerachainBGT internal bgt;
     IBerachainBGTStaker internal bgtStaker;
     IBerachainRewardsVaultFactory internal factory;
     IBerachainFeeCollector internal feeCollector;
     BerachainDistributor internal distributor;
-
     IWBERA internal wbera;
     IBerachainBeaconDeposit beaconDepositContract;
 
-    struct ValData {
-        bytes32 beaconBlockRoot;
-        uint64 index;
-        bytes pubkey;
-        bytes32[] proposerIndexProof;
-        bytes32[] pubkeyProof;
-    }
-
-    ValData internal valData;
-
-    uint256 internal cartioFork;
-
+    // Tokens for testing
     ERC20 honey;
     ERC20 weth;
     ERC20 usdc;
-    ERC20 usdt;
     ERC20 wbtc;
 
-    // create a cartio fork during setup
+    // Validator data for POL distribution
+    ValData public valData;
+
+    // Mainnet fork ID
+    uint256 internal mainnetFork;
+
     function setUp() public virtual {
-        // custom params
+        // Set custom parameters
         admin = address(this);
-        keeper = address(1);
-        infraredGovernance = address(2);
+        keeper = address(0x242D55c9404E0Ed1fD37dB1f00D60437820fe4f0);
+        infraredGovernance = address(0x182a31A27A0D39d735b31e80534CFE1fCd92c38f);
 
-        uint256 _rewardsDuration = 30 days;
-        uint256 _bribeCollectorPayoutAmount = 10 ether;
+        // Load validator data from fixtures
+        _loadValidatorData();
 
-        // todo: generate cartio validator proof, using (https://github.com/sandybradley/ConsensusLayerVerifier/blob/main/py/merkle_proof_generator/main.py)
-        valData = abi.decode(
-            stdJson.parseRaw(
-                vm.readFile(
-                    string.concat(
-                        vm.projectRoot(),
-                        "/test/pol/fixtures/validator_data_proofs.json"
-                    )
-                ),
-                "$"
-            ),
-            (ValData)
-        );
+        // Create and select mainnet fork
+        uint256 blockNumber = 1972861;
+        mainnetFork = vm.createFork(MAINNET_RPC_URL, blockNumber);
+        vm.selectFork(mainnetFork);
 
-        // create fork
-        cartioFork = vm.createFork(CARTIO_RPC_URL);
-        vm.selectFork(cartioFork);
-
-        // Cartio deployments
-        beraChef = BeraChef(0x2C2F301f380dDc9c36c206DC3df8EA8688419cC1);
-        factory = IBerachainRewardsVaultFactory(
-            0xE2257F3C674a7CBBFFCf7C01925D5bcB85ea0367
-        );
-        distributor =
-            BerachainDistributor(0x211bE45338B7C6d5721B5543Eb868547088Aca39);
-        bgt = IBerachainBGT(0x289274787bAF083C15A45a174b7a8e44F0720660);
-        bgtStaker =
-            IBerachainBGTStaker(0x7B4fba14B2eae33Dd9E780E4bD406fC0429c96af);
-        beaconDepositContract =
-            IBerachainBeaconDeposit(0x4242424242424242424242424242424242424242);
-        wbera = IWBERA(0x2C2F301f380dDc9c36c206DC3df8EA8688419cC1);
-
-        // RewardVaultFactory 0xE2257F3C674a7CBBFFCf7C01925D5bcB85ea0367
-        // RewardVault 0xBED0D947E914C499877162cA01E44ca3173CB74B
-        // FeeCollector 0x7B7aae85E651285f754830506086120621A04031
-
-        honey = ERC20(0xd137593CDB341CcC78426c54Fb98435C60Da193c);
-        weth = ERC20(0x2d93FbcE4CffC15DD385A80B3f4CC1D4E76C38b3);
-        usdc = ERC20(0x015fd589F4f1A33ce4487E12714e1B15129c9329);
-        usdt = ERC20(0x164A2dE1bc5dc56F329909F7c97Bae929CaE557B);
-        wbtc = ERC20(0xFa5bf670A92AfF186E5176aA55690E0277010040);
-
-        // deploy
-        deployer = new InfraredDeployer();
-        deployer.run(
-            infraredGovernance,
-            keeper,
-            address(bgt),
-            address(factory),
-            address(beraChef),
-            address(beaconDepositContract),
-            address(wbera),
-            address(honey),
-            _rewardsDuration,
-            _bribeCollectorPayoutAmount
-        );
-
-        // retreive addersses
-        infrared = deployer.infrared();
-        collector = deployer.collector();
-        infraredDistributor = deployer.distributor();
-        ibgt = deployer.ibgt();
-        ibera = deployer.ibera();
-        depositor = deployer.depositor();
-        receivor = deployer.receivor();
-
-        // voter = deployer.voter();
-        // sIR = deployer.sIR();
-        // ir = InfraredGovernanceToken(address(deployer.ir()));
-
-        uint16 feeShareholders = 4; // 25% of fees
-        vm.prank(infraredGovernance);
-        ibera.setFeeDivisorShareholders(feeShareholders);
+        // Initialize Berachain and Infrared contract references
+        _initializeContractReferences();
     }
 
-    /// @notice Simulates distribution of POL for current block.number
+    function _loadValidatorData() internal {
+        string memory json = vm.readFile(
+            string.concat(
+                vm.projectRoot(),
+                "/test/pol/fixtures/validator_data_proofs.json"
+            )
+        );
+
+        // Extract each field individually to ensure correct mapping
+        valData.nextTimestamp =
+            uint64(stdJson.readUint(json, "$.$0__nextTimestamp"));
+        valData.proposerIndex =
+            uint64(stdJson.readUint(json, "$.$1__proposerIndex"));
+        valData.pubkey = stdJson.readBytes(json, "$.$2__pubkey");
+
+        // For arrays, we need to handle differently
+        bytes memory proposerIndexProofData =
+            stdJson.parseRaw(json, "$.$3__proposerIndexProof");
+        bytes memory pubkeyProofData =
+            stdJson.parseRaw(json, "$.$4__pubkeyProof");
+
+        valData.proposerIndexProof =
+            abi.decode(proposerIndexProofData, (bytes32[]));
+        valData.pubkeyProof = abi.decode(pubkeyProofData, (bytes32[]));
+    }
+
+    function _hexStringToBytes32(string memory hexString)
+        internal
+        pure
+        returns (bytes32 result)
+    {
+        bytes memory strBytes = bytes(hexString);
+        require(strBytes.length == 66, "Invalid hex string length"); // "0x" + 64 hex chars
+
+        bytes memory rawBytes = new bytes(32);
+        for (uint256 i = 0; i < 32; i++) {
+            uint8 high = uint8(_charToHexDigit(strBytes[2 + i * 2]));
+            uint8 low = uint8(_charToHexDigit(strBytes[2 + i * 2 + 1]));
+            rawBytes[i] = bytes1((high << 4) | low);
+        }
+
+        assembly {
+            result := mload(add(rawBytes, 32))
+        }
+    }
+
+    function _charToHexDigit(bytes1 c) internal pure returns (uint8) {
+        if (uint8(c) >= uint8(bytes1("0")) && uint8(c) <= uint8(bytes1("9"))) {
+            return uint8(c) - uint8(bytes1("0"));
+        }
+        if (uint8(c) >= uint8(bytes1("a")) && uint8(c) <= uint8(bytes1("f"))) {
+            return 10 + uint8(c) - uint8(bytes1("a"));
+        }
+        if (uint8(c) >= uint8(bytes1("A")) && uint8(c) <= uint8(bytes1("F"))) {
+            return 10 + uint8(c) - uint8(bytes1("A"));
+        }
+        revert("Invalid hex character");
+    }
+
+    function _initializeContractReferences() internal {
+        // Berachain POL contracts
+        beraChef = BeraChef(0xdf960E8F3F19C481dDE769edEDD439ea1a63426a);
+        factory = IBerachainRewardsVaultFactory(
+            0x94Ad6Ac84f6C6FbA8b8CCbD71d9f4f101def52a8
+        );
+        distributor =
+            BerachainDistributor(0xD2f19a79b026Fb636A7c300bF5947df113940761);
+        bgt = IBerachainBGT(0x656b95E550C07a9ffe548bd4085c72418Ceb1dba);
+        bgtStaker =
+            IBerachainBGTStaker(0x44F07Ce5AfeCbCC406e6beFD40cc2998eEb8c7C6);
+        beaconDepositContract =
+            IBerachainBeaconDeposit(0x4242424242424242424242424242424242424242);
+        wbera = IWBERA(0x6969696969696969696969696969696969696969);
+
+        // Token references
+        honey = ERC20(0xFCBD14DC51f0A4d49d5E53C2E0950e0bC26d0Dce);
+        weth = ERC20(0x2F6F07CDcf3588944Bf4C42aC74ff24bF56e7590);
+        usdc = ERC20(0x549943e04f40284185054145c6E4e9568C1D3241);
+        wbtc = ERC20(0x0555E30da8f98308EdB960aa94C0Db47230d2B9c);
+
+        // Infrared contracts
+        infrared = Infrared(payable(0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126));
+        ibgt = InfraredBGT(0xac03CABA51e17c86c921E1f6CBFBdC91F8BB2E6b);
+        // ir = InfraredGovernanceToken();
+        // voter = Voter();
+        // sIR = VotingEscrow();
+        ibera = InfraredBERA(0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5);
+        depositor =
+            InfraredBERADepositor(0x04CddC538ea65908106416986aDaeCeFD4CAB7D7);
+        withdrawor = InfraredBERAWithdrawor(
+            payable(0x8c0E122960dc2E97dc0059c07d6901Dce72818E1)
+        );
+        // claimor = InfraredBERAClaimor();
+        receivor = InfraredBERAFeeReceivor(
+            payable(0xf6a4A6aCECd5311327AE3866624486b6179fEF97)
+        );
+        collector = BribeCollector(0x8d44170e120B80a7E898bFba8cb26B01ad21298C);
+        infraredDistributor =
+            InfraredDistributor(0x1fAD980dfafF71E3Fdd9bef643ab2Ff2BdC4Ccd6);
+        infraredVault =
+            InfraredVault(0x0dF14916796854d899576CBde69a35bAFb923c22);
+        ibgtVault = IInfraredVault(0x4EF0c533D065118907f68e6017467Eb05DBb2c8C);
+    }
+
     function distributePol() public {
         distributor.distributeFor(
-            uint64(block.number),
-            valData.index,
+            valData.nextTimestamp,
+            valData.proposerIndex,
             valData.pubkey,
             valData.proposerIndexProof,
             valData.pubkeyProof
         );
     }
 
-    /// @notice Simulates rolling of chain forward to block `number` distributing POL rewards for each block to `coinbase` in the process
-    /// @dev `number` must be greater than the current `block.number`
-    /// @param number   uint256  The block number to roll to
     function rollPol(uint256 number) public {
-        require(number > block.number, "rolling number <= block.number");
-        uint256 delta = number - block.number;
-        for (uint256 i = 1; i < delta + 1; i++) {
-            vm.roll(block.number + i);
-            distributePol();
-        }
+        vm.roll(number);
+        distributePol();
     }
 
     function _credential(address addr) internal pure returns (bytes memory) {
@@ -216,5 +252,64 @@ contract HelperForkTest is Test {
 
     function _create48Byte() internal pure returns (bytes memory) {
         return abi.encodePacked(bytes32("32"), bytes16("16"));
+    }
+}
+
+// Mock implementation of the EIP-4788 BeaconRoots contract for testing
+contract EnhancedMock4788BeaconRoots {
+    bytes32 private mockBeaconBlockRoot;
+    mapping(uint256 => bool) private validTimestamps;
+    bool private defaultIsTimestampValid;
+
+    // Set if a specific timestamp should be considered valid
+    function setTimestampValid(uint256 timestamp, bool isValid) external {
+        validTimestamps[timestamp] = isValid;
+    }
+
+    // Set the default for timestamps not specifically set
+    function setIsTimestampValid(bool _isValid) external {
+        defaultIsTimestampValid = _isValid;
+    }
+
+    // Set the mock beacon block root to return
+    function setMockBeaconBlockRoot(bytes32 _mockBeaconBlockRoot) external {
+        mockBeaconBlockRoot = _mockBeaconBlockRoot;
+    }
+
+    // Check if a specific timestamp is valid or use the default
+    function isTimestampValid(uint256 timestamp) public view returns (bool) {
+        if (validTimestamps[timestamp]) {
+            return true;
+        }
+        return defaultIsTimestampValid;
+    }
+
+    // This is likely what's being called - match the function signature
+    function parentBeaconBlockRoots(uint256 timestamp)
+        external
+        view
+        returns (bytes32)
+    {
+        require(isTimestampValid(timestamp), "RootNotFound()");
+        return mockBeaconBlockRoot;
+    }
+
+    // Add a fallback function to catch any other function calls
+    fallback() external {
+        // Get the timestamp from the calldata
+        uint256 ts;
+        assembly {
+            // Assuming timestamp is the first parameter
+            ts := calldataload(4)
+        }
+
+        require(isTimestampValid(ts), "RootNotFound()");
+
+        // Return the mock root
+        assembly {
+            let ptr := mload(0x40)
+            mstore(ptr, sload(0)) // Load mockBeaconBlockRoot from storage slot 0
+            return(ptr, 32)
+        }
     }
 }

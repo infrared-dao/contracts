@@ -20,7 +20,7 @@ SALT=$(cast keccak "iBERA-WBERA-v1")
 
 IBERA_RATE_PROVIDER="0x776fD57Bbeb752BDeEB200310faFAe9A155C50a0"
 
-RPC_URL="http://35.203.86.197:8545/"
+RPC_URL="https://rpc.berachain.com"
 
 VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan'
 

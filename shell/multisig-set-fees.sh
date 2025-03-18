@@ -9,7 +9,7 @@ INFRARED="0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126"
 IBERA="0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5"
 SAFE_TX_SERVICE="https://transaction-mainnet.safe.berachain.com/"
 
-RPC_URL="http://35.203.86.197:8545/"
+RPC_URL="https://rpc.berachain.com"
 
 # sugested values. feel free to change
 

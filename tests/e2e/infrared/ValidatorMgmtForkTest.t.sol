@@ -4,17 +4,23 @@ pragma solidity 0.8.26;
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 // import {BeaconDeposit} from "@berachain/pol/BeaconDeposit.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
-import "../InfraredForkTest.t.sol";
+import "../HelperForkTest.t.sol";
 
-contract ValidatorMgmtForkTest is InfraredForkTest {
+contract ValidatorMgmtForkTest is HelperForkTest {
+    ValidatorTypes.Validator public infraredValidator;
     ValidatorTypes.Validator[] public infraredValidators;
+    uint256 public initNumberOfValidators;
 
     function setUp() public virtual override {
         super.setUp();
 
-        ValidatorTypes.Validator memory infraredValidator = ValidatorTypes
-            .Validator({pubkey: _create48Byte(), addr: address(infrared)});
+        infraredValidator = ValidatorTypes.Validator({
+            pubkey: _create48Byte(),
+            addr: address(infrared)
+        });
         infraredValidators.push(infraredValidator);
+
+        initNumberOfValidators = infrared.numInfraredValidators();
 
         // BeaconDeposit(address(beaconDepositContract)).setOperator(infraredValidator.pubkey, infraredValidator.addr);
     }
@@ -23,7 +29,7 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
         vm.startPrank(infraredGovernance);
 
         // priors checked
-        assertEq(infrared.numInfraredValidators(), 0);
+        assertEq(infrared.numInfraredValidators(), initNumberOfValidators);
         assertEq(
             infrared.isInfraredValidator(infraredValidators[0].pubkey), false
         );
@@ -31,10 +37,8 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
         infrared.addValidators(infraredValidators);
 
         // check validator added to infrared set
-        assertEq(infrared.numInfraredValidators(), 1);
-        assertEq(
-            infrared.isInfraredValidator(infraredValidators[0].pubkey), true
-        );
+        assertEq(infrared.numInfraredValidators(), initNumberOfValidators + 1);
+        assertEq(infrared.isInfraredValidator(infraredValidator.pubkey), true);
 
         vm.stopPrank();
     }
@@ -52,7 +56,7 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
         infrared.removeValidators(pubkeys);
 
         // check valdiator removed from infrared set
-        assertEq(infrared.numInfraredValidators(), 0);
+        assertEq(infrared.numInfraredValidators(), initNumberOfValidators);
         assertEq(
             infrared.isInfraredValidator(infraredValidators[0].pubkey), false
         );
@@ -75,7 +79,7 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
         );
 
         // check validator replaced in infrared set
-        assertEq(infrared.numInfraredValidators(), 1);
+        assertEq(infrared.numInfraredValidators(), initNumberOfValidators + 1);
         assertEq(
             infrared.isInfraredValidator(infraredValidators[0].pubkey), false
         );
@@ -104,51 +108,50 @@ contract ValidatorMgmtForkTest is InfraredForkTest {
     }
 
     function testQueueNewCuttingBoard() public {
-        testDeposit();
+        // Verify the validator is registered with Infrared
+        assertTrue(
+            infrared.isInfraredValidator(valData.pubkey),
+            "Validator should be registered with Infrared"
+        );
 
-        // weight 100% of distributed rewards to lp vault
-        address lpRewardsVaultAddress = address(lpVault.rewardsVault());
+        // Set up the cutting board with weights
+        address lpRewardsVaultAddress = address(infraredVault.rewardsVault());
         IBeraChef.Weight[] memory _weights = new IBeraChef.Weight[](1);
         _weights[0] = IBeraChef.Weight({
             receiver: lpRewardsVaultAddress,
             percentageNumerator: 1e4
         });
+
+        // Calculate start block for cutting board activation
         uint64 _startBlock =
             uint64(block.number) + beraChef.rewardAllocationBlockDelay() + 1;
 
-        vm.prank(beraChef.owner());
-        beraChef.setVaultWhitelistedStatus(lpRewardsVaultAddress, true, "");
+        // Queue the new cutting board
+        vm.prank(keeper);
+        infrared.queueNewCuttingBoard(valData.pubkey, _startBlock, _weights);
 
-        vm.startPrank(keeper);
-        infrared.queueNewCuttingBoard(
-            infraredValidators[0].pubkey, _startBlock, _weights
+        // Verify the cutting board was queued properly
+        IBeraChef.RewardAllocation memory queuedAllocation =
+            beraChef.getQueuedRewardAllocation(valData.pubkey);
+        assertEq(queuedAllocation.startBlock, _startBlock);
+
+        // Roll forward to the activation block
+        vm.roll(_startBlock + 1);
+
+        // DIRECTLY activate the queued allocation
+        vm.prank(address(distributor));
+        beraChef.activateReadyQueuedRewardAllocation(valData.pubkey);
+
+        // Verify that the cutting board was activated
+        IBeraChef.RewardAllocation memory activeAllocationAfter =
+            beraChef.getActiveRewardAllocation(valData.pubkey);
+
+        // Assertions to verify activation
+        assertEq(activeAllocationAfter.startBlock, _startBlock);
+        assertEq(activeAllocationAfter.weights.length, 1);
+        assertEq(
+            activeAllocationAfter.weights[0].receiver, lpRewardsVaultAddress
         );
-
-        // check cutting board queued for validator
-        IBeraChef.RewardAllocation memory qcb =
-            beraChef.getQueuedRewardAllocation(infraredValidators[0].pubkey);
-        assertEq(qcb.startBlock, _startBlock);
-        assertEq(qcb.weights.length, 1);
-        assertEq(qcb.weights[0].receiver, lpRewardsVaultAddress);
-        assertEq(qcb.weights[0].percentageNumerator, 1e4);
-
-        // move forward beyond buffer length so enough time passed through buffer
-        vm.roll(block.number + HISTORY_BUFFER_LENGTH + 1);
-
-        // roll with pol now over single block
-        // rollPol(block.number + 1);
-
-        // // check cutting board activates for validator once roll pol again
-        // IBeraChef.RewardAllocation memory acb =
-        //     beraChef.getActiveRewardAllocation(infraredValidators[0].pubkey);
-        // assertEq(acb.startBlock, qcb.startBlock);
-        // assertEq(acb.weights.length, 1);
-        // assertEq(acb.weights[0].receiver, lpRewardsVaultAddress);
-        // assertEq(acb.weights[0].percentageNumerator, 1e4);
-
-        // // check queued cutting board deleted
-        // qcb = beraChef.getQueuedRewardAllocation(infraredValidators[0].pubkey);
-        // assertEq(qcb.startBlock, 0);
-        // assertEq(qcb.weights.length, 0);
+        assertEq(activeAllocationAfter.weights[0].percentageNumerator, 1e4);
     }
 }
