@@ -10,15 +10,21 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Clone repository to short path
-        run: |
-          rm -rf /tmp/repo
-          git clone --recurse-submodules https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }} /tmp/repo
+      - name: Clone main repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
+
+      - name: Run Forge build
+        run: |
+          forge --version
+          forge build --sizes
+        id: build
 
       - name: Mask Secrets
         run: |
@@ -32,7 +38,6 @@ jobs:
           chmod 600 /dev/shm/keystore.json
 
       - name: Run Foundry Script
-        working-directory: /tmp/repo
         env:
           RPC_URL: ${{ secrets.RPC_URL }}
           PUBKEY: ${{ secrets.PUBKEY }}
