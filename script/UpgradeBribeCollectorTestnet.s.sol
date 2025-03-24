@@ -5,20 +5,18 @@ import "forge-std/Script.sol";
 
 import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {BatchScript} from "@forge-safe/BatchScript.sol";
 
 import {BribeCollectorV1_2} from "src/core/upgrades/BribeCollectorV1_2.sol";
 
-contract UpgradeBribeCollector is BatchScript {
+contract UpgradeBribeCollectorTestnet is Script {
     /// @dev requires BribeCollectorV1.2 implementation to be deployed separately
     function run(
-        address safe,
         address _bribeCollectorProxy,
         address _bribeCollectorV1_2Implementation
-    ) external isBatch(safe) {
+    ) external {
         // input check
         if (
-            safe == address(0) || _bribeCollectorProxy == address(0)
+            _bribeCollectorProxy == address(0)
                 || _bribeCollectorV1_2Implementation == address(0)
         ) {
             revert();
@@ -29,10 +27,11 @@ contract UpgradeBribeCollector is BatchScript {
             _bribeCollectorV1_2Implementation,
             ""
         );
-        addToBatch(_bribeCollectorProxy, 0, data);
 
         vm.startBroadcast();
-        executeBatch(true);
+        (bool success,) = _bribeCollectorProxy.call(data);
+        if (!success) revert();
+
         vm.stopBroadcast();
     }
 }

@@ -21,6 +21,7 @@
 	url = https://github.com/PaulRBerg/prb-test
 [submodule "lib/contracts"]
 	path = lib/contracts
+	branch = main
 	url = https://github.com/berachain/contracts
 [submodule "lib/forge-safe"]
 	path = lib/forge-safe

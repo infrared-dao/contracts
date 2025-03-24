@@ -86,7 +86,7 @@ contract BribeCollectorTest is Helper {
 
         wbera.approve(address(collector), collector.payoutAmount());
 
-        vm.expectRevert(Errors.RewardTokenNotSupported.selector);
+        vm.expectRevert(Errors.InvalidFeeToken.selector);
         collector.claimFees(recipient, feeTokens, feeAmounts);
 
         // update bribe split to test better

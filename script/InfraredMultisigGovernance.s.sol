@@ -537,4 +537,24 @@ contract InfraredMultisigGovernance is BatchScript {
         executeBatch(true);
         vm.stopBroadcast();
     }
+
+    function migrateMultipleVaults(
+        address safe,
+        address infrared,
+        address[] calldata _assets,
+        uint8 versionToUpgradeTo
+    ) external isBatch(safe) {
+        uint256 len = _assets.length;
+        if (len == 0) revert();
+        for (uint256 i; i < len; i++) {
+            bytes memory data = abi.encodeWithSignature(
+                "migrateVault(address,uint8)", _assets[i], versionToUpgradeTo
+            );
+            addToBatch(infrared, 0, data);
+        }
+
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
 }

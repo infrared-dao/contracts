@@ -22,7 +22,7 @@ contract BribeCollectorV1_2 is InfraredUpgradeable, IBribeCollector {
     /// @notice Payout token, required to be WBERA token as its unwrapped and used to compound rewards in the `iBera` system.
     address public payoutToken;
 
-    /// @notice Payout amount is a constant value that is paid out the caller of the `claimFees` function.
+    /// @notice Payout amount is a constant value that is paid by the caller of the `claimFees` function.
     uint256 public payoutAmount;
 
     // Reserve storage slots for future upgrades for safety
@@ -32,8 +32,8 @@ contract BribeCollectorV1_2 is InfraredUpgradeable, IBribeCollector {
     /*                       ADMIN FUNCTIONS                      */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice Set the payout token for the bribe collector.
-    /// @dev Only callable by the governor and should be set to WBERA token since iBERA  requires BERA to compound rewards.
+    /// @notice Set the payout amount for the bribe collector.
+    /// @param _newPayoutAmount updated payout amount
     function setPayoutAmount(uint256 _newPayoutAmount) external onlyGovernor {
         if (_newPayoutAmount == 0) revert Errors.ZeroAmount();
         emit PayoutAmountSet(payoutAmount, _newPayoutAmount);
@@ -57,35 +57,39 @@ contract BribeCollectorV1_2 is InfraredUpgradeable, IBribeCollector {
 
         uint256 senderBalance = ERC20(payoutToken).balanceOf(msg.sender);
         if (senderBalance < payoutAmount) {
-            revert Errors.InvalidAmount();
+            revert Errors.InsufficientBalance();
         }
 
         // transfer price of claiming tokens (payoutAmount) from the sender to this contract
         ERC20(payoutToken).safeTransferFrom(
             msg.sender, address(this), payoutAmount
         );
-        // increase the allowance of the payout token to the infrared contract to be send to
+        // set the allowance of the payout token to the infrared contract to be sent to
         // validator distribution contract
-        ERC20(payoutToken).safeApprove(address(infrared), payoutAmount);
+        ERC20(payoutToken).safeApprove(
+            address(infrared), ERC20(payoutToken).balanceOf(address(this))
+        );
         // Callback into infrared post auction to split amount to vaults and protocol
-        infrared.collectBribes(payoutToken, payoutAmount);
+        infrared.collectBribes(
+            payoutToken, ERC20(payoutToken).balanceOf(address(this))
+        );
         // payoutAmount will be transferred out at this point
 
-        // From all the specified fee tokens, transfer them to the recipient.
-        for (uint256 i = 0; i < _feeTokens.length; i++) {
+        // For all the specified fee tokens, transfer them to the recipient.
+        for (uint256 i; i < _feeTokens.length; i++) {
             address feeToken = _feeTokens[i];
             uint256 feeAmount = _feeAmounts[i];
             if (feeToken == payoutToken) {
-                revert Errors.RewardTokenNotSupported();
+                revert Errors.InvalidFeeToken();
             }
 
             if (!infrared.whitelistedRewardTokens(feeToken)) {
-                revert Errors.RewardTokenNotSupported();
+                revert Errors.FeeTokenNotWhitelisted();
             }
 
             uint256 contractBalance = ERC20(feeToken).balanceOf(address(this));
             if (feeAmount > contractBalance) {
-                revert Errors.InvalidAmount();
+                revert Errors.InsufficientFeeTokenBalance();
             }
             ERC20(feeToken).safeTransfer(_recipient, feeAmount);
             emit FeesClaimed(msg.sender, _recipient, feeToken, feeAmount);
@@ -94,7 +98,8 @@ contract BribeCollectorV1_2 is InfraredUpgradeable, IBribeCollector {
 
     function sweepPayoutToken() external {
         uint256 balance = ERC20(payoutToken).balanceOf(address(this));
-        // increase the allowance of the payout token to the infrared contract to be send to
+        if (balance == 0) revert Errors.InsufficientBalance();
+        // set the allowance of the payout token to the infrared contract to be sent to
         // validator distribution contract
         ERC20(payoutToken).safeApprove(address(infrared), balance);
         // Callback into infrared split amount to vaults and protocol

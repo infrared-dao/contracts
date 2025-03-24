@@ -20,10 +20,10 @@ forge verify-contract 0x4EF0c533D065118907f68e6017467Eb05DBb2c8C src/core/Infrar
 
 
 
-# forge verify-contract 0x559d1347242F350bDc44f99C729984Bfb188092f src/core/Infrared.sol:Infrared --verifier-url $VERIFIER --etherscan-api-key $BERASCAN_API_KEY --num-of-optimizations 200 --compiler-version 0.8.26 --constructor-args $(cast abi-encode "constructor(address,address,address,address,address,address,address,address,uint256,uint256)" 0x182a31A27A0D39d735b31e80534CFE1fCd92c38f 0x242D55c9404E0Ed1fD37dB1f00D60437820fe4f0 0x656b95E550C07a9ffe548bd4085c72418Ceb1dba 0x94Ad6Ac84f6C6FbA8b8CCbD71d9f4f101def52a8 0xdf960E8F3F19C481dDE769edEDD439ea1a63426a 0x4242424242424242424242424242424242424242 0x6969696969696969696969696969696969696969 0xFCBD14DC51f0A4d49d5E53C2E0950e0bC26d0Dce 86400 10000000000000000000000) --libraries src/core/libraries/ValidatorManagerLib.sol:ValidatorManagerLib:0xe9b8b63361cbd64a9995a0d97689cfe7d890317b --libraries src/core/libraries/RewardsLib.sol:RewardsLib:0xb00a8bb981894ad2a69bd153d4487d6df46842cb --libraries src/core/libraries/VaultManagerLib.sol:VaultManagerLib:0x64b8e30b276649700d99380f6539a0f8d1bd262c --watch
+forge verify-contract 0x67B4e6721AD3a99B7fF3679caee971b07fd85cD1 src/core/upgrades/InfraredV1_3.sol:InfraredV1_3 --verifier-url $VERIFIER --etherscan-api-key $BERASCAN_API_KEY --num-of-optimizations 200 --compiler-version 0.8.26  --libraries src/core/libraries/ValidatorManagerLib.sol:ValidatorManagerLib:0x91E8464B91fDc08951A86b6638494518d50be4b9 --libraries src/core/libraries/RewardsLib.sol:RewardsLib:0xFcc3b4b4081De0B718E4c9E458Ab2535810cCbB3 --libraries src/core/utils/InfraredVaultDeployer.sol:InfraredVaultDeployer:0x27481C720232Aaefb0Dd2F8C2b648CA6f22B4C7B --libraries src/core/libraries/VaultManagerLib.sol:VaultManagerLib:0xe101B15eC18a85443256Cf40899595e662591f6b --watch
 
 
-forge verify-contract 0x61bd35FBEC49B144A1953f48f84ef8d2B321Da40 src/core/BribeCollector.sol:BribeCollector --verifier-url $VERIFIER --etherscan-api-key $BERASCAN_API_KEY  --num-of-optimizations 200  --compiler-version 0.8.26 --watch
+forge verify-contract 0xB704CeC5E4DF84446F6BCAd9a52B9f4641bd29A8 src/core/upgrades/BribeCollectorV1_2.sol:BribeCollectorV1_2 --verifier-url $VERIFIER --etherscan-api-key $BERASCAN_API_KEY  --num-of-optimizations 200  --compiler-version 0.8.26 --watch
 
 forge verify-contract 0x742EbBF91A37064e89E5628D139070B73aa90247 src/core/InfraredDistributor.sol:InfraredDistributor --verifier-url $VERIFIER --etherscan-api-key $BERASCAN_API_KEY  --num-of-optimizations 200  --compiler-version 0.8.26 --watch
 

@@ -4,9 +4,10 @@ pragma solidity 0.8.26;
 import "forge-std/Script.sol";
 
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
+import {BeraChef} from "@berachain/pol/rewards/BeraChef.sol";
 import {IInfrared} from "src/interfaces/IInfrared.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
-import {Infrared} from "src/core/Infrared.sol";
+import {InfraredV1_3 as Infrared} from "src/core/upgrades/InfraredV1_3.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
@@ -30,6 +31,7 @@ contract InfraredKeeperScript is BatchScript {
     InfraredBERADepositor depositor = InfraredBERADepositor(
         payable(0x04CddC538ea65908106416986aDaeCeFD4CAB7D7)
     );
+    BeraChef chef = BeraChef(0xdf960E8F3F19C481dDE769edEDD439ea1a63426a);
 
     function harvest(address[] calldata _stakingTokens) external {
         vm.startBroadcast();
@@ -55,6 +57,31 @@ contract InfraredKeeperScript is BatchScript {
         // Harvest boost rewards
         infrared.harvestBoostRewards();
 
+        vm.stopBroadcast();
+    }
+
+    function activateValCommissions(bytes[] calldata _pubkeys) external {
+        vm.startBroadcast();
+        uint256 len = _pubkeys.length;
+        for (uint256 i; i < len; i++) {
+            bytes memory _pubkey = _pubkeys[i];
+            // check if queue to activate
+            IBeraChef.QueuedCommissionRateChange memory qcr =
+                chef.getValQueuedCommissionOnIncentiveTokens(_pubkey);
+            (uint32 blockNumberLast, uint96 commissionRate) =
+                (qcr.blockNumberLast, qcr.commissionRate);
+            uint32 activationBlock =
+                uint32(blockNumberLast + chef.commissionChangeDelay());
+            if (blockNumberLast == 0 || block.number < activationBlock) {
+                continue;
+            }
+            // check commission is 100%
+            if (commissionRate != 10000) {
+                continue;
+            }
+            // activate queued commission rate
+            infrared.activateQueuedValCommission(_pubkey);
+        }
         vm.stopBroadcast();
     }
 

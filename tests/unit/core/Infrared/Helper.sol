@@ -27,6 +27,8 @@ import {BribeCollectorV1_2} from "src/core/upgrades/BribeCollectorV1_2.sol";
 
 // internal
 import {ERC20, Infrared} from "src/core/Infrared.sol";
+import {InfraredV1_2} from "src/core/upgrades/InfraredV1_2.sol";
+import {InfraredV1_3} from "src/core/upgrades/InfraredV1_3.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
@@ -192,6 +194,13 @@ abstract contract Helper is POLTest {
 
         labelContracts();
 
+        // upgrade infrared
+        address infraredV1_2Implementation = address(new InfraredV1_2());
+
+        // upgrade proxy
+        vm.prank(infraredGovernance);
+        infrared.upgradeToAndCall(infraredV1_2Implementation, "");
+
         // upgrade bribe collector
         // deploy new implementation
         collector = new BribeCollectorV1_2();
@@ -205,6 +214,13 @@ abstract contract Helper is POLTest {
         );
         require(success, "Upgrade failed");
         collector = BribeCollectorV1_2(address(collector0));
+
+        // upgrade infrared again
+        address infraredV1_3Implementation = address(new InfraredV1_3());
+
+        // upgrade proxy again
+        vm.prank(infraredGovernance);
+        infrared.upgradeToAndCall(infraredV1_3Implementation, "");
     }
 
     function labelContracts() public {

@@ -9,6 +9,10 @@ library Errors {
     error InvalidArrayLength();
     error AlreadySet();
     error NotPauser();
+    error InsufficientBalance();
+    error InvalidFeeToken();
+    error FeeTokenNotWhitelisted();
+    error InsufficientFeeTokenBalance();
 
     // ValidatorSet errors.
     error ValidatorAlreadyExists();

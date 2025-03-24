@@ -22,7 +22,10 @@ import {IInfraredGovernanceToken} from
 import {IBribeCollector} from "src/interfaces/IBribeCollector.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
-import {ConfigTypes, IInfraredV1_2} from "src/interfaces/IInfraredV1_2.sol";
+import {
+    ConfigTypes,
+    IInfraredV1_2
+} from "src/interfaces/upgrades/IInfraredV1_2.sol";
 import {InfraredUpgradeable} from "src/core/InfraredUpgradeable.sol";
 import {InfraredVault} from "src/core/InfraredVault.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
