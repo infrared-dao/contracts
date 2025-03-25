@@ -11,6 +11,22 @@ import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {Voter} from "src/voting/Voter.sol";
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 
+interface IERC20 {
+    function totalSupply() external view returns (uint256);
+    function balanceOf(address account) external view returns (uint256);
+    function transfer(address recipient, uint256 amount)
+        external
+        returns (bool);
+    function allowance(address owner, address spender)
+        external
+        view
+        returns (uint256);
+    function approve(address spender, uint256 amount) external returns (bool);
+    function transferFrom(address sender, address recipient, uint256 amount)
+        external
+        returns (bool);
+}
+
 contract InfraredMultisigGovernance is BatchScript {
     // Validator Management
 
@@ -84,10 +100,11 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function updateWhiteListedRewardTokens(
+        address safe,
         address payable infrared,
         address _token,
         bool _whitelisted
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
             "updateWhiteListedRewardTokens(address,bool)", _token, _whitelisted
         );
@@ -95,6 +112,86 @@ contract InfraredMultisigGovernance is BatchScript {
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
+    }
+
+    function updateMultipleWhiteListedRewardTokens(
+        address safe,
+        address payable infrared,
+        address ibera,
+        address[] calldata _tokens,
+        bool _whitelisted
+    ) external isBatch(safe) {
+        uint256 len = _tokens.length;
+        if (len == 0) revert();
+        for (uint256 i; i < len; i++) {
+            address _token = _tokens[i];
+            // check not already whitelisted
+            if (Infrared(infrared).whitelistedRewardTokens(_token)) continue;
+            // Test the token before adding it to the batch (ibera proxy exception)
+            if (_token == ibera || testToken(_token)) {
+                bytes memory data = abi.encodeWithSignature(
+                    "updateWhiteListedRewardTokens(address,bool)",
+                    _token,
+                    _whitelisted
+                );
+                addToBatch(infrared, 0, data);
+            } else {
+                // Log failure (requires Foundry's console.sol for scripting)
+                console.log(
+                    "Token at address %s failed tests and was skipped", _token
+                );
+            }
+        }
+
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function testToken(address token) internal view returns (bool) {
+        IERC20 erc20 = IERC20(token);
+
+        // ERC20 Compliance Checks
+        try erc20.totalSupply() returns (uint256) {
+            // Success
+        } catch {
+            console.log("Token %s failed totalSupply check", token);
+            return false;
+        }
+
+        try erc20.balanceOf(address(this)) returns (uint256) {
+            // Success
+        } catch {
+            console.log("Token %s failed balanceOf check", token);
+            return false;
+        }
+
+        try erc20.allowance(address(this), address(this)) returns (uint256) {
+            // Success
+        } catch {
+            console.log("Token %s failed allowance check", token);
+            return false;
+        }
+
+        // Proxy Check
+        if (isProxy(token)) {
+            console.log("Token %s appears to be a proxy", token);
+            return false; // Or handle as needed
+        }
+
+        return true; // Token passed all checks
+    }
+
+    function isProxy(address token) internal view returns (bool) {
+        // EIP-1967 implementation slot
+        bytes32 implSlot = bytes32(
+            0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc
+        );
+        address impl = address(uint160(uint256(vm.load(token, implSlot))));
+        if (impl != address(0)) {
+            return true; // Likely a proxy
+        }
+        return false;
     }
 
     function updateRewardsDuration(
