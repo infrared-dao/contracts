@@ -30,6 +30,42 @@ interface IERC20 {
 contract InfraredMultisigGovernance is BatchScript {
     // Validator Management
 
+    /// @notice add validator and set deposit signature
+    function onboardValidator(
+        address safe,
+        address payable infrared,
+        address ibera,
+        address addr,
+        bytes calldata pubkey,
+        bytes calldata signature
+    ) public isBatch(safe) {
+        ValidatorTypes.Validator[] memory _validators =
+            new ValidatorTypes.Validator[](1);
+        _validators[0] = ValidatorTypes.Validator({pubkey: pubkey, addr: addr});
+
+        // add validator to contracts
+        bytes memory data = abi.encodeWithSignature(
+            "addValidators((bytes,address)[])", _validators
+        );
+        addToBatch(infrared, 0, data);
+
+        // set init 10k deposit sig
+        data = abi.encodeWithSignature(
+            "setDepositSignature(bytes,bytes)", pubkey, signature
+        );
+        addToBatch(ibera, 0, data);
+
+        // set commission 100%
+        uint96 maxCommissionRate = 10000; // 100% = 10000 in BeraChef
+        data = abi.encodeWithSignature(
+            "queueValCommission(bytes,uint96)", pubkey, maxCommissionRate
+        );
+        addToBatch(infrared, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
     function addValidator(
         address safe,
         address payable infrared,
@@ -67,9 +103,11 @@ contract InfraredMultisigGovernance is BatchScript {
 
     // Bribe collector management
 
-    function setPayoutAmount(address collector, uint256 _newPayoutAmount)
-        external
-    {
+    function setPayoutAmount(
+        address safe,
+        address collector,
+        uint256 _newPayoutAmount
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
             "setPayoutAmount(uint256)", _newPayoutAmount
         );
@@ -415,11 +453,12 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function updateInfraredBERABribesWeight(
+        address safe,
         address payable infrared,
         uint256 _weight
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
-            "updateInfraredBERABribesWeight(uint256)", _weight
+            "updateInfraredBERABribeSplit(uint256)", _weight
         );
         addToBatch(infrared, 0, data);
         vm.startBroadcast();
@@ -445,12 +484,16 @@ contract InfraredMultisigGovernance is BatchScript {
         address safe,
         address payable infrared,
         address _to,
-        address _token
+        address[] calldata _tokens
     ) external isBatch(safe) {
-        bytes memory data = abi.encodeWithSignature(
-            "claimProtocolFees(address,address)", _to, _token
-        );
-        addToBatch(infrared, 0, data);
+        uint256 len = _tokens.length;
+        for (uint256 i; i < len; i++) {
+            bytes memory data = abi.encodeWithSignature(
+                "claimProtocolFees(address,address)", _to, _tokens[i]
+            );
+            addToBatch(infrared, 0, data);
+        }
+
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
@@ -648,6 +691,33 @@ contract InfraredMultisigGovernance is BatchScript {
                 "migrateVault(address,uint8)", _assets[i], versionToUpgradeTo
             );
             addToBatch(infrared, 0, data);
+        }
+
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function queueValCommissions(
+        address safe,
+        address _infraredProxy,
+        bytes[] calldata _pubkeys
+    ) external isBatch(safe) {
+        // input check
+        if (safe == address(0) || _infraredProxy == address(0)) {
+            revert();
+        }
+
+        // queue validator incentive commissions
+        uint256 len = _pubkeys.length;
+        uint96 maxCommissionRate = 10000; // 100% = 10000 in BeraChef
+        for (uint256 i; i < len; i++) {
+            bytes memory data = abi.encodeWithSignature(
+                "queueValCommission(bytes,uint96)",
+                _pubkeys[i],
+                maxCommissionRate
+            );
+            addToBatch(_infraredProxy, 0, data);
         }
 
         vm.startBroadcast();

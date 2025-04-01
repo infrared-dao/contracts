@@ -1,12 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
-
-# Load environment variables
-source .env
-
-# Common variables
-RPC_URL="https://rpc.berachain.com"
-SCRIPT="script/InfraredKeeperScriptEOA.s.sol:InfraredKeeperScriptEOA"
+source ./shell/keeper/keeper_common.sh
 
 PUBKEYS=(
     "0x88be126bfda4eee190e6c01a224272ed706424851e203791c7279aeecb6b503059901db35b1821f1efe4e6b445f5cc9f"
@@ -16,13 +9,12 @@ PUBKEYS=(
     "0x90d64ab2a8ab9b5faace9225d205d47dc0b8155592b354b860134928f7f39f15f54d909dad7897868aba6dc7e7eef6c8"
     "0x998adf736d60eecdfd3ab5136a779aa23235c44bb6de08def2069f73e946de963b35a68d5a66d611d3a7cd45035dca8f"
     "0xaddc88b5a74211b80ed2b8c5169b85380b7428a8b0a3381a4470d52203eb230f136b423370308783082866f716b06651"
-    "0x86888df491e8ccdc5bb940b9dda51fa7449518593820c9e4e9033a7b87f5e9f8debbba6a4f68218711896906ad40ce71"
 )
 
 IFS=, PUBKEYS_STR="${PUBKEYS[*]}"
 
 forge script $SCRIPT \
-    --sig "activateAndMaxBoost(bytes[])" "[$PUBKEYS_STR]" \
+    --sig "activateQueuedCuttingBoard(bytes[])" "[$PUBKEYS_STR]" \
     --rpc-url $RPC_URL \
-    --keystore $KEYSTORE --password $PASSWORD \
+    --private-key $PRIVATE_KEY \
     --broadcast -vvvv

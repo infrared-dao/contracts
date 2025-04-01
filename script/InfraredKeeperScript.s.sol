@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {BeraChef} from "@berachain/pol/rewards/BeraChef.sol";
+import {BribeCollectorV1_2} from "src/core/upgrades/BribeCollectorV1_2.sol";
 import {IInfrared} from "src/interfaces/IInfrared.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
 import {InfraredV1_3 as Infrared} from "src/core/upgrades/InfraredV1_3.sol";
@@ -32,6 +33,8 @@ contract InfraredKeeperScript is BatchScript {
         payable(0x04CddC538ea65908106416986aDaeCeFD4CAB7D7)
     );
     BeraChef chef = BeraChef(0xdf960E8F3F19C481dDE769edEDD439ea1a63426a);
+    BribeCollectorV1_2 collector =
+        BribeCollectorV1_2(0x8d44170e120B80a7E898bFba8cb26B01ad21298C);
 
     function harvest(address[] calldata _stakingTokens) external {
         vm.startBroadcast();
@@ -56,6 +59,37 @@ contract InfraredKeeperScript is BatchScript {
 
         // Harvest boost rewards
         infrared.harvestBoostRewards();
+
+        vm.stopBroadcast();
+    }
+
+    function harvestBribes(address[] calldata _incentiveTokens) external {
+        vm.startBroadcast();
+
+        // Harvest base rewards
+        infrared.harvestBribes(_incentiveTokens);
+
+        vm.stopBroadcast();
+    }
+
+    function claimIncentives(
+        address recipient,
+        address[] calldata _incentiveTokens,
+        uint256[] calldata _amounts
+    ) external {
+        vm.startBroadcast();
+
+        // Harvest base rewards
+        collector.claimFees(recipient, _incentiveTokens, _amounts);
+
+        vm.stopBroadcast();
+    }
+
+    function sweepPayoutToken() external {
+        vm.startBroadcast();
+
+        // Harvest base rewards
+        collector.sweepPayoutToken();
 
         vm.stopBroadcast();
     }
@@ -85,14 +119,36 @@ contract InfraredKeeperScript is BatchScript {
         vm.stopBroadcast();
     }
 
-    function harvestOldVault(address safe, address _vault, address _asset)
-        external
-        isBatch(safe)
-    {
-        bytes memory data = abi.encodeWithSignature(
-            "harvestOldVault(address,address)", _vault, _asset
-        );
-        addToBatch(address(infrared), 0, data);
+    function activateQueuedCuttingBoard(bytes[] calldata _pubkeys) external {
+        vm.startBroadcast();
+        uint256 len = _pubkeys.length;
+        for (uint256 i; i < len; i++) {
+            bytes memory _pubkey = _pubkeys[i];
+            // check if queue to activate
+            if (!chef.isQueuedRewardAllocationReady(_pubkey, block.number)) {
+                continue;
+            }
+
+            // activate queued cutting board
+            infrared.activateQueuedValCommission(_pubkey);
+        }
+        vm.stopBroadcast();
+    }
+
+    function harvestOldVaults(
+        address safe,
+        address[] calldata _vaults,
+        address[] calldata _assets
+    ) external isBatch(safe) {
+        uint256 len = _vaults.length;
+        if (_assets.length != len) revert();
+        for (uint256 i; i < len; i++) {
+            bytes memory data = abi.encodeWithSignature(
+                "harvestOldVault(address,address)", _vaults[i], _assets[i]
+            );
+            addToBatch(address(infrared), 0, data);
+        }
+
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
