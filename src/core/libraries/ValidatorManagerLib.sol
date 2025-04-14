@@ -157,9 +157,6 @@ library ValidatorManagerLib {
         uint256 _totalBoosts = 0;
 
         for (uint256 i = 0; i < _pubkeys.length; i++) {
-            if (!$.validatorIds.contains(keccak256(_pubkeys[i]))) {
-                revert Errors.InvalidValidator();
-            }
             if (_amts[i] == 0) revert Errors.ZeroAmount();
             _totalBoosts += _amts[i];
         }
@@ -215,9 +212,6 @@ library ValidatorManagerLib {
         bytes[] memory _pubkeys
     ) external {
         for (uint256 i = 0; i < _pubkeys.length; i++) {
-            if (!$.validatorIds.contains(keccak256(_pubkeys[i]))) {
-                revert Errors.InvalidValidator();
-            }
             IBerachainBGT(bgt).activateBoost(address(this), _pubkeys[i]);
         }
     }
@@ -258,10 +252,6 @@ library ValidatorManagerLib {
             revert Errors.InvalidArrayLength();
         }
         for (uint256 i = 0; i < _pubkeys.length; i++) {
-            if (!$.validatorIds.contains(keccak256(_pubkeys[i]))) {
-                revert Errors.InvalidValidator();
-            }
-
             if (_amts[i] == 0) revert Errors.ZeroAmount();
             IBerachainBGT(bgt).cancelDropBoost(_pubkeys[i], _amts[i]);
         }

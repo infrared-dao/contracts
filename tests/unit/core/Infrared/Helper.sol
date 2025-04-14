@@ -29,7 +29,7 @@ import {BribeCollectorV1_2} from "src/core/upgrades/BribeCollectorV1_2.sol";
 import {ERC20, Infrared} from "src/core/Infrared.sol";
 import {InfraredV1_2} from "src/core/upgrades/InfraredV1_2.sol";
 import {InfraredV1_3} from "src/core/upgrades/InfraredV1_3.sol";
-import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
+import {InfraredV1_4} from "src/core/upgrades/InfraredV1_4.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
@@ -221,6 +221,13 @@ abstract contract Helper is POLTest {
         // upgrade proxy again
         vm.prank(infraredGovernance);
         infrared.upgradeToAndCall(infraredV1_3Implementation, "");
+
+        // upgrade infrared again
+        address infraredV1_4Implementation = address(new InfraredV1_4());
+
+        // upgrade proxy again
+        vm.prank(infraredGovernance);
+        infrared.upgradeToAndCall(infraredV1_4Implementation, "");
     }
 
     function labelContracts() public {
