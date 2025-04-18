@@ -23,7 +23,7 @@ RPC_URL="https://rpc.berachain.com"
 # }
 
 FEE_TYPE=0  # pick from above (uint8 index starting at 0 = HarvestOperatorFeeRate)
-FEE_AMOUNT=1000000  # 100% = 1e6
+FEE_AMOUNT=500000  # 50% = 5e5
 
 # uint16 feeDivisorShareholders, uint256 operatorWeight, uint256 harvestOperatorFeeRate, uint256 harvestVaultFeeRate, uint256 harvestBribesFeeRate, uint256 harvestBoostFeeRate
 

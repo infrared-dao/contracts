@@ -10,7 +10,7 @@ IBERA="0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5"
 IBGT="0xac03CABA51e17c86c921E1f6CBFBdC91F8BB2E6b"
 HONEY="0xFCBD14DC51f0A4d49d5E53C2E0950e0bC26d0Dce"
 
-WEIGHT=100000  # 10% (denominator is 1e6)
+WEIGHT=50000  # 5% (denominator is 1e6)
 
 forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "updateInfraredBERABribesWeight(address,address,uint256)" $SAFE $INFRARED $WEIGHT  \
