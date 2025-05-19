@@ -6,6 +6,7 @@ import "@forge-std/console2.sol";
 import "src/core/Infrared.sol";
 import "src/core/libraries/ConfigTypes.sol";
 import "src/interfaces/IInfrared.sol";
+import "src/interfaces/upgrades/IInfraredV1_5.sol";
 import "src/interfaces/IMultiRewards.sol";
 import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
@@ -70,6 +71,91 @@ contract InfraredRewardsTest is Helper {
             vaultBalanceAfter > vaultBalanceBefore,
             "Vault should have more InfraredBGT after harvest"
         );
+    }
+
+    function testClaimExternalVaultRewardsSuccess() public {
+        address vaultWbera = factory.getVault(address(wbera));
+        IBerachainRewardsVault vault = IBerachainRewardsVault(vaultWbera);
+        address user = address(10);
+        address user2 = address(12);
+        vm.deal(address(user), 1000 ether);
+        vm.deal(address(user2), 1000 ether);
+        uint256 stakeAmount = 1000 ether;
+
+        vm.startPrank(user);
+        wbera.deposit{value: stakeAmount}();
+        wbera.approve(address(vault), stakeAmount);
+        vault.stake(stakeAmount);
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        wbera.deposit{value: stakeAmount}();
+        wbera.approve(address(vault), stakeAmount);
+        vault.stake(stakeAmount);
+        vm.stopPrank();
+
+        vm.startPrank(address(blockRewardController));
+        bgt.mint(address(distributor), 200 ether);
+        vm.stopPrank();
+
+        vm.startPrank(address(distributor));
+        bgt.approve(address(vaultWbera), 200 ether);
+        IBerachainRewardsVault(vaultWbera).notifyRewardAmount(
+            abi.encodePacked(bytes32("v0"), bytes16("")), 200 ether
+        );
+        vm.stopPrank();
+
+        vm.warp(block.timestamp + 10 days);
+
+        uint256 uservaultBalanceBefore = ibgt.balanceOf(address(user));
+
+        vm.startPrank(user);
+        vault.setOperator(address(infrared));
+        vm.stopPrank();
+
+        vm.startPrank(user2);
+        vault.setOperator(address(infrared));
+        vm.stopPrank();
+
+        uint256 expectedAmount = IInfraredV1_5(address(infrared))
+            .externalVaultRewards(address(wbera), user);
+
+        // test unauthorized
+        vm.startPrank(address(0));
+        vm.expectRevert();
+        IInfraredV1_5(address(infrared)).claimExternalVaultRewards(
+            address(wbera), user
+        );
+        vm.stopPrank();
+
+        // test keeper can call
+        vm.startPrank(keeper);
+        vm.expectEmit();
+        emit IInfraredV1_5.ExternalVaultClaimed(
+            user, address(wbera), address(vault), 99999999999999999000
+        );
+        IInfraredV1_5(address(infrared)).claimExternalVaultRewards(
+            address(wbera), user
+        );
+        vm.stopPrank();
+
+        // test user can call
+        vm.startPrank(user2);
+        vm.expectEmit();
+        emit IInfraredV1_5.ExternalVaultClaimed(
+            user2, address(wbera), address(vault), 99999999999999999000
+        );
+        IInfraredV1_5(address(infrared)).claimExternalVaultRewards(
+            address(wbera), user2
+        );
+        vm.stopPrank();
+
+        uint256 userBalanceAfter = ibgt.balanceOf(address(user));
+        assertTrue(
+            userBalanceAfter > uservaultBalanceBefore,
+            "Vault should have more InfraredBGT after harvest"
+        );
+        assertEq(userBalanceAfter - uservaultBalanceBefore, expectedAmount);
     }
 
     function testharvestVaultNotWhitelistedToken() public {

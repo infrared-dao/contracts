@@ -28,12 +28,12 @@ contract BribeCollectorTest is Helper {
         vm.stopPrank();
     }
 
-    function testClaimFeesSuccess() public {
+    function testClaimFeesSuccess() public virtual {
         // set collectBribesWeight 50%
         vm.prank(infraredGovernance);
         infrared.updateInfraredBERABribeSplit(1e6 / 2);
 
-        address searcher = address(777);
+        address searcher = SEARCHER; // Using constant from Helper.sol
 
         // Arrange
         address recipient = address(3);
@@ -72,7 +72,10 @@ contract BribeCollectorTest is Helper {
         assertEq(ibgt.balanceOf(recipient), 1 ether);
     }
 
-    function testClaimFeesRejectsPayoutTokenAndSweepPayoutToken() public {
+    function testClaimFeesRejectsPayoutTokenAndSweepPayoutToken()
+        public
+        virtual
+    {
         // now test
         address recipient = address(3);
         address[] memory feeTokens = new address[](1);
@@ -108,7 +111,7 @@ contract BribeCollectorTest is Helper {
         assertEq(wbera.balanceOf(address(collector)), 0);
     }
 
-    function testUpgrades() public {
+    function testUpgrades() public virtual {
         assertEq(collector.payoutToken(), address(wbera));
         assertEq(collector.payoutAmount(), 10 ether);
 

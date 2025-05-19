@@ -42,7 +42,7 @@ remappings = [
 
 [profile.production]
 optimizer = true
-optimizer_runs = 200
+optimizer_runs = 100
 
 [profile.production.optimizer_details]
 constantOptimizer = true
@@ -57,9 +57,9 @@ devnet = "${RPC_URL_DEVNET}"
 testnet = "${RPC_URL_TESTNET}"
 mainnet = "${RPC_URL_MAINNET}"
 
-# [etherscan]
-# goerli = { key = "${ETHERSCAN_KEY}", url = "https://api-goerli.etherscan.io/api" }
-# mainnet = { key = "${ETHERSCAN_KEY}" }
+[etherscan]
+berachain = {key = "${BERASCAN_API_KEY}", url = "https://api.berascan.com/api"}
+
 [fmt]
 line_length = 80
 int_types = "long"

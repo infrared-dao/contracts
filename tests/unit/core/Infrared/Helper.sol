@@ -24,12 +24,14 @@ import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {BribeCollector} from "src/core/BribeCollector.sol";
 import {BribeCollectorV1_2} from "src/core/upgrades/BribeCollectorV1_2.sol";
+import {BribeCollectorV1_3} from "src/core/upgrades/BribeCollectorV1_3.sol";
 
 // internal
 import {ERC20, Infrared} from "src/core/Infrared.sol";
 import {InfraredV1_2} from "src/core/upgrades/InfraredV1_2.sol";
 import {InfraredV1_3} from "src/core/upgrades/InfraredV1_3.sol";
 import {InfraredV1_4} from "src/core/upgrades/InfraredV1_4.sol";
+import {InfraredV1_5} from "src/core/upgrades/InfraredV1_5.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
@@ -61,9 +63,12 @@ abstract contract Helper is POLTest {
     BribeCollectorV1_2 internal collector;
     InfraredDistributor internal infraredDistributor;
 
+    // Standard test addresses
     address internal admin;
     address internal keeper;
     address internal infraredGovernance;
+    address internal testUser;
+    address constant SEARCHER = address(777);
 
     // MockERC20 internal bgt;
     MockERC20 internal wibera;
@@ -97,6 +102,7 @@ abstract contract Helper is POLTest {
         admin = address(this);
         keeper = address(1);
         infraredGovernance = address(2);
+        testUser = address(3);
 
         stakingAsset = address(wbera);
 
@@ -201,8 +207,7 @@ abstract contract Helper is POLTest {
         vm.prank(infraredGovernance);
         infrared.upgradeToAndCall(infraredV1_2Implementation, "");
 
-        // upgrade bribe collector
-        // deploy new implementation
+        // upgrade bribe collector to v1.2
         collector = new BribeCollectorV1_2();
 
         // perform proxy upgrade
@@ -214,6 +219,27 @@ abstract contract Helper is POLTest {
         );
         require(success, "Upgrade failed");
         collector = BribeCollectorV1_2(address(collector0));
+
+        // upgrade bribe collector to v1.3
+        BribeCollectorV1_3 bribeCollectorV1_3 = new BribeCollectorV1_3();
+
+        // perform proxy upgrade
+        vm.prank(infraredGovernance);
+        (success,) = address(collector0).call(
+            abi.encodeWithSignature(
+                "upgradeToAndCall(address,bytes)",
+                address(bribeCollectorV1_3),
+                ""
+            )
+        );
+        require(success, "Upgrade to BribeCollectorV1_3 failed");
+
+        // Grant KEEPER_ROLE to addresses that need to call claimFees
+        vm.startPrank(infraredGovernance);
+        collector.grantRole(collector.KEEPER_ROLE(), SEARCHER);
+        collector.grantRole(collector.KEEPER_ROLE(), address(this));
+        collector.grantRole(collector.KEEPER_ROLE(), keeper);
+        vm.stopPrank();
 
         // upgrade infrared again
         address infraredV1_3Implementation = address(new InfraredV1_3());
@@ -228,6 +254,13 @@ abstract contract Helper is POLTest {
         // upgrade proxy again
         vm.prank(infraredGovernance);
         infrared.upgradeToAndCall(infraredV1_4Implementation, "");
+
+        // upgrade infrared again
+        address infraredV1_5Implementation = address(new InfraredV1_5());
+
+        // upgrade proxy again
+        vm.prank(infraredGovernance);
+        infrared.upgradeToAndCall(infraredV1_5Implementation, "");
     }
 
     function labelContracts() public {
