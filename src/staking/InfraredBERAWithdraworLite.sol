@@ -5,16 +5,18 @@ import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {Errors, Upgradeable} from "src/utils/Upgradeable.sol";
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {IInfraredBERADepositor} from "src/interfaces/IInfraredBERADepositor.sol";
-import {IInfraredBERAClaimor} from "src/interfaces/IInfraredBERAClaimor.sol";
-import {IInfraredBERAWithdrawor} from
-    "src/interfaces/IInfraredBERAWithdrawor.sol";
+import {IInfraredBERAWithdraworLite} from
+    "src/interfaces/IInfraredBERAWithdraworLite.sol";
 import {InfraredBERAConstants} from "./InfraredBERAConstants.sol";
 
 /// @title InfraredBERAWithdraworLite
 /// @notice This contract is only responsible for handling involuntary exits from the CL. It is a light version of the InfraredBERAWithdrawor contract.
 /// @dev This contract should be upgraded once withdrawals are enabled by `https://github.com/berachain/beacon-kit`.
 /// @dev expects compliance of https://github.com/ethereum/EIPs/blob/master/EIPS/eip-7002.md
-contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
+contract InfraredBERAWithdraworLite is
+    Upgradeable,
+    IInfraredBERAWithdraworLite
+{
     /// @notice The withdrawal request type, execution layer withdrawal.
     uint8 public constant WITHDRAW_REQUEST_TYPE = 0x01;
 
@@ -58,7 +60,7 @@ contract InfraredBERAWithdraworLite is Upgradeable, IInfraredBERAWithdrawor {
     /// @notice The next nonce to submit withdraw request for
     uint256 public nonceSubmit;
 
-    /// @inheritdoc IInfraredBERAWithdrawor
+    /// @inheritdoc IInfraredBERAWithdraworLite
     uint256 public nonceProcess;
 
     /// Reserve storage slots for future upgrades for safety

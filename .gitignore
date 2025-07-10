@@ -35,3 +35,12 @@ src/script/devnet/loadEnv.sh
 
 ## Secrets.
 .env
+
+__pycache__
+tmp
+tmp*
+
+# Claude Code files
+.claude/
+CLAUDE.md
+.claude_*

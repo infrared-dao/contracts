@@ -11,7 +11,8 @@ import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
 import {InfraredV1_3 as Infrared} from "src/core/upgrades/InfraredV1_3.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
+import {InfraredBERAWithdrawor} from
+    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {IBGT as IBerachainBGT} from "@berachain/pol/interfaces/IBGT.sol";
 import {BatchScript} from "@forge-safe/BatchScript.sol";
@@ -322,17 +323,17 @@ contract InfraredKeeperScript is BatchScript {
         vm.stopBroadcast();
     }
 
-    function sweep(bytes calldata pubkey, address _safe)
-        external
-        isBatch(_safe)
-    {
-        bytes memory data =
-            abi.encodeWithSelector(iberaWithdrawer.sweep.selector, pubkey);
-        addToBatch(address(iberaWithdrawer), 0, data);
-        vm.startBroadcast();
-        executeBatch(true);
-        vm.stopBroadcast();
-    }
+    // function sweep(bytes calldata pubkey, address _safe)
+    //     external
+    //     isBatch(_safe)
+    // {
+    //     bytes memory data =
+    //         abi.encodeWithSelector(iberaWithdrawer.sweep.selector, pubkey);
+    //     addToBatch(address(iberaWithdrawer), 0, data);
+    //     vm.startBroadcast();
+    //     executeBatch(true);
+    //     vm.stopBroadcast();
+    // }
 
     function depositValidator(
         bytes calldata pubkey,

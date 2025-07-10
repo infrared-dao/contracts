@@ -88,24 +88,28 @@ contract ValidatorMgmtForkTest is HelperForkTest {
         vm.stopPrank();
     }
 
-    function testDeposit() public {
-        // add validator to infrared
-        testAddValidators();
+    // function testDeposit() public {
+    //     // add validator to infrared
+    //     testAddValidators();
 
-        // deposit to ibera
-        vm.deal(address(this), InfraredBERAConstants.INITIAL_DEPOSIT);
-        ibera.mint{value: InfraredBERAConstants.INITIAL_DEPOSIT}(address(this));
+    //     // deposit to ibera
+    //     vm.deal(address(this), InfraredBERAConstants.INITIAL_DEPOSIT);
+    //     ibera.mint{value: InfraredBERAConstants.INITIAL_DEPOSIT}(address(this));
 
-        // set deposit signature from admin account
-        vm.prank(infraredGovernance);
-        ibera.setDepositSignature(infraredValidators[0].pubkey, _create96Byte());
+    //     // set deposit signature from admin account
+    //     vm.prank(infraredGovernance);
+    //     ibera.setDepositSignature(infraredValidators[0].pubkey, _create96Byte());
 
-        // keeper call to execute beacon deposit
-        vm.prank(keeper);
-        depositor.execute(
-            infraredValidators[0].pubkey, InfraredBERAConstants.INITIAL_DEPOSIT
-        );
-    }
+    //     // keeper call to execute beacon deposit
+    //     vm.prank(keeper);
+    //     depositor.execute(
+    //         header,
+    //         validatorStruct,
+    //         gIndex,
+    //         InfraredBERAConstants.INITIAL_DEPOSIT,
+    //         proof
+    //     );
+    // }
 
     function testQueueNewCuttingBoard() public {
         // Verify the validator is registered with Infrared

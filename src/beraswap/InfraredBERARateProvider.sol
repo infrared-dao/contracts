@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {IRateProvider} from "src/beraswap/IRateProvider.sol";
-import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
+import {IInfraredBERAV2} from "src/interfaces/upgrades/IInfraredBERAV2.sol";
 
 /**
  * @title iBERA Rate Provider
@@ -10,10 +10,10 @@ import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
  */
 contract InfraredBERARateProvider is IRateProvider {
     /// @notice The address of the ibera contract
-    IInfraredBERA public immutable ibera;
+    IInfraredBERAV2 public immutable ibera;
 
     /// @notice Constructs the MevETHRateProvider contract, setting the mevETH address
-    constructor(IInfraredBERA _ibera) {
+    constructor(IInfraredBERAV2 _ibera) {
         ibera = _ibera;
     }
 

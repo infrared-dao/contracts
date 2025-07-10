@@ -23,7 +23,8 @@ import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {InfraredBERAClaimor} from "src/staking/InfraredBERAClaimor.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
+import {InfraredBERAWithdrawor} from
+    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
@@ -65,7 +66,6 @@ contract HelperForkTest is Test {
     InfraredBERA public ibera;
     InfraredBERADepositor public depositor;
     InfraredBERAWithdrawor public withdrawor;
-    InfraredBERAClaimor public claimor;
     InfraredBERAFeeReceivor public receivor;
 
     // Infrared system contracts
@@ -121,6 +121,8 @@ contract HelperForkTest is Test {
 
         // Initialize Berachain and Infrared contract references
         _initializeContractReferences();
+
+        // todo: upgrades
     }
 
     function _loadValidatorData() internal {
@@ -215,7 +217,7 @@ contract HelperForkTest is Test {
         withdrawor = InfraredBERAWithdrawor(
             payable(0x8c0E122960dc2E97dc0059c07d6901Dce72818E1)
         );
-        // claimor = InfraredBERAClaimor();
+
         receivor = InfraredBERAFeeReceivor(
             payable(0xf6a4A6aCECd5311327AE3866624486b6179fEF97)
         );

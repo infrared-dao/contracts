@@ -9,7 +9,8 @@ import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
 import {Infrared} from "src/core/Infrared.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
+import {InfraredBERAWithdrawor} from
+    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {IBGT as IBerachainBGT} from "@berachain/pol/interfaces/IBGT.sol";
 

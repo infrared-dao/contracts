@@ -23,7 +23,8 @@ import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {InfraredBERAClaimor} from "src/staking/InfraredBERAClaimor.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
+import {InfraredBERAWithdrawor} from
+    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";

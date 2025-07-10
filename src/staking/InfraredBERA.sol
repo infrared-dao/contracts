@@ -13,8 +13,6 @@ import {IInfraredBERAFeeReceivor} from
 import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
 import {InfraredBERAConstants} from "./InfraredBERAConstants.sol";
 import {InfraredBERADepositor} from "./InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from "./InfraredBERAWithdrawor.sol";
-import {InfraredBERAClaimor} from "./InfraredBERAClaimor.sol";
 import {InfraredBERAFeeReceivor} from "./InfraredBERAFeeReceivor.sol";
 
 /*

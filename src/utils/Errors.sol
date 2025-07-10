@@ -72,5 +72,25 @@ library Errors {
     error CanNotCompoundAccumuldatedBERA();
     error ExceedsMaxEffectiveBalance();
     error HandleForceExitsBeforeDeposits();
+    error HandleForceExitsBeforeRegister();
     error OperatorAlreadySet();
+    error InvalidPrecompileResponse();
+    error ExcessiveFee();
+    error AlreadyFinalised();
+    error ExceedsRequestLength();
+    error NotFinalised();
+    error InvalidState();
+    error InvalidWithdrawalAddress();
+    error DepositMustBeGreaterThanMinActivationBalance();
+    error WithdrawMustLeaveMoreThanMinActivationBalance();
+    error MinExitFeeNotMet();
+    error AlreadyExited();
+    error AlreadyInitiated();
+    error BalanceMissmatch();
+    error EffectiveBalanceMissmatch();
+    error NotExited();
+    error ProcessReserves();
+    error StaleProof();
+    error WaitForPending();
+    error ZeroBalance();
 }

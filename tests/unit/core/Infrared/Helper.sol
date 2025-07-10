@@ -13,9 +13,12 @@ import {BeaconDeposit} from "@berachain/pol/BeaconDeposit.sol";
 import {Voter} from "src/voting/Voter.sol";
 import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
-import {InfraredBERAClaimor} from "src/staking/InfraredBERAClaimor.sol";
 import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
+import {InfraredBERAV2} from "src/staking/upgrades/InfraredBERAV2.sol";
+import {InfraredBERADepositorV2} from
+    "src/staking/upgrades/InfraredBERADepositorV2.sol";
+import {InfraredBERAWithdrawor} from
+    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
 import {InfraredBERAWithdraworLite} from
     "src/staking/InfraredBERAWithdraworLite.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
@@ -38,7 +41,6 @@ import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
 
 import {IInfrared} from "src/interfaces/IInfrared.sol";
-
 // mocks
 import {MockERC20} from "tests/unit/mocks/MockERC20.sol";
 import {RewardVaultFactory} from "@berachain/pol/rewards/RewardVaultFactory.sol";
@@ -52,11 +54,12 @@ abstract contract Helper is POLTest {
     Voter public voter;
     VotingEscrow public sIR;
 
-    InfraredBERA public ibera;
-    InfraredBERADepositor public depositor;
+    InfraredBERAV2 public ibera;
+    InfraredBERADepositorV2 public depositor;
+    InfraredBERA public iberaV0;
+    InfraredBERADepositor public depositorV0;
     InfraredBERAWithdrawor public withdrawor;
     InfraredBERAWithdraworLite public withdraworLite;
-    InfraredBERAClaimor public claimor;
     InfraredBERAFeeReceivor public receivor;
 
     BribeCollector internal collector0;
@@ -70,8 +73,7 @@ abstract contract Helper is POLTest {
     address internal testUser;
     address constant SEARCHER = address(777);
 
-    // MockERC20 internal bgt;
-    MockERC20 internal wibera;
+    // MockERC20 internal bgt;ibger
     MockERC20 internal honey;
     address internal beraVault;
 
@@ -95,7 +97,6 @@ abstract contract Helper is POLTest {
 
         address depositContract = address(new BeaconDeposit());
 
-        wibera = new MockERC20("WIBERA", "WIBERA", 18);
         honey = new MockERC20("HONEY", "HONEY", 18);
 
         // Set up addresses for roles
@@ -114,16 +115,15 @@ abstract contract Helper is POLTest {
 
         // ibera = new InfraredBERA(address(infrared));
         // InfraredBERA
-        ibera = InfraredBERA(setupProxy(address(new InfraredBERA())));
+        iberaV0 = InfraredBERA(setupProxy(address(new InfraredBERA())));
 
-        depositor = InfraredBERADepositor(
+        depositorV0 = InfraredBERADepositor(
             setupProxy(address(new InfraredBERADepositor()))
         );
         withdraworLite = InfraredBERAWithdraworLite(
             payable(setupProxy(address(new InfraredBERAWithdraworLite())))
         );
-        claimor =
-            InfraredBERAClaimor(setupProxy(address(new InfraredBERAClaimor())));
+
         receivor = InfraredBERAFeeReceivor(
             payable(setupProxy(address(new InfraredBERAFeeReceivor())))
         );
@@ -136,7 +136,7 @@ abstract contract Helper is POLTest {
             address(infrared), infraredGovernance, address(wbera), 10 ether
         );
         infraredDistributor.initialize(
-            address(infrared), infraredGovernance, address(ibera)
+            address(infrared), infraredGovernance, address(iberaV0)
         );
 
         // voter = Voter(setupProxy(address(new Voter(address(infrared)))));
@@ -152,7 +152,7 @@ abstract contract Helper is POLTest {
             address(collector0),
             address(infraredDistributor),
             address(0),
-            address(ibera),
+            address(iberaV0),
             1 days
         );
         infrared.initialize(data);
@@ -163,23 +163,21 @@ abstract contract Helper is POLTest {
         infrared.setIBGT(address(ibgt));
 
         // initialize ibera proxies
-        depositor.initialize(
-            infraredGovernance, keeper, address(ibera), depositContract
+        depositorV0.initialize(
+            infraredGovernance, keeper, address(iberaV0), depositContract
         );
-        withdraworLite.initialize(infraredGovernance, keeper, address(ibera));
-
-        claimor.initialize(infraredGovernance, keeper, address(ibera));
+        withdraworLite.initialize(infraredGovernance, keeper, address(iberaV0));
 
         receivor.initialize(
-            infraredGovernance, keeper, address(ibera), address(infrared)
+            infraredGovernance, keeper, address(iberaV0), address(infrared)
         );
 
         // init deposit to avoid inflation attack
-        ibera.initialize{value: 10 ether}(
+        iberaV0.initialize{value: 10 ether}(
             infraredGovernance,
             keeper,
             address(infrared),
-            address(depositor),
+            address(depositorV0),
             address(withdraworLite),
             address(receivor)
         );
@@ -187,7 +185,7 @@ abstract contract Helper is POLTest {
         uint16 feeShareholders = 4; // 25% of fees
 
         vm.prank(infraredGovernance);
-        ibera.setFeeDivisorShareholders(feeShareholders);
+        iberaV0.setFeeDivisorShareholders(feeShareholders);
 
         vm.startPrank(governance);
         bgt.whitelistSender(address(factory), true);
@@ -261,6 +259,27 @@ abstract contract Helper is POLTest {
         // upgrade proxy again
         vm.prank(infraredGovernance);
         infrared.upgradeToAndCall(infraredV1_5Implementation, "");
+
+        _upgradeIBeraToV2();
+    }
+
+    function _upgradeIBeraToV2() internal {
+        // Deploy V2 implementations
+        address depositorV2Impl = address(new InfraredBERADepositorV2());
+        address iberaV2Impl = address(new InfraredBERAV2());
+
+        vm.startPrank(infraredGovernance);
+        // Upgrade depositor to V2
+        depositorV0.upgradeToAndCall(depositorV2Impl, "");
+        depositor = InfraredBERADepositorV2(address(depositorV0));
+
+        // Upgrade ibera to V2
+        iberaV0.upgradeToAndCall(iberaV2Impl, "");
+        ibera = InfraredBERAV2(address(iberaV0));
+
+        depositor.initializeV2();
+        ibera.initializeV2();
+        vm.stopPrank();
     }
 
     function labelContracts() public {

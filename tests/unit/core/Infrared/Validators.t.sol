@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import {Helper, IAccessControl} from "./Helper.sol";
 import {Errors} from "src/utils/Errors.sol";
-
+import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
 import {IInfrared} from "src/interfaces/IInfrared.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
@@ -90,7 +90,8 @@ contract ValidatorManagment is Helper {
 
         uint256 donatedAmount = 100 ether;
         uint256 ts = ibera.totalSupply();
-        (uint256 prevBacking,) = ibera.previewBurn(ts);
+        uint256 fee = InfraredBERAConstants.MINIMUM_WITHDRAW_FEE;
+        (uint256 prevBacking,) = ibera.previewBurn(ts + fee);
 
         // 1. simulate someone claiming their bgt to the contract causing harvest base to be called.
         vm.prank(address(blockRewardController));
@@ -122,7 +123,7 @@ contract ValidatorManagment is Helper {
 
         // 5. the backing of iBERA should have increased by 100 ether.
         ts = ibera.totalSupply();
-        (uint256 currentBacking,) = ibera.previewBurn(ts);
+        (uint256 currentBacking,) = ibera.previewBurn(ts + fee);
         assertEq(currentBacking - prevBacking, donatedAmount);
     }
 

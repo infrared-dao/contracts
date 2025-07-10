@@ -55,12 +55,13 @@ contract InfraredMultisigGovernance is BatchScript {
         );
         addToBatch(ibera, 0, data);
 
+        // not yet operator until 10k deposit
         // set commission 100%
-        uint96 maxCommissionRate = 10000; // 100% = 10000 in BeraChef
-        data = abi.encodeWithSignature(
-            "queueValCommission(bytes,uint96)", pubkey, maxCommissionRate
-        );
-        addToBatch(infrared, 0, data);
+        // uint96 maxCommissionRate = 10000; // 100% = 10000 in BeraChef
+        // data = abi.encodeWithSignature(
+        //     "queueValCommission(bytes,uint96)", pubkey, maxCommissionRate
+        // );
+        // addToBatch(infrared, 0, data);
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
@@ -407,11 +408,12 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function recoverERC20(
+        address safe,
         address payable infrared,
         address _to,
         address _token,
         uint256 _amount
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
             "recoverERC20(address,address,uint256)", _to, _token, _amount
         );

@@ -59,6 +59,7 @@ mainnet = "${RPC_URL_MAINNET}"
 
 [etherscan]
 berachain = {key = "${BERASCAN_API_KEY}", url = "https://api.berascan.com/api"}
+bepolia = {chain = "80069", key = "verifyContract", url = "https://api.routescan.io/v2/network/testnet/evm/80069/etherscan"}
 
 [fmt]
 line_length = 80
