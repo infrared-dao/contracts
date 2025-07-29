@@ -322,6 +322,34 @@ library RewardsLib {
         }
     }
 
+    /// @notice Alternative to Harvet base rewards, auctioning iBGT on harvestBaseCollector, from BGT rewards from Distributor
+    ///     ref - https://github.com/berachain/contracts-monorepo/blob/main/src/pol/rewards/Distributor.sol#L160
+    /// @notice The BGT accumilates in the contract, therfore can check balance(this) since all other BGT rewards are claimed and harvested atomically
+    /// @param ibgt     The address of the InfraredBGT toke
+    /// @param bgt      The address of the BGT token
+    /// @param harvestBaseCollector The address of the harvestBaseCollector contract
+    /// @return bgtAmt  The amount of BGT rewards harvested
+    function auctionBase(
+        address ibgt,
+        address bgt,
+        address harvestBaseCollector
+    ) external returns (uint256 bgtAmt) {
+        // Since BGT balance has accrued to this contract, we check for what we've already accounted for
+        uint256 minted = IInfraredBGT(ibgt).totalSupply();
+
+        // The balance of BGT in the contract is the rewards accumulated from base rewards since the last harvest
+        // Since is paid out every block our validators propose (have a `Distributor::distibuteFor()` call)
+        uint256 balance = IBerachainBGT(bgt).balanceOf(address(this));
+        if (balance == 0) return 0;
+
+        // @dev the amount that will be minted is the difference between the balance accrued since the last harvestVault and the current balance in the contract.
+        // This difference should keep getting bigger as the contract accumilates more bgt from `Distributor::distibuteFor()` calls.
+        bgtAmt = balance - minted;
+
+        // @dev mint equivilent of iBGT to the harvestBaseCollector
+        IInfraredBGT(ibgt).mint(harvestBaseCollector, bgtAmt);
+    }
+
     /// @notice Harvests the accrued BGT rewards to a vault.
     /// @notice BGT transferred here directly to the user https://github.com/berachain/contracts-monorepo/blob/c374de32077ede0147985cf2bf6ed89570244a7e/src/pol/rewards/RewardVault.sol#L404
     /// @param vault            The address of the InfraredRewardVault, wrapping an underlying RewardVault
@@ -638,6 +666,18 @@ library RewardsLib {
             feeProtocol,
             rewardsDuration
         );
+    }
+
+    /// @notice redeem ibgt for bera
+    /// @param bgt              The address of the BGT token
+    /// @param ibgt             The address of the iBGT token
+    /// @param amount           Amount of ibgt to redeem
+    function redeemIbgtForBera(address bgt, address ibgt, uint256 amount)
+        external
+    {
+        ERC20(ibgt).safeTransferFrom(msg.sender, address(this), amount);
+        IInfraredBGT(ibgt).burn(amount);
+        IBerachainBGT(bgt).redeem(msg.sender, amount);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/

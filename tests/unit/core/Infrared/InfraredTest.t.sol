@@ -17,6 +17,8 @@ import {IInfraredBERAFeeReceivor} from
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {Errors} from "src/utils/Errors.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
+import {HarvestBaseCollector} from "src/staking/HarvestBaseCollector.sol";
+import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
 
 contract InfraredTest is Helper {
     // using stdStorage for StdStorage;
@@ -307,6 +309,81 @@ contract InfraredTest is Helper {
             ibera.balanceOf(address(validator)) > 0,
             "Validator should have received rewards"
         );
+    }
+
+    function testAuctionBaseSuccess() public {
+        // 1. Add a validator to the validator set
+        vm.startPrank(infraredGovernance);
+        ValidatorTypes.Validator memory validator_str = ValidatorTypes.Validator({
+            pubkey: "0x1234567890abcdef",
+            addr: address(validator)
+        });
+        ValidatorTypes.Validator[] memory validators =
+            new ValidatorTypes.Validator[](1);
+        validators[0] = validator_str;
+        bytes[] memory pubkeys = new bytes[](1);
+        pubkeys[0] = validator_str.pubkey;
+        infrared.addValidators(validators);
+        vm.stopPrank();
+
+        // 2. Mint ibgt to some random address, such that total supply of ibgt is 10000 ether
+        vm.prank(address(infrared));
+        ibgt.mint(address(12), 10000 ether);
+        vm.startPrank(address(blockRewardController));
+        // 3. Mint bgt to the Infrared, to simulate the rewards.
+        bgt.mint(address(infrared), 11000 ether);
+        vm.stopPrank();
+        deal(address(bgt), 11000 ether);
+
+        assertTrue(
+            bgt.balanceOf(address(infrared)) > ibgt.totalSupply(),
+            "Infrared should have more BGT than total supply of InfraredBGT"
+        );
+
+        // Store initial balances
+        uint256 receivorBalanceBefore = ibera.receivor().balance;
+        address payable baseCollector = payable(
+            InfraredV1_7(payable(address(infrared))).harvestBaseCollector()
+        );
+        uint256 collectorBalanceBefore = ibgt.balanceOf(baseCollector);
+
+        // toggle to use auction
+        vm.prank(keeper);
+        InfraredV1_7(payable(address(infrared))).toggleAuctionBase();
+
+        // 4. Call harvestBase to distribute the rewards
+        vm.expectEmit();
+        emit IInfrared.BaseHarvested(address(this), 1000 ether);
+        infrared.harvestBase();
+
+        // Check that ETH was sent to harvest base collector
+        uint256 collectorBalanceAfter = ibgt.balanceOf(baseCollector);
+        assertTrue(
+            collectorBalanceAfter > collectorBalanceBefore,
+            "HarvestBase collector should have received ETH"
+        );
+
+        // claim fee
+        uint256 amt = HarvestBaseCollector(baseCollector).payoutAmount();
+        vm.deal(keeper, amt);
+        vm.startPrank(keeper);
+        wbera.deposit{value: amt}();
+        wbera.approve(baseCollector, amt);
+        HarvestBaseCollector(baseCollector).claimFee(
+            keeper, collectorBalanceAfter - collectorBalanceBefore
+        );
+        HarvestBaseCollector(baseCollector).sweep();
+        vm.stopPrank();
+
+        assertEq(ibgt.balanceOf(baseCollector), 0);
+        assertEq(
+            ibgt.balanceOf(keeper),
+            collectorBalanceAfter - collectorBalanceBefore
+        );
+        assertEq(wbera.balanceOf(baseCollector), 0);
+
+        uint256 receivorBalanceAfter = ibera.receivor().balance;
+        assertTrue(receivorBalanceAfter > receivorBalanceBefore);
     }
 
     function testharvestBribesSuccess() public {

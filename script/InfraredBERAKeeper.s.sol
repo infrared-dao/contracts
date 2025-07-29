@@ -7,6 +7,7 @@ import "forge-std/console.sol";
 import {BeaconRootsVerify} from "src/utils/BeaconRootsVerify.sol";
 import {InfraredBERAWithdrawor} from
     "src/staking/upgrades/InfraredBERAWithdrawor.sol";
+import {InfraredBERAV2} from "src/staking/upgrades/InfraredBERAV2.sol";
 import {InfraredBERADepositorV2} from
     "src/staking/upgrades/InfraredBERADepositorV2.sol";
 
@@ -43,6 +44,19 @@ contract InfraredBERAKeeper is Script {
         bool slashed;
         uint64 withdrawable_epoch;
         bytes32 withdrawal_credentials;
+    }
+
+    /// @dev queue's a ticket to rebalance entire stak of given validator
+    function queueExitRebalance(
+        address _withdrawor,
+        address _ibera,
+        bytes calldata _pubkey
+    ) external {
+        uint256 _stake = InfraredBERAV2(_ibera).stakes(_pubkey);
+        address _depositor = InfraredBERAV2(_ibera).depositor();
+        vm.startBroadcast();
+        InfraredBERAWithdrawor(payable(_withdrawor)).queue(_depositor, _stake);
+        vm.stopBroadcast();
     }
 
     function executeWithdrawProofs(
@@ -217,6 +231,18 @@ contract InfraredBERAKeeper is Script {
             nextBlockTimestamp
         );
         vm.stopBroadcast();
+    }
+
+    function findUnclaimedTickets(address _withdrawor) public view {
+        uint256 len =
+            InfraredBERAWithdrawor(payable(_withdrawor)).requestLength();
+        for (uint256 i; i < len; i++) {
+            (InfraredBERAWithdrawor.RequestState state,,,,) =
+                InfraredBERAWithdrawor(payable(_withdrawor)).requests(i);
+            if (uint8(state) == 1) {
+                console.logUint(i);
+            }
+        }
     }
 
     function toAsciiString(address addr)

@@ -35,10 +35,12 @@ import {InfraredV1_2} from "src/core/upgrades/InfraredV1_2.sol";
 import {InfraredV1_3} from "src/core/upgrades/InfraredV1_3.sol";
 import {InfraredV1_4} from "src/core/upgrades/InfraredV1_4.sol";
 import {InfraredV1_5} from "src/core/upgrades/InfraredV1_5.sol";
+import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
+import {HarvestBaseCollector} from "src/staking/HarvestBaseCollector.sol";
 
 import {IInfrared} from "src/interfaces/IInfrared.sol";
 // mocks
@@ -260,7 +262,35 @@ abstract contract Helper is POLTest {
         vm.prank(infraredGovernance);
         infrared.upgradeToAndCall(infraredV1_5Implementation, "");
 
+        // iber v2
         _upgradeIBeraToV2();
+
+        // upgrade infrared v1.7
+        vm.startPrank(infraredGovernance);
+        infrared.upgradeToAndCall(
+            address(new InfraredV1_7()),
+            abi.encodeWithSignature(
+                "initializeV1_7(address)",
+                setupProxy(
+                    address(new HarvestBaseCollector()),
+                    abi.encodeWithSignature(
+                        "initialize(address,address,address,address,address,address,uint256)",
+                        address(infrared),
+                        infraredGovernance,
+                        keeper,
+                        address(ibgt),
+                        address(wbera),
+                        address(receivor),
+                        10 ether
+                    )
+                )
+            )
+        );
+        vm.stopPrank();
+
+        // set auctionBase flag to false for legacy tests
+        vm.prank(keeper);
+        InfraredV1_7(payable(address(infrared))).toggleAuctionBase();
     }
 
     function _upgradeIBeraToV2() internal {
@@ -337,6 +367,13 @@ abstract contract Helper is POLTest {
         returns (address proxy)
     {
         proxy = address(new ERC1967Proxy(implementation, ""));
+    }
+
+    function setupProxy(address implementation, bytes memory data)
+        internal
+        returns (address proxy)
+    {
+        proxy = address(new ERC1967Proxy(implementation, data));
     }
 
     function _credential(address addr) internal pure returns (bytes memory) {

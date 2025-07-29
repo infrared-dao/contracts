@@ -10,6 +10,7 @@ import "src/interfaces/upgrades/IInfraredV1_5.sol";
 import "src/interfaces/IMultiRewards.sol";
 import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
+import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
 
 contract InfraredRewardsTest is Helper {
     /*//////////////////////////////////////////////////////////////
@@ -1118,4 +1119,44 @@ contract InfraredRewardsTest is Helper {
             "Rewards should continue accruing after unpause"
         );
     }
+
+    function testRedeemIbgtForBera() public {
+        assertTrue(ibgt.hasRole(ibgt.BURNER_ROLE(), address(infrared)));
+        uint256 amount = 10000 ether;
+        vm.startPrank(address(blockRewardController));
+        bgt.mint(address(infrared), amount);
+        vm.stopPrank();
+        vm.startPrank(address(infrared));
+        ibgt.mint(keeper, amount);
+        vm.stopPrank();
+        uint256 prevIbgtSupply = ibgt.totalSupply();
+        uint256 prevbgtSupply = bgt.balanceOf(address(infrared));
+        uint256 prevBeraBal = keeper.balance;
+
+        // expect revert if not keeper
+        vm.expectRevert();
+        InfraredV1_7(payable(address(infrared))).redeemIbgtForBera(amount);
+
+        vm.startPrank(keeper);
+        // expect revert if ibgt not approved
+        vm.expectRevert();
+        InfraredV1_7(payable(address(infrared))).redeemIbgtForBera(amount);
+
+        // approve
+        ibgt.approve(address(infrared), amount);
+
+        // expect revert if zero amount
+        vm.expectRevert();
+        InfraredV1_7(payable(address(infrared))).redeemIbgtForBera(0);
+
+        // expect success
+        InfraredV1_7(payable(address(infrared))).redeemIbgtForBera(amount);
+        vm.stopPrank();
+
+        assertEq(ibgt.totalSupply(), prevIbgtSupply - amount);
+        assertEq(bgt.balanceOf(address(infrared)), prevbgtSupply - amount);
+        assertEq(keeper.balance, prevBeraBal + amount);
+    }
+
+    receive() external payable {}
 }

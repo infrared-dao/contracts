@@ -12,9 +12,11 @@ fuzz = { runs = 1_000 }
 test = 'tests'
 remappings = [
     '@forge-std/=lib/forge-std/src/',
-    '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
+    # '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
+    '@openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/',
     '@openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/',
     '@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/',
+    '@openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades/src/',
     '@solmate/=lib/solmate/src/',
     'solady/src/=lib/solady/src/',
     'solady/test/=lib/solady/test/',
@@ -23,13 +25,17 @@ remappings = [
     '@forge-safe/=lib/forge-safe/src/'
 ]
 fs_permissions = [{ access = "read-write", path = "./" }]
+ffi = true
+ast = true
+build_info = true
+extra_output = ["storageLayout"]
 
 [profile.ci]
 fuzz = { runs = 256 }
 verbosity = 4
 remappings = [
     '@forge-std/=lib/forge-std/src/',
-    '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
+    '@openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/',
     '@openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/',
     '@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/',
     '@solmate/=lib/solmate/src/',
@@ -67,3 +73,7 @@ int_types = "long"
 
 [doc]
 title = "Infrared Smart Contract Documentation"
+
+[lint]
+exclude_lints = ["unused-import","screaming-snake-case-immutable","screaming-snake-case-const","mixed-case-variable","mixed-case-function","asm-keccak256"]
+ignore = ["tests/**/*","script/**/*","src/voting/**/*"]

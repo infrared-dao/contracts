@@ -22,6 +22,7 @@ abstract contract InfraredUpgradeable is Upgradeable {
         _;
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         // prevents implementation contracts from being used
         _disableInitializers();

@@ -1,5 +1,6 @@
 [submodule "lib/forge-std"]
 	path = lib/forge-std
+	branch = master
 	url = https://github.com/foundry-rs/forge-std
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
@@ -27,3 +28,6 @@
 	path = lib/forge-safe
 	branch = main
 	url = https://github.com/sandybradley/forge-safe
+[submodule "lib/openzeppelin-foundry-upgrades"]
+	path = lib/openzeppelin-foundry-upgrades
+	url = https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades

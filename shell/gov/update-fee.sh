@@ -22,8 +22,8 @@ RPC_URL="https://rpc.berachain.com"
 #     HarvestBoostProtocolRate
 # }
 
-FEE_TYPE=0  # pick from above (uint8 index starting at 0 = HarvestOperatorFeeRate)
-FEE_AMOUNT=500000  # 50% = 5e5
+FEE_TYPE=2  # pick from above (uint8 index starting at 0 = HarvestOperatorFeeRate)
+FEE_AMOUNT=10000  # 1% = 1e4
 
 # uint16 feeDivisorShareholders, uint256 operatorWeight, uint256 harvestOperatorFeeRate, uint256 harvestVaultFeeRate, uint256 harvestBribesFeeRate, uint256 harvestBoostFeeRate
 
@@ -32,4 +32,4 @@ forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance 
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     --ffi \
-    --broadcast 
+    --broadcast -vvvv

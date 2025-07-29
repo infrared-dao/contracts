@@ -1,0 +1,47 @@
+{
+  "lib/prb-test": {
+    "branch": {
+      "name": "main",
+      "rev": "cd07166bdd12c7c4a899cb53951653b53939a644"
+    }
+  },
+  "lib/forge-std": {
+    "branch": {
+      "name": "master",
+      "rev": "60acb7aaadcce2d68e52986a0a66fe79f07d138f"
+    }
+  },
+  "lib/openzeppelin-contracts": {
+    "rev": "d11ed2fb0a0130363b1e82d5742ad7516df0e749"
+  },
+  "lib/forge-safe": {
+    "branch": {
+      "name": "main",
+      "rev": "751365b37b10d4e8ec03f941113ea57bf04fa558"
+    }
+  },
+  "lib/solmate": {
+    "branch": {
+      "name": "main",
+      "rev": "e5e0ed64c75e74974151780884e59071d026d84e"
+    }
+  },
+  "lib/openzeppelin-foundry-upgrades": {
+    "rev": "cbce1e00305e943aa1661d43f41e5ac72c662b07"
+  },
+  "lib/contracts": {
+    "branch": {
+      "name": "main",
+      "rev": "274989a5f81930d00a2c6eb8e9294940d9924dba"
+    }
+  },
+  "lib/solady": {
+    "branch": {
+      "name": "main",
+      "rev": "093d219130f9780dab1058b2ac02acab71908a86"
+    }
+  },
+  "lib/openzeppelin-contracts-upgradeable": {
+    "rev": "35afeb4c1d6240ffb84127f35e42f1c080663f2f"
+  }
+}

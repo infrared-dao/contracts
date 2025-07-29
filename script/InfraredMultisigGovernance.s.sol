@@ -97,9 +97,8 @@ contract InfraredMultisigGovernance is BatchScript {
         bytes memory data =
             abi.encodeWithSignature("removeValidators(bytes[])", pubkeys);
         addToBatch(infrared, 0, data);
-        vm.startBroadcast();
+
         executeBatch(true);
-        vm.stopBroadcast();
     }
 
     // Bribe collector management
@@ -121,11 +120,21 @@ contract InfraredMultisigGovernance is BatchScript {
     // Vault Management
 
     function addReward(
+        address safe,
         address payable infrared,
         address _stakingToken,
         address _rewardsToken,
         uint256 _rewardsDuration
-    ) external {
+    ) external isBatch(safe) {
+        if (!Infrared(infrared).whitelistedRewardTokens(_rewardsToken)) {
+            // Infrared(infrared).updateWhiteListedRewardTokens(_rewardsToken, true);
+            bytes memory data0 = abi.encodeWithSignature(
+                "updateWhiteListedRewardTokens(address,bool)",
+                _rewardsToken,
+                true
+            );
+            addToBatch(infrared, 0, data0);
+        }
         bytes memory data = abi.encodeWithSignature(
             "addReward(address,address,uint256)",
             _stakingToken,
@@ -133,9 +142,9 @@ contract InfraredMultisigGovernance is BatchScript {
             _rewardsDuration
         );
         addToBatch(infrared, 0, data);
-        vm.startBroadcast();
+        // vm.startBroadcast();
         executeBatch(true);
-        vm.stopBroadcast();
+        // vm.stopBroadcast();
     }
 
     function updateWhiteListedRewardTokens(
@@ -198,14 +207,14 @@ contract InfraredMultisigGovernance is BatchScript {
             return false;
         }
 
-        try erc20.balanceOf(address(this)) returns (uint256) {
+        try erc20.balanceOf(address(0)) returns (uint256) {
             // Success
         } catch {
             console.log("Token %s failed balanceOf check", token);
             return false;
         }
 
-        try erc20.allowance(address(this), address(this)) returns (uint256) {
+        try erc20.allowance(address(0), address(0)) returns (uint256) {
             // Success
         } catch {
             console.log("Token %s failed allowance check", token);
@@ -374,6 +383,20 @@ contract InfraredMultisigGovernance is BatchScript {
             abi.encodeWithSignature("grantRole(bytes32,address)", role, keeper);
         addToBatch(infrared, 0, data);
         addToBatch(ibera, 0, data);
+        vm.startBroadcast();
+        executeBatch(true);
+        vm.stopBroadcast();
+    }
+
+    function grantKeeperRoleOnlyInfrared(
+        address safe,
+        address payable infrared,
+        address keeper
+    ) external isBatch(safe) {
+        bytes32 role = Infrared(infrared).KEEPER_ROLE();
+        bytes memory data =
+            abi.encodeWithSignature("grantRole(bytes32,address)", role, keeper);
+        addToBatch(infrared, 0, data);
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
