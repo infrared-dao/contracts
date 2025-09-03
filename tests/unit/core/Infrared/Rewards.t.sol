@@ -589,7 +589,7 @@ contract InfraredRewardsTest is Helper {
         address user = address(123);
         stakeInVault(address(infraredVault), stakingAsset, user, 100 ether);
 
-        vm.startPrank(infraredGovernance);
+        vm.startPrank(keeper);
         infrared.updateFee(ConfigTypes.FeeType.HarvestVaultFeeRate, 3e5); // 30% total fee
         infrared.updateFee(ConfigTypes.FeeType.HarvestVaultProtocolRate, 1e6); // 100% of fee to protocol
         vm.stopPrank();

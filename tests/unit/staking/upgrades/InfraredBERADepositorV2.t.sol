@@ -150,7 +150,7 @@ contract InfraredBERADepositorV2Test is InfraredBERAV2BaseTest {
                         INITIALIZATION TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function testInitializeV2() public {
+    function testInitializeV2() public view {
         assertEq(depositor.minActivationDeposit(), MIN_ACTIVATION_DEPOSIT);
     }
 

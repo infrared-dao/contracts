@@ -138,13 +138,11 @@ library ValidatorManagerLib {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Queues boosts for validators in the BGT smart contract
-    /// @param $ Storage pointer to the validator storage
     /// @param bgt address of the BGT contract
     /// @param _pubkeys array of public keys of validators
     /// @param _amts array of amounts of boosts to queue
     /// @dev The sum of the boosts must be less than or equal to the total supply of iBGT
     function queueBoosts(
-        ValidatorStorage storage $,
         address bgt,
         address ibgt,
         bytes[] memory _pubkeys,
@@ -203,14 +201,9 @@ library ValidatorManagerLib {
     }
 
     /// @notice Activates boosts for validators in the BGT smart contract
-    /// @param $ Storage pointer to the validator storage
     /// @param bgt address of the BGT contract
     /// @param _pubkeys array of public keys of validators
-    function activateBoosts(
-        ValidatorStorage storage $,
-        address bgt,
-        bytes[] memory _pubkeys
-    ) external {
+    function activateBoosts(address bgt, bytes[] memory _pubkeys) external {
         for (uint256 i = 0; i < _pubkeys.length; i++) {
             IBerachainBGT(bgt).activateBoost(address(this), _pubkeys[i]);
         }
@@ -238,12 +231,10 @@ library ValidatorManagerLib {
     }
 
     /// @notice Cancels drop boosts for validators in the BGT smart contract before they are activated
-    /// @param $ Storage pointer to the validator storage
     /// @param bgt address of the BGT contract
     /// @param _pubkeys array of public keys of validators
     /// @param _amts array of amounts of boosts to cancel
     function cancelDropBoosts(
-        ValidatorStorage storage $,
         address bgt,
         bytes[] memory _pubkeys,
         uint128[] memory _amts

@@ -13,11 +13,7 @@ import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
 import {HarvestBaseCollector} from "src/staking/HarvestBaseCollector.sol";
 
 contract UpgradeInfraredV1_7 is BatchScript {
-    // address constant CREATE2_FACTORY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;  // Standard create2 address
     address public constant SAFE = 0x182a31A27A0D39d735b31e80534CFE1fCd92c38f; // Infrared gov safe
-    uint256 constant SALT_COLLECTOR_IMPL = 12345;
-    uint256 constant SALT_INFRARED_IMPL = 54321;
-    uint256 constant SALT_PROXY = 67890;
 
     function validate() public {
         Options memory opts;
@@ -134,102 +130,6 @@ contract UpgradeInfraredV1_7 is BatchScript {
 
         executeBatch(_send);
     }
-
-    // function run(
-    //     bool _send,
-    //     address _infraredProxy,
-    //     address _keeper,
-    //     address _ibgt,
-    //     address _wbera,
-    //     address _receivor,
-    //     uint256 _payoutAmount
-    // ) external isBatch(SAFE) {
-    //     if (_infraredProxy == address(0) || _keeper  == address(0) || _ibgt  == address(0) || _wbera  == address(0) || _receivor  == address(0) || _payoutAmount == 0) {
-    //         revert();
-    //     }
-
-    //     address proxyAddr = _deployCollector(
-    //         _infraredProxy, _keeper, _ibgt, _wbera, _receivor, _payoutAmount
-    //     );
-
-    //     _upgradeInfrared(_infraredProxy, proxyAddr);
-
-    //     executeBatch(_send);
-    // }
-
-    // function _deployCollector(
-    //     address _infraredProxy,
-    //     address _keeper,
-    //     address _ibgt,
-    //     address _wbera,
-    //     address _receivor,
-    //     uint256 _payoutAmount
-    // ) internal returns (address proxyAddr) {
-    //     // Compute implementation bytecode
-    //     bytes memory implCode = type(HarvestBaseCollector).creationCode;
-    //     bytes memory implInitCode = abi.encodePacked(implCode);
-    //     address implAddr = computeCreate2Address(
-    //         SALT_COLLECTOR_IMPL, keccak256(implInitCode), CREATE2_FACTORY
-    //     );
-
-    //     // Prepare initializer data
-    //     bytes memory initializerData = abi.encodeCall(
-    //         HarvestBaseCollector.initialize,
-    //         (_infraredProxy, SAFE, _keeper, _ibgt, _wbera, _receivor, _payoutAmount)
-    //     );
-
-    //     // Compute proxy bytecode
-    //     bytes memory proxyCode = type(ERC1967Proxy).creationCode;
-    //     bytes memory proxyArgs = abi.encode(implAddr, initializerData);
-    //     bytes memory proxyInitCode = abi.encodePacked(proxyCode, proxyArgs);
-
-    //     // Add batch call: Deploy implementation
-    //     bytes memory deployImplCalldata = abi.encodeWithSignature(
-    //         "deploy(bytes,uint256)", implInitCode, SALT_COLLECTOR_IMPL
-    //     );
-    //     addToBatch(CREATE2_FACTORY, 0, deployImplCalldata);
-
-    //     // Add batch call: Deploy proxy
-    //     bytes memory deployProxyCalldata = abi.encodeWithSignature(
-    //         "deploy(bytes,uint256)", proxyInitCode, SALT_PROXY
-    //     );
-    //     addToBatch(CREATE2_FACTORY, 0, deployProxyCalldata);
-
-    //     // Log predictions
-    //     console.log("Predicted Collector Impl Address:", implAddr);
-    //     proxyAddr = computeCreate2Address(
-    //         SALT_PROXY, keccak256(proxyInitCode), CREATE2_FACTORY
-    //     );
-    //     console.log("Predicted Proxy Address:", proxyAddr);
-    // }
-
-    // function _upgradeInfrared(
-    //     address _infraredProxy,
-    //     address proxyAddr
-    // ) internal {
-    //     // Deploy new Infrared impl
-    //     bytes memory infraredImplCode = type(InfraredV1_7).creationCode;
-    //     bytes memory infraredImplInitCode = abi.encodePacked(infraredImplCode);
-    //     address infraredImplAddr = computeCreate2Address(
-    //         SALT_INFRARED_IMPL, keccak256(infraredImplInitCode), CREATE2_FACTORY
-    //     );
-
-    //     bytes memory deployInfraredImplCalldata = abi.encodeWithSignature(
-    //         "deploy(bytes,uint256)", infraredImplInitCode, SALT_INFRARED_IMPL
-    //     );
-    //     addToBatch(CREATE2_FACTORY, 0, deployInfraredImplCalldata);
-
-    //     // Call upgrade and initialize
-    //     bytes memory initializerData = abi.encodeCall(
-    //         InfraredV1_7.initializeV1_7, (proxyAddr)
-    //     );
-    //     bytes memory upgradeData = abi.encodeWithSignature(
-    //         "upgradeToAndCall(address,bytes)", infraredImplAddr, initializerData
-    //     );
-    //     addToBatch(_infraredProxy, 0, upgradeData);
-
-    //     console.log("Predicted Infrared Impl Address:", infraredImplAddr);
-    // }
 
     // Helper to compute CREATE2 address (from Foundry's vm)
     function computeCreate2Address(

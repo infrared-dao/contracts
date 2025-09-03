@@ -32,9 +32,7 @@ contract InfraredV1_5UpgradeTest is HelperForkTest {
         _loadValidatorData();
 
         // Create and select mainnet fork with specified block number
-        // mainnetFork = vm.createFork(MAINNET_RPC_URL, 4143138);
-        mainnetFork = vm.createFork(MAINNET_RPC_URL);
-        vm.selectFork(mainnetFork);
+        mainnetFork = vm.createSelectFork(MAINNET_RPC_URL, 4143138);
 
         // Initialize Berachain and Infrared contract references
         _initializeContractReferences();

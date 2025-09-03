@@ -34,8 +34,7 @@ contract BeaconRootsTest is HelperForkTest {
 
         // Create and select mainnet fork
         // 6186162
-        mainnetFork = vm.createFork(MAINNET_RPC_URL, 6187537);
-        vm.selectFork(mainnetFork);
+        mainnetFork = vm.createSelectFork(MAINNET_RPC_URL, 6187537);
 
         // Initialize Berachain and Infrared contract references
         _initializeContractReferences();

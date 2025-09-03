@@ -309,7 +309,6 @@ contract HarvestBaseCollectorTest is Helper {
         vm.deal(address(harvestBaseCollector), sweepAmount);
 
         uint256 initialReceiverBal = address(receivor).balance;
-        uint256 initialContractBal = address(harvestBaseCollector).balance;
 
         vm.prank(keeper);
         harvestBaseCollector.sweep();
@@ -326,8 +325,6 @@ contract HarvestBaseCollectorTest is Helper {
         deal(address(wbera), sweepAmount);
 
         uint256 initialReceiverBal = address(receivor).balance;
-        uint256 initialContractWberaBal =
-            wbera.balanceOf(address(harvestBaseCollector));
 
         vm.prank(keeper);
         harvestBaseCollector.sweep();

@@ -3,17 +3,18 @@
 
 ## Infrared Contracts
 
-| Contract                   | Implementation Address                       | Proxy Address                                |
-|----------------------------|----------------------------------------------|----------------------------------------------|
+| Contract                   | Address                                      |
+|----------------------------|----------------------------------------------|
 | iBGT                       | `0xac03CABA51e17c86c921E1f6CBFBdC91F8BB2E6b` |                                              |
 | ibgtVault                  | `0x4EF0c533D065118907f68e6017467Eb05DBb2c8C` |                                              |
-| Infrared                   | `0x559d1347242F350bDc44f99C729984Bfb188092f` | `0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126` |
-| BribeCollector             | `0x61bd35FBEC49B144A1953f48f84ef8d2B321Da40` | `0x8d44170e120B80a7E898bFba8cb26B01ad21298C` |
-| InfraredDistributor        | `0x742EbBF91A37064e89E5628D139070B73aa90247` | `0x1fAD980dfafF71E3Fdd9bef643ab2Ff2BdC4Ccd6` |
-| iBERA                      | `0x94B5d53483117FE3832c8E08d2a71Ab8AB546d81` | `0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5` |
-| InfraredBERADepositor      | `0xef26bcFb9ce4E807465A46087e9DD73b652feF87` | `0x04CddC538ea65908106416986aDaeCeFD4CAB7D7` |
-| InfraredBERAWithdraworLite | `0x725a5576232220132F129f08E4A9EB7d4Be92444` | `0x8c0E122960dc2E97dc0059c07d6901Dce72818E1` |
-| InfraredBERAFeeReceivor    | `0xAB2dADD15Af962b036d361849c024A3F70B18254` | `0xf6a4A6aCECd5311327AE3866624486b6179fEF97` |
+| Infrared                   | `0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126` |
+| BribeCollector             | `0x8d44170e120B80a7E898bFba8cb26B01ad21298C` |
+| InfraredDistributor        | `0x1fAD980dfafF71E3Fdd9bef643ab2Ff2BdC4Ccd6` |
+| iBERA                      | `0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5` |
+| InfraredBERADepositor      | `0x04CddC538ea65908106416986aDaeCeFD4CAB7D7` |
+| InfraredBERAWithdraworLite | `0x8c0E122960dc2E97dc0059c07d6901Dce72818E1` |
+| InfraredBERAFeeReceivor    | `0xf6a4A6aCECd5311327AE3866624486b6179fEF97` |
+| IbgtRedeemer               | `0x3E8edA9821C588A57200B790204C0066A1681046` |
 
 ---
 

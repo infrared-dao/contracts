@@ -28,7 +28,7 @@ contract InfraredBERAV2Test is InfraredBERAV2BaseTest {
     /*                    INITIALIZATION TESTS                    */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function testInitializeV2() public {
+    function testInitializeV2() public view {
         // Should start with withdrawals enabled and burn fee set
         assertTrue(ibera.withdrawalsEnabled());
         assertEq(ibera.burnFee(), InfraredBERAConstants.MINIMUM_WITHDRAW_FEE);
@@ -53,7 +53,7 @@ contract InfraredBERAV2Test is InfraredBERAV2BaseTest {
     /*              PROOF TIMESTAMP BUFFER TESTS                 */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function testInitializeV2SetsProofTimestampBuffer() public {
+    function testInitializeV2SetsProofTimestampBuffer() public view {
         // proofTimestampBuffer should be initialized to 10 minutes
         assertEq(ibera.proofTimestampBuffer(), 10 minutes);
     }
@@ -891,7 +891,7 @@ contract InfraredBERAV2Test is InfraredBERAV2BaseTest {
     /*                    ERC4626 COMPLIANCE                     */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function testAsset() public {
+    function testAsset() public view {
         assertEq(ibera.asset(), address(0)); // Native BERA
     }
 
@@ -902,11 +902,11 @@ contract InfraredBERAV2Test is InfraredBERAV2BaseTest {
         assertEq(ibera.totalAssets(), ibera.deposits());
     }
 
-    function testMaxDeposit() public {
+    function testMaxDeposit() public view {
         assertEq(ibera.maxDeposit(alice), type(uint256).max);
     }
 
-    function testMaxMint() public {
+    function testMaxMint() public view {
         assertEq(ibera.maxMint(alice), type(uint256).max);
     }
 

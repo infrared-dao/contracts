@@ -240,7 +240,7 @@ contract InfraredInitializationTest is Helper {
             ConfigTypes.FeeType feeType = ConfigTypes.FeeType(i);
 
             // Set the fee
-            vm.prank(infraredGovernance);
+            vm.prank(keeper);
             infrared.updateFee(feeType, testFees[i]);
 
             // Calculate the slot for this fee in the mapping

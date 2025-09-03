@@ -87,7 +87,7 @@ contract InfraredBERAWithdraworTest is InfraredBERAV2BaseTest {
                         INITIALIZATION TESTS
     //////////////////////////////////////////////////////////////*/
 
-    function testInitializeV2() public {
+    function testInitializeV2() public view {
         assertEq(withdrawor.WITHDRAW_PRECOMPILE(), WITHDRAW_PRECOMPILE);
         assertEq(withdrawor.minActivationBalance(), 250_000 ether);
     }

@@ -21,8 +21,7 @@ contract BatchClaimerV2Test is Test {
     address rewardsFactoryAddr;
 
     function setUp() public {
-        mainnetFork = vm.createFork(MAINNET_RPC_URL, blockNumber);
-        vm.selectFork(mainnetFork);
+        mainnetFork = vm.createSelectFork(MAINNET_RPC_URL, blockNumber);
         multi = new BatchClaimerV2_1();
         vm.prank(gov);
         infrared.grantRole(keccak256("KEEPER_ROLE"), address(multi));

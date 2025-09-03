@@ -806,7 +806,7 @@ contract InfraredV1_7 is InfraredUpgradeable, IInfraredV1_7 {
         external
         onlyKeeper
     {
-        _validatorStorage().queueBoosts(
+        ValidatorManagerLib.queueBoosts(
             address(_bgt), address(ibgt), _pubkeys, _amts
         );
         emit QueuedBoosts(msg.sender, _pubkeys, _amts);
@@ -827,7 +827,7 @@ contract InfraredV1_7 is InfraredUpgradeable, IInfraredV1_7 {
     /// @notice Activates queued boosts for `_pubkeys`.
     /// @param _pubkeys   bytes[] memory The pubkeys of the validators to activate boosts for.
     function activateBoosts(bytes[] calldata _pubkeys) external {
-        _validatorStorage().activateBoosts(address(_bgt), _pubkeys);
+        ValidatorManagerLib.activateBoosts(address(_bgt), _pubkeys);
         emit ActivatedBoosts(msg.sender, _pubkeys);
     }
 
@@ -850,7 +850,7 @@ contract InfraredV1_7 is InfraredUpgradeable, IInfraredV1_7 {
         bytes[] calldata _pubkeys,
         uint128[] calldata _amts
     ) external onlyKeeper {
-        _validatorStorage().cancelDropBoosts(address(_bgt), _pubkeys, _amts);
+        ValidatorManagerLib.cancelDropBoosts(address(_bgt), _pubkeys, _amts);
         emit CancelDropBoosts(msg.sender, _pubkeys, _amts);
     }
 

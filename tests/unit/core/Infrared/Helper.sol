@@ -28,6 +28,7 @@ import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {BribeCollector} from "src/core/BribeCollector.sol";
 import {BribeCollectorV1_2} from "src/core/upgrades/BribeCollectorV1_2.sol";
 import {BribeCollectorV1_3} from "src/core/upgrades/BribeCollectorV1_3.sol";
+import {BribeCollectorV1_4} from "src/core/upgrades/BribeCollectorV1_4.sol";
 
 // internal
 import {ERC20, Infrared} from "src/core/Infrared.sol";
@@ -36,6 +37,7 @@ import {InfraredV1_3} from "src/core/upgrades/InfraredV1_3.sol";
 import {InfraredV1_4} from "src/core/upgrades/InfraredV1_4.sol";
 import {InfraredV1_5} from "src/core/upgrades/InfraredV1_5.sol";
 import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
+import {InfraredV1_8} from "src/core/upgrades/InfraredV1_8.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
@@ -291,6 +293,22 @@ abstract contract Helper is POLTest {
         // set auctionBase flag to false for legacy tests
         vm.prank(keeper);
         InfraredV1_7(payable(address(infrared))).toggleAuctionBase();
+
+        // v1.8 upgrade
+        vm.startPrank(infraredGovernance);
+        // upgrade bribe collector to v1.4 (set initial payout token to wbera for legacy tests)
+        BribeCollectorV1_4 bribeCollectorV1_4 = new BribeCollectorV1_4();
+        (success,) = address(collector0).call(
+            abi.encodeWithSignature(
+                "upgradeToAndCall(address,bytes)",
+                address(bribeCollectorV1_4),
+                ""
+            )
+        );
+        require(success, "Upgrade to BribeCollectorV1_4 failed");
+        // infrared v1.8
+        infrared.upgradeToAndCall(address(new InfraredV1_8()), "");
+        vm.stopPrank();
     }
 
     function _upgradeIBeraToV2() internal {

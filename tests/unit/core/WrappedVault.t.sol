@@ -94,7 +94,7 @@ contract WrappedVaultTest is Helper {
     function testClaimRewards() public {
         uint256 rewardsAmount = 100 ether;
         uint256 rewardsDuration = 30 days;
-        setUpGetReward(rewardsAmount, rewardsDuration);
+        setUpGetReward(rewardsAmount);
 
         vm.startPrank(user);
 
@@ -145,9 +145,7 @@ contract WrappedVaultTest is Helper {
         vm.stopPrank();
     }
 
-    function setUpGetReward(uint256 rewardsAmount, uint256 rewardsDuratoin)
-        internal
-    {
+    function setUpGetReward(uint256 rewardsAmount) internal {
         // Setup reward token in the infraredVault and mint rewards
         vm.startPrank(address(infrared));
         deal(address(wbera), address(infrared), rewardsAmount);

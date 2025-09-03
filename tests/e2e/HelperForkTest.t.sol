@@ -39,7 +39,7 @@ import {InfraredDeployer} from "script/InfraredDeployer.s.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 
 contract HelperForkTest is Test {
-    string constant MAINNET_RPC_URL = "https://rpc.berachain.com";
+    string constant MAINNET_RPC_URL = "https://berachain.drpc.org";
 
     uint64 internal constant HISTORY_BUFFER_LENGTH = 8191;
 
@@ -116,8 +116,7 @@ contract HelperForkTest is Test {
 
         // Create and select mainnet fork
         uint256 blockNumber = 1972861;
-        mainnetFork = vm.createFork(MAINNET_RPC_URL, blockNumber);
-        vm.selectFork(mainnetFork);
+        mainnetFork = vm.createSelectFork(MAINNET_RPC_URL, blockNumber);
 
         // Initialize Berachain and Infrared contract references
         _initializeContractReferences();

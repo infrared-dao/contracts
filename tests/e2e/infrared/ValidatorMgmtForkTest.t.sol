@@ -67,8 +67,10 @@ contract ValidatorMgmtForkTest is HelperForkTest {
     function testReplaceValidator() public {
         testAddValidators();
 
-        ValidatorTypes.Validator memory infraredValidator = ValidatorTypes
-            .Validator({pubkey: bytes("dummy"), addr: address(0x99872876234876)});
+        infraredValidator = ValidatorTypes.Validator({
+            pubkey: bytes("dummy"),
+            addr: address(0x99872876234876)
+        });
 
         // move forward beyond buffer length so enough time passed
         vm.roll(block.number + HISTORY_BUFFER_LENGTH + 1);

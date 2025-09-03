@@ -30,8 +30,7 @@ contract InfraredV1_3UpgradeTest is Test {
 
     function setUp() public {
         // Create fork
-        fork = vm.createFork(RPC_URL, 2712485);
-        vm.selectFork(fork);
+        fork = vm.createSelectFork(RPC_URL, 2712485);
 
         // Get the existing Infrared contract
         infrared = Infrared(payable(0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126));

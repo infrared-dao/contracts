@@ -58,8 +58,7 @@ contract ForkTest is Test {
         infrared = Infrared(payable(0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126));
 
         // create fork
-        fork = vm.createFork(RPC_URL);
-        vm.selectFork(fork);
+        fork = vm.createSelectFork(RPC_URL);
 
         // retreive addersses
         infraredVault =

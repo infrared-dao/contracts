@@ -42,8 +42,7 @@ contract ConsensusLayerVerifierTest is HelperForkTest {
 
         // Create and select mainnet fork
         uint256 blockNumber = forkBlockNumber + 1;
-        mainnetFork = vm.createFork(MAINNET_RPC_URL, blockNumber);
-        vm.selectFork(mainnetFork);
+        mainnetFork = vm.createSelectFork(MAINNET_RPC_URL, blockNumber);
 
         // Initialize Berachain and Infrared contract references
         _initializeContractReferences();

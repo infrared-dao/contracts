@@ -4,7 +4,6 @@ pragma solidity 0.8.26;
 import {Errors, Upgradeable} from "src/utils/Upgradeable.sol";
 
 import {IInfrared} from "src/interfaces/IInfrared.sol";
-import {IInfraredUpgradeable} from "src/interfaces/IInfraredUpgradeable.sol";
 
 /**
  * @title InfraredUpgradeable

@@ -53,30 +53,18 @@ contract RedeemerTest is Test {
     MockInfrared mockInfrared;
 
     address user = address(0x123);
-    address redeemerAddr = address(0x456);
-    address[] redeemers = new address[](1);
 
     function setUp() public {
         mockIbgt = new MockIBGT();
         mockBgt = new MockBGT();
         mockInfrared = new MockInfrared(address(mockIbgt));
 
-        redeemers[0] = redeemerAddr;
-        redeemer = new Redeemer(
-            address(this), address(mockBgt), address(mockInfrared), redeemers
-        );
+        redeemer = new Redeemer(address(mockBgt), address(mockInfrared));
 
         // Mint some iBGT to user
-        // mockIbgt.mint(user, 1000 ether);
-        mockIbgt.mint(redeemerAddr, 1000 ether);
+        mockIbgt.mint(user, 1000 ether);
         // Set totalSupply implicitly via mint
         mockIbgt.mint(address(this), 1000 ether); // For totalSupply = 2000 ether
-    }
-
-    function test_OnlyRedeemerCanRedeem() public {
-        vm.prank(user); // Non-redeemer
-        vm.expectRevert(Redeemer.Unauthorized.selector);
-        redeemer.redeemIbgtForBera(100 ether);
     }
 
     function test_RedeemSuccess() public {
@@ -85,21 +73,21 @@ contract RedeemerTest is Test {
         mockBgt.setQueuedBoost(address(mockInfrared), 500 ether);
 
         // User approves redeemer
-        vm.prank(redeemerAddr);
+        vm.prank(user);
         mockIbgt.approve(address(redeemer), 100 ether);
 
         // Deal ETH to mockInfrared for simulation
         vm.deal(address(mockInfrared), 100 ether);
 
-        uint256 userBalanceBefore = redeemerAddr.balance;
+        uint256 userBalanceBefore = user.balance;
         // Call as redeemer
-        vm.prank(redeemerAddr);
+        vm.prank(user);
         redeemer.redeemIbgtForBera(100 ether);
 
         // Assertions
         assertEq(mockInfrared.redeemedAmount(), 100 ether);
-        assertEq(redeemerAddr.balance, userBalanceBefore + 100 ether);
-        assertEq(mockIbgt.balanceOf(redeemerAddr), 900 ether); // Burned 100
+        assertEq(user.balance, userBalanceBefore + 100 ether);
+        assertEq(mockIbgt.balanceOf(user), 900 ether); // Burned 100
     }
 
     function test_InsufficientUnboostedReverts() public {
@@ -107,16 +95,16 @@ contract RedeemerTest is Test {
         mockBgt.setBoosts(address(mockInfrared), 1400 ether);
         mockBgt.setQueuedBoost(address(mockInfrared), 600 ether);
 
-        vm.prank(redeemerAddr);
+        vm.prank(user);
         mockIbgt.approve(address(redeemer), 100 ether);
 
-        vm.prank(redeemerAddr);
+        vm.prank(user);
         vm.expectRevert(Redeemer.InsufficientUnboostedBGT.selector);
         redeemer.redeemIbgtForBera(100 ether);
     }
 
     function test_ZeroAmountReverts() public {
-        vm.prank(redeemerAddr);
+        vm.prank(user);
         vm.expectRevert(Redeemer.InvalidAmount.selector);
         redeemer.redeemIbgtForBera(0);
     }
@@ -125,13 +113,13 @@ contract RedeemerTest is Test {
         // Setup as in success test
         mockBgt.setBoosts(address(mockInfrared), 500 ether);
         mockBgt.setQueuedBoost(address(mockInfrared), 500 ether);
-        vm.prank(redeemerAddr);
+        vm.prank(user);
         mockIbgt.approve(address(redeemer), 100 ether);
         vm.deal(address(mockInfrared), 100 ether);
 
-        vm.prank(redeemerAddr);
+        vm.prank(user);
         vm.expectEmit(true, true, false, true);
-        emit Redeemer.IbgtRedeemed(redeemerAddr, 100 ether);
+        emit Redeemer.IbgtRedeemed(user, 100 ether);
         redeemer.redeemIbgtForBera(100 ether);
     }
 }

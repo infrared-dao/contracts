@@ -13,7 +13,6 @@ import {IBerachainBGT} from "src/interfaces/IBerachainBGT.sol";
 import {IInfrared} from "src/interfaces/IInfrared.sol";
 import {IReward} from "src/voting/interfaces/IReward.sol";
 import {IVoter} from "src/voting/interfaces/IVoter.sol";
-import {DataTypes} from "src/utils/DataTypes.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
 import {IInfraredGovernanceToken} from
@@ -730,6 +729,57 @@ library RewardsLib {
             $,
             IInfraredVault(ibgtVault),
             wbera,
+            voter,
+            amtIbgtVault,
+            feeTotal,
+            feeProtocol,
+            rewardsDuration
+        );
+    }
+
+    /// @notice Callback from the BribeCollector to payout the iBGT bribes were auctioned off for
+    ///     ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/core/BribeCollector.sol#L87
+    /// @param $        Storage pointer for reward accumulators
+    /// @param _amount          The amount of iBGT our bribes were auctioned off for
+    /// @param ibgt            The address of the iBGT token
+    /// @param ibgtVault        The address of the InfraredBGT vault
+    /// @param voter            The address of the voter (address(0) if IR token is not live)
+    /// @param harvestBaseCollector The address of base collector auction contract
+    /// @param rewardsDuration  The duration of the rewards
+    ///
+    /// @notice iBGT is split between the iBERA product (where it is redeemed for BERA) and the rest is sent to the IBGT vault.
+    /// @return amtInfraredBERA The amount of iBGT sent to the iBERA product
+    /// @return amtIbgtVault    The amount of iBGT sent to the IBGT vault
+    function collectBribesInIBGT(
+        RewardsStorage storage $,
+        uint256 _amount,
+        address ibgt,
+        address ibgtVault,
+        address voter,
+        address harvestBaseCollector,
+        uint256 rewardsDuration
+    ) external returns (uint256 amtInfraredBERA, uint256 amtIbgtVault) {
+        // transfer iBGT from bribe collector
+        ERC20(ibgt).safeTransferFrom(msg.sender, address(this), _amount);
+
+        // determine amount to send to iBERA and IBGT vault
+        amtInfraredBERA = (_amount * $.bribeSplitRatio) / UNIT_DENOMINATOR;
+        amtIbgtVault = _amount - amtInfraredBERA;
+
+        // Send iBGT to harvestBaseCollector to auction for BERA to send to IBERA receivor for compounding
+        ERC20(ibgt).safeTransfer(harvestBaseCollector, amtInfraredBERA);
+
+        // Get Fee totals (voter + protocol)
+        uint256 feeTotal =
+            $.fees[uint256(ConfigTypes.FeeType.HarvestBribesFeeRate)];
+        uint256 feeProtocol =
+            $.fees[uint256(ConfigTypes.FeeType.HarvestBribesProtocolRate)];
+
+        // Charge fees and notify rewards
+        _handleTokenRewardsForVault(
+            $,
+            IInfraredVault(ibgtVault),
+            ibgt,
             voter,
             amtIbgtVault,
             feeTotal,
