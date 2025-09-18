@@ -112,9 +112,22 @@ contract InfraredMultisigGovernance is BatchScript {
             "setPayoutAmount(uint256)", _newPayoutAmount
         );
         addToBatch(collector, 0, data);
-        vm.startBroadcast();
         executeBatch(true);
-        vm.stopBroadcast();
+    }
+
+    function setPayoutToken(
+        address safe,
+        address collector,
+        address _newPayoutToken
+    ) external isBatch(safe) {
+        if (
+            safe == address(0) || collector == address(0)
+                || _newPayoutToken == address(0)
+        ) revert();
+        bytes memory data =
+            abi.encodeWithSignature("setPayoutToken(address)", _newPayoutToken);
+        addToBatch(collector, 0, data);
+        executeBatch(true);
     }
 
     // Vault Management
