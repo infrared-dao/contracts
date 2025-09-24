@@ -5,7 +5,8 @@ import "forge-std/Script.sol";
 
 import {BatchScript} from "@forge-safe/BatchScript.sol";
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
-import {Infrared, ValidatorTypes} from "src/core/Infrared.sol";
+import {IInfraredVault, Infrared, ValidatorTypes} from "src/core/Infrared.sol";
+import {IMultiRewards} from "src/interfaces/IMultiRewards.sol";
 import {BribeCollector} from "src/core/BribeCollector.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
 import {Voter} from "src/voting/Voter.sol";
@@ -160,6 +161,64 @@ contract InfraredMultisigGovernance is BatchScript {
         // vm.stopBroadcast();
     }
 
+    function removeReward(
+        address safe,
+        address payable infrared,
+        address _stakingToken,
+        address _rewardsToken
+    ) external isBatch(safe) {
+        bytes memory data = abi.encodeWithSignature(
+            "removeReward(address,address)", _stakingToken, _rewardsToken
+        );
+        addToBatch(infrared, 0, data);
+        executeBatch(true);
+
+        // IInfraredVault vault = Infrared(infrared).vaultRegistry(_stakingToken);
+        // vault.getAllRewardTokens();
+    }
+
+    function multiSendToken(
+        address safe,
+        address token,
+        uint256 totaAmount,
+        address[] calldata users,
+        uint256[] calldata amounts
+    ) external isBatch(safe) {
+        uint256 _totalAmount;
+
+        if (users.length != amounts.length) revert();
+
+        for (uint256 i; i < users.length; i++) {
+            _totalAmount += amounts[i];
+            // if (isContract(users[i])) {
+            //     console.log("Address is contract %s", users[i]);
+            //     console.log("Amount %s", amounts[i]);
+            //     continue;
+            // }
+            bytes memory data = abi.encodeWithSignature(
+                "transfer(address,uint256)", users[i], amounts[i]
+            );
+            addToBatch(token, 0, data);
+        }
+
+        // safety check
+        if (_totalAmount != totaAmount) revert();
+
+        executeBatch(true);
+    }
+
+    function isContract(address target)
+        public
+        view
+        returns (bool _isContract)
+    {
+        if (target.code.length == 0) {
+            _isContract = false;
+        } else {
+            _isContract = true;
+        }
+    }
+
     function updateWhiteListedRewardTokens(
         address safe,
         address payable infrared,
@@ -276,16 +335,45 @@ contract InfraredMultisigGovernance is BatchScript {
         address _rewardsToken,
         uint256 _rewardsDuration
     ) external isBatch(safe) {
-        bytes memory data = abi.encodeWithSignature(
+        // safety checks b/c of bug in _setRewardDuration when period finish has passed
+        // conditions to be met
+        // block.timestamp < period finish (note this cannot be guarenteed as execution time is lagged by multisig)
+        // or prior rate is zero
+        // otherwise bundle a small `addIncentives` tx to satisy above
+
+        IInfraredVault vault = Infrared(infrared).vaultRegistry(_stakingToken);
+        // get current / prior reward rate
+        (,,, uint256 rewardRate,,,) =
+            IMultiRewards(address(vault)).rewardData(_rewardsToken);
+
+        bytes memory data;
+
+        if (rewardRate > 0) {
+            // approve infrared to spend minimal reward amount to extend period finish and / or reduce rate to zero
+            // note assumes some balance of reward token in multisig
+            data = abi.encodeWithSignature(
+                "approve(address,uint256)", address(infrared), 1
+            );
+            addToBatch(_rewardsToken, 0, data);
+            // add incentives
+            data = abi.encodeWithSignature(
+                "addIncentives(address,address,uint256)",
+                _stakingToken,
+                _rewardsToken,
+                1
+            );
+            addToBatch(infrared, 0, data);
+        }
+        // now safe to update reward duration as either previous rate is zero or period finish has been extended
+        data = abi.encodeWithSignature(
             "updateRewardsDurationForVault(address,address,uint256)",
             _stakingToken,
             _rewardsToken,
             _rewardsDuration
         );
         addToBatch(infrared, 0, data);
-        vm.startBroadcast();
+
         executeBatch(true);
-        vm.stopBroadcast();
     }
 
     function updateRewardDurationsForAllVaults(
