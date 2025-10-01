@@ -85,5 +85,6 @@ int_types = "long"
 title = "Infrared Smart Contract Documentation"
 
 [lint]
+lint_on_build = false
 exclude_lints = ["unused-import","screaming-snake-case-immutable","screaming-snake-case-const","mixed-case-variable","mixed-case-function","asm-keccak256"]
 ignore = ["tests/**/*","script/**/*","src/voting/**/*"]

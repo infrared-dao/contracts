@@ -15,6 +15,7 @@
 | InfraredBERAWithdraworLite | `0x8c0E122960dc2E97dc0059c07d6901Dce72818E1` |
 | InfraredBERAFeeReceivor    | `0xf6a4A6aCECd5311327AE3866624486b6179fEF97` |
 | IbgtRedeemer               | `0x3E8edA9821C588A57200B790204C0066A1681046` |
+| BYUSD reward distributor   | `0x2114079132C56827237f581eF1a0625680d29576` |
 
 ---
 
