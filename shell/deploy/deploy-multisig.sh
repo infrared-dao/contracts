@@ -18,7 +18,6 @@ WBERA="0x2C2F301f380dDc9c36c206DC3df8EA8688419cC1"
 HONEY="0xd137593CDB341CcC78426c54Fb98435C60Da193c"
 
 # Cartio RPC URL
-# RPC_URL="https://amberdew-eth-cartio.berachain.com"
 RPC_URL="https://bartio.rpc.berachain.com"
 
 # VERIFYER_URL='https://api.routescan.io/v2/network/testnet/evm/80000/etherscan'
