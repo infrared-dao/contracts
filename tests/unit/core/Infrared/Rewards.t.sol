@@ -237,7 +237,9 @@ contract InfraredRewardsTest is Helper {
         uint256 rewardsDuration = 7 days;
         vm.startPrank(address(infrared));
         for (uint160 i = 0; i < 9; i++) {
-            infraredVault.addReward(address(i + 900), rewardsDuration);
+            infraredVault.addReward(
+                address(new MockERC20("MockAsset", "MCK", 18)), rewardsDuration
+            );
         }
 
         // Setup: Configure RED token and mint rate

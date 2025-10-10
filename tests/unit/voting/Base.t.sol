@@ -113,6 +113,7 @@ abstract contract Base is Test {
         voter.initialize(
             address(infrared), address(escrow), address(this), keeper
         );
+        infrared.setIBGT(address(ibgt));
 
         escrow.setVoterAndDistributor(address(voter), keeper);
         escrow.setAllowedManager(keeper);

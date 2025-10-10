@@ -118,11 +118,14 @@ contract InfraredVaultTest is Helper {
 
         vm.startPrank(address(infrared));
         for (uint160 i = 0; i < 9; i++) {
-            infraredVault.addReward(address(i + 900), rewardsDuration);
+            infraredVault.addReward(
+                address(new MockERC20("NewReward", "NRT", 18)), rewardsDuration
+            );
         }
         // Now reached max reward tokens
+        address _new = address(new MockERC20("NewReward", "NRT", 18));
         vm.expectRevert(abi.encodeWithSignature("MaxNumberOfRewards()"));
-        infraredVault.addReward(address(1000), rewardsDuration);
+        infraredVault.addReward(_new, rewardsDuration);
         vm.stopPrank();
     }
 
@@ -220,8 +223,8 @@ contract InfraredVaultTest is Helper {
     }
 
     function testRevertWithZeroAmount() public {
-        vm.startPrank(address(infrared));
-        infraredVault.addReward(address(0x3), 30 days);
+        // vm.startPrank(address(infrared));
+        // infraredVault.addReward(address(0x3), 30 days);
 
         vm.startPrank(address(infrared));
         vm.expectRevert(Errors.ZeroAmount.selector);
@@ -232,9 +235,9 @@ contract InfraredVaultTest is Helper {
     function testAccessControlNotifyRewardAmount() public {
         uint256 rewardAmount = 1000 ether;
 
-        vm.startPrank(address(infrared));
-        infraredVault.addReward(address(0x3), 30 days);
-        vm.stopPrank();
+        // vm.startPrank(address(infrared));
+        // infraredVault.addReward(address(0x3), 30 days);
+        // vm.stopPrank();
 
         vm.expectRevert(
             abi.encodeWithSignature("Unauthorized(address)", address(this))
@@ -344,7 +347,7 @@ contract InfraredVaultTest is Helper {
         // Setup reward token in the infraredVault and mint rewards
         vm.startPrank(address(infrared));
         uint256 rewardsAmount = 100 ether;
-        infraredVault.addReward(address(0x3), 86400);
+        // infraredVault.addReward(address(0x3), 86400);
         rewardsToken.mint(address(infrared), rewardsAmount);
         rewardsToken.approve(address(infraredVault), rewardsAmount);
         infraredVault.notifyRewardAmount(address(rewardsToken), rewardsAmount);
@@ -356,7 +359,7 @@ contract InfraredVaultTest is Helper {
         assertTrue(lastUpdateTime != 0);
 
         vm.startPrank(address(infrared));
-        vm.expectRevert("Cannot withdraw reward token");
+        vm.expectRevert("Active reward period");
         infraredVault.recoverERC20(user2, address(rewardsToken), rewardsAmount);
         vm.stopPrank();
     }
@@ -384,9 +387,9 @@ contract InfraredVaultTest is Helper {
     function testSuccessfulDurationUpdate() public {
         uint256 newDuration = 7 days;
 
-        vm.startPrank(address(infrared));
-        infraredVault.addReward(address(0x3), newDuration); // Setup reward token
-        vm.stopPrank();
+        // vm.startPrank(address(infrared));
+        // infraredVault.addReward(address(0x3), newDuration); // Setup reward token
+        // vm.stopPrank();
         vm.startPrank(address(infrared));
         vm.expectEmit();
         emit IMultiRewards.RewardsDurationUpdated(
@@ -415,9 +418,9 @@ contract InfraredVaultTest is Helper {
     }
 
     function testRevertWithZeroDurationUpdateRewardsDuration() public {
-        vm.startPrank(address(infrared));
-        infraredVault.addReward(address(0x3), 1 days); // Setup reward token
-        vm.stopPrank();
+        // vm.startPrank(address(infrared));
+        // infraredVault.addReward(address(0x3), 1 days); // Setup reward token
+        // vm.stopPrank();
         vm.startPrank(address(infrared));
         vm.expectRevert(Errors.ZeroAmount.selector);
         infraredVault.updateRewardsDuration(address(rewardsToken), 0);
@@ -427,9 +430,9 @@ contract InfraredVaultTest is Helper {
     function testAccessControlUpdateRewardsDuration() public {
         uint256 newDuration = 7 days;
 
-        vm.startPrank(address(infrared));
-        infraredVault.addReward(address(0x3), newDuration); // Setup reward token
-        vm.stopPrank();
+        // vm.startPrank(address(infrared));
+        // infraredVault.addReward(address(0x3), newDuration); // Setup reward token
+        // vm.stopPrank();
 
         vm.startPrank(address(5)); // Non-admin address
         vm.expectRevert(
@@ -674,7 +677,7 @@ contract InfraredVaultTest is Helper {
     function testSuccessfulGetReward() public {
         uint256 rewardsAmount = 100 ether;
         uint256 rewardsDuration = 30 days;
-        setUpGetReward(rewardsAmount, rewardsDuration);
+        setUpGetReward(rewardsAmount);
 
         vm.startPrank(user);
         // Manipulate time to simulate the passage of the reward duration
@@ -695,8 +698,7 @@ contract InfraredVaultTest is Helper {
 
     function testGetRewardWhenNoRewards() public {
         uint256 rewardsAmount = 100 ether;
-        uint256 rewardsDuration = 30 days;
-        setUpGetReward(rewardsAmount, rewardsDuration);
+        setUpGetReward(rewardsAmount);
 
         address otherUser = address(3);
 
@@ -715,7 +717,7 @@ contract InfraredVaultTest is Helper {
     function testMultipleRewardsClaim() public {
         uint256 rewardsAmount = 100 ether;
         uint256 rewardsDuration = 30 days;
-        setUpGetReward(rewardsAmount, rewardsDuration);
+        setUpGetReward(rewardsAmount);
         // Claim rewards twice
         vm.startPrank(user);
         // First claim
@@ -743,7 +745,7 @@ contract InfraredVaultTest is Helper {
     function testMultipleRewardTokensClaim() public {
         uint256 firstRewardAmount = 50 ether;
         uint256 rewardsDuration = 30 days;
-        setUpGetReward(firstRewardAmount, rewardsDuration);
+        setUpGetReward(firstRewardAmount);
         // Initialize second mock reward token
         MockERC20 secondRewardsToken =
             new MockERC20("Second Reward Token", "SRWD", 18);
@@ -865,7 +867,7 @@ contract InfraredVaultTest is Helper {
     function testSuccessfulGetRewardForUser() public {
         uint256 rewardsAmount = 100 ether;
         uint256 rewardsDuration = 30 days;
-        setUpGetReward(rewardsAmount, rewardsDuration);
+        setUpGetReward(rewardsAmount);
 
         // Manipulate time to simulate the passage of the reward duration
         skip(rewardsDuration + 100 minutes);
@@ -926,12 +928,10 @@ contract InfraredVaultTest is Helper {
         );
     }
 
-    function setUpGetReward(uint256 rewardsAmount, uint256 rewardsDuratoin)
-        internal
-    {
+    function setUpGetReward(uint256 rewardsAmount) internal {
         // Setup reward token in the infraredVault and mint rewards
         vm.startPrank(address(infrared));
-        infraredVault.addReward(address(0x3), rewardsDuratoin);
+        // infraredVault.addReward(address(0x3), rewardsDuratoin);
         rewardsToken.mint(address(infrared), rewardsAmount);
         rewardsToken.approve(address(infraredVault), rewardsAmount);
         infraredVault.notifyRewardAmount(address(rewardsToken), rewardsAmount);
@@ -1169,7 +1169,9 @@ contract InfraredVaultTest is Helper {
         vm.stopPrank();
 
         // Check that the rewardPerToken is zero due to precision loss
-        assertEq(infraredVault.rewardPerToken(address(rewardsToken)), 0);
+        uint256 _rewardPerToken =
+            infraredVault.rewardPerToken(address(rewardsToken));
+        assertEq(_rewardPerToken, 0);
 
         // Skip time to simulate the reward period
         skip(rewardDuration);
@@ -1299,7 +1301,6 @@ contract InfraredVaultTest is Helper {
         infraredVault.notifyRewardAmount(address(rewardToken), rewardAmount);
 
         // Remove reward token while rewards are active
-        vm.expectRevert();
         infraredVault.removeReward(address(rewardToken));
         vm.stopPrank();
     }

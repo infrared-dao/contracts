@@ -66,6 +66,7 @@ contract MultiRewardsTest is Test {
     address alice;
     address bob;
     address charlie;
+    address public dummy = address(0xDEAD); // Dummy for updates without claiming
 
     function setUp() public {
         // Deploy mock tokens
@@ -85,9 +86,11 @@ contract MultiRewardsTest is Test {
         charlie = address(0x3);
 
         // Mint tokens for testing
-        rewardToken.mint(alice, 1e20);
+        baseToken.mint(alice, type(uint256).max / 2);
+        rewardToken.mint(alice, type(uint256).max / 2);
+        rewardToken2.mint(alice, type(uint256).max / 2);
+
         rewardToken.mint(bob, 1e20);
-        rewardToken2.mint(alice, 1e20);
         rewardToken2.mint(charlie, 1e20);
         baseToken.mint(bob, 1e20);
         baseToken.mint(charlie, 1e20);
@@ -529,22 +532,88 @@ contract MultiRewardsTest is Test {
     function testFuzz_SetRewardsDuration(
         uint256 initialReward,
         uint256 initialDuration,
-        uint256 newDuration
+        uint256 newDuration,
+        uint256 newReward
     ) public {
         vm.assume(initialDuration > 0 && initialDuration < 52 weeks);
         vm.assume(newDuration > 0 && newDuration < 52 weeks);
         vm.assume(initialReward > 0 && initialReward < 1e20);
         vm.assume(initialReward > initialDuration); // Ensure non-zero rate
+        vm.assume(newReward > newDuration && newReward < 1e24);
 
         vm.startPrank(alice);
         multiRewards.addReward(address(rewardToken), alice, initialDuration);
         rewardToken.mint(alice, initialReward);
         rewardToken.approve(address(multiRewards), initialReward);
         multiRewards.notifyRewardAmount(address(rewardToken), initialReward);
-
-        skip(initialDuration);
-        multiRewards.updateRewardsDuration(address(rewardToken), newDuration);
         vm.stopPrank();
+
+        (
+            address rewardsDistributor,
+            uint256 rewardsDuration,
+            uint256 periodFinish,
+            uint256 rewardRate,
+            uint256 lastUpdateTime,
+            uint256 rewardPerTokenStored,
+            uint256 rewardResidual
+        ) = multiRewards.rewardData(address(rewardToken));
+
+        assertEq(rewardRate, initialReward / initialDuration);
+        assertEq(rewardPerTokenStored, 0);
+        assertEq(rewardResidual, initialReward % initialDuration);
+        assertEq(lastUpdateTime, block.timestamp);
+        assertEq(periodFinish, block.timestamp + initialDuration);
+        assertEq(rewardsDuration, initialDuration);
+        assertEq(rewardsDistributor, alice);
+
+        skip(initialDuration + 2);
+        multiRewards.updateRewardsDuration(address(rewardToken), newDuration);
+
+        (
+            rewardsDistributor,
+            rewardsDuration,
+            periodFinish,
+            rewardRate,
+            lastUpdateTime,
+            rewardPerTokenStored,
+            rewardResidual
+        ) = multiRewards.rewardData(address(rewardToken));
+
+        assertEq(rewardRate, initialReward / initialDuration);
+        assertEq(rewardPerTokenStored, 0);
+        assertEq(rewardResidual, initialReward % initialDuration);
+        assertLt(lastUpdateTime, block.timestamp);
+        assertLt(periodFinish, block.timestamp);
+        assertEq(rewardsDuration, newDuration);
+        assertEq(rewardsDistributor, alice);
+
+        rewardToken.mint(alice, newReward);
+        vm.startPrank(alice);
+        rewardToken.approve(address(multiRewards), newReward);
+        multiRewards.notifyRewardAmount(address(rewardToken), newReward);
+        vm.stopPrank();
+
+        (
+            rewardsDistributor,
+            rewardsDuration,
+            periodFinish,
+            rewardRate,
+            lastUpdateTime,
+            rewardPerTokenStored,
+            rewardResidual
+        ) = multiRewards.rewardData(address(rewardToken));
+
+        uint256 newRate =
+            (newReward + initialReward % initialDuration) / newDuration;
+        uint256 newRes =
+            (newReward + initialReward % initialDuration) % newDuration;
+        assertEq(rewardRate, newRate);
+        assertEq(rewardPerTokenStored, 0);
+        assertEq(rewardResidual, newRes);
+        assertEq(lastUpdateTime, block.timestamp);
+        assertEq(periodFinish, block.timestamp + newDuration);
+        assertEq(rewardsDuration, newDuration);
+        assertEq(rewardsDistributor, alice);
     }
 
     function testFuzz_GetReward(uint256 rewardAmount, uint256 timeElapsed)
@@ -575,6 +644,135 @@ contract MultiRewardsTest is Test {
         // Check Bob's reward balance
         uint256 bobRewardBalance = rewardToken.balanceOf(bob);
         assertGt(bobRewardBalance, 0);
+    }
+
+    function testLowDecimalHighTVLPrecision() public {
+        MockERC20 lowReward = new MockERC20("USDC", "USDC", 6);
+
+        vm.prank(alice);
+        multiRewards.addReward(address(lowReward), alice, 86400); // 1 day duration
+
+        uint256 smallReward = 10 ** 6; // 1 USDC in units
+        uint256 duration = 86400;
+        uint256 expected = smallReward - (smallReward % duration); // Account for notify residual
+
+        lowReward.mint(alice, smallReward);
+        vm.prank(alice);
+        lowReward.approve(address(multiRewards), smallReward);
+        vm.prank(alice);
+        multiRewards.notifyRewardAmount(address(lowReward), smallReward);
+
+        // High TVL stake
+        uint256 highTVL = 10 ** 27; // 10^27 totalSupply
+        baseToken.mint(bob, highTVL);
+        vm.prank(bob);
+        baseToken.approve(address(multiRewards), highTVL);
+        vm.prank(bob);
+        multiRewards.stake(highTVL);
+
+        // Advance time (full period)
+        skip(86400);
+
+        // Check rewardPerToken increments (due to dynamic scaling)
+        uint256 rpt = multiRewards.rewardPerToken(address(lowReward));
+        assertGt(rpt, 0, "rewardPerToken should increment with scaling");
+
+        // Check earned >0 and matches distributed amount
+        uint256 earnedBob = multiRewards.earned(bob, address(lowReward));
+        assertGt(earnedBob, 0, "Earned rewards should be greater than 0");
+        assertApproxEqAbs(
+            earnedBob,
+            expected,
+            1,
+            "Earned should match distributed amount (excluding notify residual)"
+        );
+
+        // Claim and verify transfer
+        vm.prank(bob);
+        multiRewards.getReward();
+        assertApproxEqAbs(
+            lowReward.balanceOf(bob), expected, 1, "Claimed amount matches"
+        );
+    }
+
+    function testRecoveryAfterPeriodFinish() public {
+        MockERC20 lowReward = new MockERC20("USDC", "USDC", 6);
+
+        vm.prank(alice);
+        multiRewards.addReward(address(lowReward), alice, 86400);
+
+        uint256 rewardAmount = 10 ** 6; // 1 USDC
+        lowReward.mint(alice, rewardAmount);
+        vm.prank(alice);
+        lowReward.approve(address(multiRewards), rewardAmount);
+        vm.prank(alice);
+        multiRewards.notifyRewardAmount(address(lowReward), rewardAmount);
+
+        // No stakes, so all undistributed
+
+        // Advance past period
+        skip(86400 + 1);
+
+        uint256 balBefore = lowReward.balanceOf(alice);
+
+        // Recover as owner
+        vm.prank(alice);
+        multiRewards.recoverERC20(alice, address(lowReward), rewardAmount); // Assume public wrapper added: function recoverERC20(address to, address token, uint256 amount) external onlyOwner { _recoverERC20(to, token, amount); }
+
+        assertEq(
+            lowReward.balanceOf(alice) - balBefore,
+            rewardAmount,
+            "Full amount recovered after period"
+        );
+    }
+
+    function testFuzz_LowDecimalPrecision(
+        uint256 rewardAmount,
+        uint256 timeDelta,
+        uint256 tvl
+    ) public {
+        uint256 duration = 86400;
+        rewardAmount = bound(rewardAmount, duration + 1, 10 ** 12);
+        timeDelta = bound(timeDelta, 2, duration - 1);
+        tvl = bound(tvl, 10 ** 24, 10 ** 30);
+
+        MockERC20 lowReward = new MockERC20("USDC", "USDC", 6);
+
+        vm.prank(alice);
+        multiRewards.addReward(address(lowReward), alice, duration);
+
+        lowReward.mint(alice, rewardAmount);
+        vm.prank(alice);
+        lowReward.approve(address(multiRewards), rewardAmount);
+        vm.prank(alice);
+        multiRewards.notifyRewardAmount(address(lowReward), rewardAmount);
+
+        // Stake high TVL
+        baseToken.mint(bob, tvl);
+        vm.prank(bob);
+        baseToken.approve(address(multiRewards), tvl);
+        vm.prank(bob);
+        multiRewards.stake(tvl);
+
+        skip(timeDelta);
+
+        uint256 rpt = multiRewards.rewardPerToken(address(lowReward));
+        assertGt(rpt, 0, "rewardPerToken increments with scaling");
+
+        uint256 earnedBob = multiRewards.earned(bob, address(lowReward));
+        assertGt(earnedBob, 0, "Earned >0 with low decimals and high TVL");
+
+        // Compute expected
+        uint256 res = rewardAmount % duration;
+        uint256 rate = (rewardAmount - res) / duration;
+        uint256 expected = rate * timeDelta;
+
+        assertApproxEqAbs(
+            earnedBob,
+            expected,
+            expected / 1000 + 1,
+            "Earned approx matches prorated reward"
+        );
     }
 }
 
