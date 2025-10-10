@@ -1,16 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.0;
 
+import {ERC20} from "@solmate/tokens/ERC20.sol";
+import {ERC4626} from "@solmate/tokens/ERC4626.sol";
+import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
+
 import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
-import {ERC20} from "@solmate/tokens/ERC20.sol";
-import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
+
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IBerachainBGTStaker} from "src/interfaces/IBerachainBGTStaker.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 import {IBerachainBGT} from "src/interfaces/IBerachainBGT.sol";
 import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfraredV1_9} from "src/interfaces/upgrades/IInfraredV1_9.sol";
 import {IReward} from "src/voting/interfaces/IReward.sol";
 import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
@@ -775,13 +779,17 @@ library RewardsLib {
         uint256 feeProtocol =
             $.fees[uint256(ConfigTypes.FeeType.HarvestBribesProtocolRate)];
 
+        address wiBGT = IInfraredV1_9(address(this)).wiBGT();
+        uint256 wibgtAmount =
+            ERC4626(wiBGT).deposit(amtIbgtVault, address(this));
+
         // Charge fees and notify rewards
         _handleTokenRewardsForVault(
             $,
             IInfraredVault(ibgtVault),
-            ibgt,
+            wiBGT,
             voter,
-            amtIbgtVault,
+            wibgtAmount,
             feeTotal,
             feeProtocol,
             rewardsDuration

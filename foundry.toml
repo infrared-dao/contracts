@@ -50,7 +50,7 @@ remappings = [
 
 [profile.production]
 optimizer = true
-optimizer_runs = 100
+optimizer_runs = 50
 
 [profile.production.optimizer_details]
 constantOptimizer = true

@@ -10,6 +10,7 @@ import {ERC1967Proxy} from
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 import {BeaconDeposit} from "@berachain/pol/BeaconDeposit.sol";
 
+import {WrappedRewardToken} from "src/periphery/WrappedRewardToken.sol";
 import {Voter} from "src/voting/Voter.sol";
 import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 import {InfraredBERA} from "src/staking/InfraredBERA.sol";
@@ -38,6 +39,7 @@ import {InfraredV1_4} from "src/core/upgrades/InfraredV1_4.sol";
 import {InfraredV1_5} from "src/core/upgrades/InfraredV1_5.sol";
 import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
 import {InfraredV1_8} from "src/core/upgrades/InfraredV1_8.sol";
+import {InfraredV1_9} from "src/core/upgrades/InfraredV1_9.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
@@ -95,6 +97,8 @@ abstract contract Helper is POLTest {
 
     address validator = address(888);
     address validator2 = address(999);
+
+    address wiBGT;
 
     function setUp() public virtual override {
         super.setUp();
@@ -308,6 +312,18 @@ abstract contract Helper is POLTest {
         require(success, "Upgrade to BribeCollectorV1_4 failed");
         // infrared v1.8
         infrared.upgradeToAndCall(address(new InfraredV1_8()), "");
+        vm.stopPrank();
+        // infrared v1.9
+        wiBGT = address(
+            new WrappedRewardToken(
+                ERC20(address(ibgt)), "Wrapped Infrared BGT", "wiBGT"
+            )
+        );
+        vm.startPrank(infraredGovernance);
+        infrared.upgradeToAndCall(
+            address(new InfraredV1_9()),
+            abi.encodeWithSelector(InfraredV1_9.initializeV1_9.selector, wiBGT)
+        );
         vm.stopPrank();
     }
 

@@ -18,3 +18,5 @@
 | iBERARateProvider          | `0x776fD57Bbeb752BDeEB200310faFAe9A155C50a0` |
 | BYUSD reward distributor   | `0x2114079132C56827237f581eF1a0625680d29576` |
 | InfraredBERARateProvider   | `0x776fD57Bbeb752BDeEB200310faFAe9A155C50a0` |
+| wiBGT                      | `0x4f3C10D2bC480638048Fa67a7D00237a33670C1B` |
+| BatchClaimor               | `0x1D6844b42784d3ADbD7fDFa5887d56d22Aa9FB67` |

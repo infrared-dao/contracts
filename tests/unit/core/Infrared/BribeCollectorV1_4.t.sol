@@ -22,7 +22,7 @@ contract BribeCollectorV1_4Test is Helper {
         collectorV4.setPayoutToken(address(ibgt));
     }
 
-    function testInitializeV1_4Success() public {
+    function testInitializeV1_4Success() public view {
         assertEq(collectorV4.payoutToken(), address(ibgt));
         assertEq(collectorV4.payoutAmount(), 10 ether);
     }
@@ -96,7 +96,8 @@ contract BribeCollectorV1_4Test is Helper {
 
         assertEq(honey.balanceOf(recipient), 1 ether);
         assertEq(
-            ibgt.balanceOf(address(ibgtVault)), collectorV4.payoutAmount() / 2
+            ERC20(wiBGT).balanceOf(address(ibgtVault)),
+            collectorV4.payoutAmount() / 2
         );
         assertEq(
             ibgt.balanceOf(
@@ -144,7 +145,8 @@ contract BribeCollectorV1_4Test is Helper {
         assertEq(honey.balanceOf(recipient), 1 ether);
         assertEq(ERC20(mockToken2).balanceOf(recipient), 2 ether);
         assertEq(
-            ibgt.balanceOf(address(ibgtVault)), collectorV4.payoutAmount() / 2
+            ERC20(wiBGT).balanceOf(address(ibgtVault)),
+            collectorV4.payoutAmount() / 2
         );
         assertEq(
             ibgt.balanceOf(
@@ -177,7 +179,8 @@ contract BribeCollectorV1_4Test is Helper {
         vm.stopPrank();
 
         assertEq(
-            ibgt.balanceOf(address(ibgtVault)), collectorV4.payoutAmount() / 2
+            ERC20(wiBGT).balanceOf(address(ibgtVault)),
+            collectorV4.payoutAmount() / 2
         );
         assertEq(
             ibgt.balanceOf(
@@ -303,7 +306,7 @@ contract BribeCollectorV1_4Test is Helper {
         collectorV4.sweepPayoutToken();
 
         assertEq(ibgt.balanceOf(address(collector)), 0);
-        assertEq(ibgt.balanceOf(address(ibgtVault)), 0.5 ether);
+        assertEq(ERC20(wiBGT).balanceOf(address(ibgtVault)), 0.5 ether);
         assertEq(
             ibgt.balanceOf(
                 InfraredV1_8(payable(address(infrared))).harvestBaseCollector()
