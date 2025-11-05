@@ -822,6 +822,6 @@ This project is licensed under the Business Source License - see the [LICENSE](L
 
 **Built with ❤️ by the Infrared team**
 
-[Website](https://infrared.finance) • [Documentation](https://docs.infrared.finance) • [Twitter](https://twitter.com/infrared_dao)
+[Website](https://infrared.finance) • [Documentation](https://docs.infrared.finance) • [X](https://x.com/InfraredFinance)
 
 </div>
