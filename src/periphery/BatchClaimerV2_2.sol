@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.20;
 
 import {Initializable} from
@@ -8,7 +8,7 @@ import {UUPSUpgradeable} from
 import {OwnableUpgradeable} from
     "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {ERC4626} from "@solmate/tokens/ERC4626.sol";
-import {InfraredV1_9} from "src/core/upgrades/InfraredV1_9.sol";
+import {InfraredV1_9} from "src/core/InfraredV1_9.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {IRewardVault as IBerachainRewardsVault} from
     "lib/contracts/src/pol/interfaces/IRewardVault.sol";

@@ -3,14 +3,14 @@ pragma solidity 0.8.26;
 
 import "./Helper.sol";
 import "@forge-std/console2.sol";
-import "src/core/Infrared.sol";
+import "src/depreciated/core/Infrared.sol";
 import "src/core/libraries/ConfigTypes.sol";
-import "src/interfaces/IInfrared.sol";
-import "src/interfaces/upgrades/IInfraredV1_5.sol";
+import "src/depreciated/interfaces/IInfrared.sol";
+import "src/depreciated/interfaces/IInfraredV1_5.sol";
 import "src/interfaces/IMultiRewards.sol";
 import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
-import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
+import {InfraredV1_7} from "src/depreciated/core/InfraredV1_7.sol";
 
 contract InfraredRewardsTest is Helper {
     /*//////////////////////////////////////////////////////////////
@@ -436,8 +436,6 @@ contract InfraredRewardsTest is Helper {
     }
 
     function deployIR() internal {
-        voter = Voter(setupProxy(address(new Voter())));
-
         ir = new InfraredGovernanceToken(
             address(infrared),
             infraredGovernance,
@@ -449,15 +447,8 @@ contract InfraredRewardsTest is Helper {
         // gov only (i.e. this needs to be run by gov)
         vm.startPrank(infraredGovernance);
         infrared.setIR(address(ir));
-        infrared.setVoter(address(voter));
-        vm.stopPrank();
 
-        sIR = new VotingEscrow(
-            keeper, address(ir), address(voter), address(infrared)
-        );
-        voter.initialize(
-            address(infrared), address(sIR), infraredGovernance, keeper
-        );
+        vm.stopPrank();
     }
 
     function testAddRewardFailsWithNotAuthorized() public {

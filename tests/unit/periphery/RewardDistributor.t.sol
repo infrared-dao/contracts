@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {Owned} from "@solmate/auth/Owned.sol";
 
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {MockERC20} from "tests/unit/mocks/MockERC20.sol";
 import {Helper} from "tests/unit/core/Infrared/Helper.sol";

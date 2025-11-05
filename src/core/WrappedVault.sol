@@ -6,7 +6,7 @@ import {ERC4626} from "@solmate/tokens/ERC4626.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
 import {Errors} from "src/utils/Errors.sol";
-import {Infrared} from "src/core/Infrared.sol";
+import {Infrared} from "src/depreciated/core/Infrared.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 
 /**

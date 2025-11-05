@@ -22,7 +22,7 @@ HARVEST_BOOST_FEE_RATE=50000 # numerator of 1e6 for fee on boost rewards 1e5 = 1
 
 # uint16 feeDivisorShareholders, uint256 operatorWeight, uint256 harvestOperatorFeeRate, uint256 harvestVaultFeeRate, uint256 harvestBribesFeeRate, uint256 harvestBoostFeeRate
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "setFees(address,address,address,uint16,uint256,uint256,uint256,uint256,uint256)" $SAFE $INFRARED $IBERA $FEE_DIVISOR_SHAREHOLDERS $OPERATOR_WEIGHT $HARVEST_OPERATOR_FEE_RATE $HARVEST_VAULT_FEE_RATE $HARVEST_BRIBES_FEE_RATE $HARVEST_BOOST_FEE_RATE \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

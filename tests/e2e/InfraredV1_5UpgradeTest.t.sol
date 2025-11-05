@@ -7,9 +7,9 @@ import {
     UUPSUpgradeable,
     ERC1967Utils
 } from "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {InfraredV1_5} from "src/core/upgrades/InfraredV1_5.sol";
-import {BribeCollectorV1_3} from "src/core/upgrades/BribeCollectorV1_3.sol";
-import {IBribeCollector} from "src/interfaces/IBribeCollector.sol";
+import {InfraredV1_5} from "src/depreciated/core/InfraredV1_5.sol";
+import {BribeCollectorV1_3} from "src/depreciated/core/BribeCollectorV1_3.sol";
+import {IBribeCollector} from "src/depreciated/interfaces/IBribeCollector.sol";
 import {HelperForkTest} from "./HelperForkTest.t.sol";
 
 contract InfraredV1_5UpgradeTest is HelperForkTest {

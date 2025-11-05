@@ -13,10 +13,11 @@ import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {BeaconDeposit} from "@berachain/pol/BeaconDeposit.sol";
 
-import {InfraredBERA} from "src/staking/InfraredBERA.sol";
-import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
+import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
+import {InfraredBERADepositor} from
+    "src/depreciated/staking/InfraredBERADepositor.sol";
 import {InfraredBERAWithdraworLite} from
-    "src/staking/InfraredBERAWithdraworLite.sol";
+    "src/depreciated/staking/InfraredBERAWithdraworLite.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 
 contract InfraredBERABaseTest is Test {

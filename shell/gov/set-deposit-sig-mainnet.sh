@@ -10,7 +10,7 @@ SIG="0xb8cc3eb141c2620bee8d7a0989d17209ff0320ed0e42f147981458dacb665be411de98fab
 PUBKEY="0x86888df491e8ccdc5bb940b9dda51fa7449518593820c9e4e9033a7b87f5e9f8debbba6a4f68218711896906ad40ce71"
 
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "setDepositSignature(address,address,bytes,bytes)" $SAFE $IBERA $PUBKEY $SIG \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-import {IInfrared} from "./IInfrared.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 
 interface IInfraredBERAFeeReceivor {
     /// @notice Emitted when accumulated rewards are swept to InfraredBERA

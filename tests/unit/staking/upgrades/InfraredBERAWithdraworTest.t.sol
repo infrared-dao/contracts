@@ -2,11 +2,10 @@
 pragma solidity ^0.8.22;
 
 import "./InfraredBERAV2Base.t.sol";
-import {InfraredBERAWithdrawor} from
-    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
+import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {IInfraredBERAWithdrawor} from
-    "src/interfaces/upgrades/IInfraredBERAWithdrawor.sol";
-import {IInfraredBERAV2} from "src/interfaces/upgrades/IInfraredBERAV2.sol";
+    "src/interfaces/IInfraredBERAWithdrawor.sol";
+import {IInfraredBERAV2} from "src/interfaces/IInfraredBERAV2.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {BeaconRootsVerify} from "src/utils/BeaconRootsVerify.sol";
 import {EndianHelper} from "src/utils/EndianHelper.sol";

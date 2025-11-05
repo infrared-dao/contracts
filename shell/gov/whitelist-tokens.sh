@@ -57,7 +57,7 @@ IFS=, TOKENS_STR="${TOKENS[*]}"
 #         address[] calldata _tokens,
 #         bool _whitelisted
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "updateMultipleWhiteListedRewardTokens(address,address,address,address[],bool)" $SAFE $INFRARED $IBERA "[$TOKENS_STR]" $WHITELIST  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

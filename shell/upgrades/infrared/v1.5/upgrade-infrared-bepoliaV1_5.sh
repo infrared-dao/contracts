@@ -9,7 +9,7 @@ INFRARED_V5_IMPLEMENTATION="0x934448A1De1031244C16d95fB017177d6b6cdfE7"
 
 RPC_URL="https://bepolia.rpc.berachain.com"
 
-forge script script/UpgradeInfraredTestnetV1_5.s.sol:UpgradeInfraredTestnetV1_5 \
+forge script script/upgrades/infrared/v1.5/UpgradeInfraredTestnetV1_5.s.sol:UpgradeInfraredTestnetV1_5 \
     --sig "run(address,address)" $INFRARED $INFRARED_V5_IMPLEMENTATION\
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

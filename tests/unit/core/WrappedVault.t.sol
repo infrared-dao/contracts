@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "@solmate/tokens/ERC20.sol";
 import "src/core/WrappedVault.sol";
-import "src/core/Infrared.sol";
+import "src/depreciated/core/Infrared.sol";
 import "src/core/InfraredVault.sol";
 import {Helper} from "./Infrared/Helper.sol";
 

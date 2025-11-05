@@ -9,7 +9,7 @@ BRIBE_COLLECTOR_V1_3_IMPLEMENTATION="0xEa4941c7f4D2926b6A72faB48f7E48aeD96C509E"
 
 RPC_URL="https://bepolia.rpc.berachain.com"
 
-forge script script/UpgradeBribeCollectorV1_3Testnet.s.sol:UpgradeBribeCollectorV1_3Testnet \
+forge script script/upgrades/bribe-collector/v1.3/UpgradeBribeCollectorV1_3Testnet.s.sol:UpgradeBribeCollectorV1_3Testnet \
     --sig "run(address,address)" $BRIBE_COLLECTOR_PROXY $BRIBE_COLLECTOR_V1_3_IMPLEMENTATION \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

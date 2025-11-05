@@ -10,18 +10,17 @@ import {MockInfrared} from "tests/unit/mocks/MockInfrared.sol";
 
 import {BeaconDeposit} from "@berachain/pol/BeaconDeposit.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
-import {InfraredBERA} from "src/staking/InfraredBERA.sol";
-import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from
-    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
+import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
+import {InfraredBERADepositor} from
+    "src/depreciated/staking/InfraredBERADepositor.sol";
+import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {BeaconRootsVerify} from "src/utils/BeaconRootsVerify.sol";
 import {ConsensusLayerVerifierTest} from
     "tests/e2e/ConsensusLayerVerifier.t.sol";
-import {InfraredBERADepositorV2} from
-    "src/staking/upgrades/InfraredBERADepositorV2.sol";
-import {InfraredBERAV2} from "src/staking/upgrades/InfraredBERAV2.sol";
+import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
+import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
 
 contract InfraredBERABaseE2ETest is ConsensusLayerVerifierTest {
     using stdJson for string;

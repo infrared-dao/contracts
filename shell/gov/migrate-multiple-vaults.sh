@@ -86,7 +86,7 @@ IFS=, ASSETS_STR="${ASSETS[*]}"
 
 # migrateMultipleVaults(address safe, address infrared, address[] _assets, uint8 versionToUpgradeTo)
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "migrateMultipleVaults(address,address,address[],uint8)" $SAFE $INFRARED "[$ASSETS_STR]" 1  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

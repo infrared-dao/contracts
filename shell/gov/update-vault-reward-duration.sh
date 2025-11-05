@@ -26,7 +26,7 @@ REWARD_TOKEN=$IBGT
 #         uint256 _rewardsDuration
 
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "updateRewardsDurationForVault(address,address,address,address,uint256)" $SAFE $INFRARED $STAKING_TOKEN $REWARD_TOKEN $DURATION \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

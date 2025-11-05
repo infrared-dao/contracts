@@ -12,7 +12,7 @@ import {MultiRewards} from "src/core/MultiRewards.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
-import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 
 /**

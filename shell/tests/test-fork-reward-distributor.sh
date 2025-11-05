@@ -23,7 +23,7 @@ INFRARED="0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126"
 STAKING_TOKEN=0xdE04c469Ad658163e2a5E860a03A86B52f6FA8C8
 REWARD_TOKEN=0x334404782aB67b4F6B2A619873E579E971f9AAB7
 
-DEPLOY_OUTPUT=$(forge script script/DeployRewardDistributor.s.sol:DeployRewardDistributor --sig "run(address,address,address,address)" $SAFE $INFRARED $STAKING_TOKEN $REWARD_TOKEN --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast -vvvv 2>&1)
+DEPLOY_OUTPUT=$(forge script script/deploy/DeployRewardDistributor.s.sol:DeployRewardDistributor --sig "run(address,address,address,address)" $SAFE $INFRARED $STAKING_TOKEN $REWARD_TOKEN --rpc-url $RPC_URL --private-key $PRIVATE_KEY --broadcast -vvvv 2>&1)
 REWARD_DIST=$(echo "$DEPLOY_OUTPUT" | grep -oP '(?<=new RewardDistributor@)0x[a-fA-F0-9]{40}' | head -n1)
 
 echo "Extracted Address: $REWARD_DIST"

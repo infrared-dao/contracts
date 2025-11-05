@@ -11,7 +11,7 @@ STAKING_TOKEN=0xdE04c469Ad658163e2a5E860a03A86B52f6FA8C8
 REWARD_TOKEN=0x688e72142674041f8f6Af4c808a4045cA1D6aC82
 REWARD_DURATION=86400
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "addReward(address,address,address,address,uint256)" $SAFE $INFRARED $STAKING_TOKEN $REWARD_TOKEN $REWARD_DURATION \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

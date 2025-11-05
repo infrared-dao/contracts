@@ -4,8 +4,7 @@ pragma solidity ^0.8.26;
 import "forge-std/Test.sol";
 import "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Helper} from "tests/unit/core/Infrared/Helper.sol";
-import {InfraredBERAWithdrawor} from
-    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
+import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 
 contract UpgradeInfraredBERAWithdraworTest is Helper {
     function testUpgradeability() public {

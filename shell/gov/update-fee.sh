@@ -27,7 +27,7 @@ FEE_AMOUNT=10000  # 1% = 1e4
 
 # uint16 feeDivisorShareholders, uint256 operatorWeight, uint256 harvestOperatorFeeRate, uint256 harvestVaultFeeRate, uint256 harvestBribesFeeRate, uint256 harvestBoostFeeRate
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "updateFee(address,address,uint8,uint256)" $SAFE $INFRARED $FEE_TYPE $FEE_AMOUNT \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

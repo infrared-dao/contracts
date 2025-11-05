@@ -3,7 +3,7 @@ pragma solidity 0.8.26;
 
 import "src/core/InfraredBGT.sol";
 import "src/core/InfraredVault.sol";
-import "src/core/Infrared.sol";
+import "src/depreciated/core/Infrared.sol";
 
 import "src/core/MultiRewards.sol";
 

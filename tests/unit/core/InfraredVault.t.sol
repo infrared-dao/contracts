@@ -14,7 +14,7 @@ import {IMultiRewards} from "src/interfaces/IMultiRewards.sol";
 
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 
-import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 
 import {MockERC20} from "tests/unit/mocks/MockERC20.sol";
 import {MockInfrared} from "tests/unit/mocks/MockInfrared.sol";

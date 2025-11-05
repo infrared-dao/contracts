@@ -16,7 +16,7 @@ WITHDRAWOR_NEW=
 DEPOSITOR_NEW=
 IBERA_NEW=
 
-FOUNDRY_PROFILE=production forge script script/UpgradeInfraredBERA.s.sol:UpgradeInfraredBERA \
+FOUNDRY_PROFILE=production forge script script/upgrades/staking/UpgradeInfraredBERA.s.sol:UpgradeInfraredBERA \
     --sig "run(address,address,address,address,address,address,address,address)" $SAFE $WITHDRAWOR_LITE $WITHDRAW_PRECOMPILE $IBERA $DEPOSITOR $WITHDRAWOR_NEW $DEPOSITOR_NEW $IBERA_NEW  \
     --broadcast  --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY -vvvv

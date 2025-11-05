@@ -12,7 +12,7 @@ HONEY="0xFCBD14DC51f0A4d49d5E53C2E0950e0bC26d0Dce"
 
 WEIGHT=50000  # 5% (denominator is 1e6)
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "updateInfraredBERABribesWeight(address,address,uint256)" $SAFE $INFRARED $WEIGHT  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

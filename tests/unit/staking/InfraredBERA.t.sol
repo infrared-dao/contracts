@@ -4,11 +4,11 @@ pragma solidity ^0.8.22;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Errors} from "src/utils/Errors.sol";
-import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
+import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
 import {IInfraredBERAWithdrawor} from
     "src/interfaces/IInfraredBERAWithdrawor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
-import {InfraredBERA} from "src/staking/InfraredBERA.sol";
+import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
 
 import {InfraredBERABaseTest} from "./InfraredBERABase.t.sol";
 

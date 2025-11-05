@@ -14,7 +14,7 @@ STAKING_TOKENS=()
 
 IFS=, STAKING_TOKENS_STR="${STAKING_TOKENS[*]}"
 
-forge script script/UpgradeInfraredTestnet.s.sol:UpgradeInfraredTestnet \
+forge script script/upgrades/infrared/v1.2/UpgradeInfraredTestnet.s.sol:UpgradeInfraredTestnet \
     --sig "run(address,address,address[])" $INFRARED $INFRARED_V2_IMPLEMENTATION "[]" \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

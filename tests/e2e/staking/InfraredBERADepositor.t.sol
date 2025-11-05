@@ -5,7 +5,7 @@ import {IBeaconDeposit} from "@berachain/pol/interfaces/IBeaconDeposit.sol";
 import {BeaconDeposit} from "@berachain/pol/BeaconDeposit.sol";
 
 import {Errors} from "src/utils/Errors.sol";
-import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
+import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
 import {IInfraredBERADepositor} from "src/interfaces/IInfraredBERADepositor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 

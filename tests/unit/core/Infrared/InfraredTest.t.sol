@@ -17,8 +17,9 @@ import {IInfraredBERAFeeReceivor} from
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {Errors} from "src/utils/Errors.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
-import {HarvestBaseCollector} from "src/staking/HarvestBaseCollector.sol";
-import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
+import {HarvestBaseCollector} from
+    "src/depreciated/staking/HarvestBaseCollector.sol";
+import {InfraredV1_7} from "src/depreciated/core/InfraredV1_7.sol";
 
 contract InfraredTest is Helper {
     // using stdStorage for StdStorage;

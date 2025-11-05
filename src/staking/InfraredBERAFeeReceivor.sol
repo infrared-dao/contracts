@@ -3,10 +3,10 @@ pragma solidity 0.8.26;
 
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {Errors, Upgradeable} from "src/utils/Upgradeable.sol";
-import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
+import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
 import {IInfraredBERAFeeReceivor} from
     "src/interfaces/IInfraredBERAFeeReceivor.sol";
-import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 import {InfraredBERAConstants} from "./InfraredBERAConstants.sol";
 
 /// @title InfraredBERAFeeReceivor

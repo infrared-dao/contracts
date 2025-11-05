@@ -5,7 +5,7 @@ source .env
 
 RPC_URL="https://rpc.berachain.com"
 
-FOUNDRY_PROFILE=production forge script script/DeployBribeCollectorV1_2.s.sol:DeployBribeCollectorV1_2 \
+FOUNDRY_PROFILE=production forge script script/upgrades/bribe-collector/v1.2/DeployBribeCollectorV1_2.s.sol:DeployBribeCollectorV1_2 \
     --broadcast  --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     --verifier-url $VERIFYER \

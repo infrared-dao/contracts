@@ -9,13 +9,10 @@ import {ERC1967Proxy} from
 import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol";
 
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
-import {BribeCollector} from "src/core/BribeCollector.sol";
-
-import {Voter} from "src/voting/Voter.sol";
-import {VotingEscrow} from "src/voting/VotingEscrow.sol";
+import {BribeCollector} from "src/depreciated/core/BribeCollector.sol";
 
 // internal
-import "src/core/Infrared.sol";
+import "src/depreciated/core/Infrared.sol";
 import "src/core/InfraredBGT.sol";
 import "src/core/InfraredVault.sol";
 import "src/utils/DataTypes.sol";
@@ -36,9 +33,6 @@ contract InvariantsInfrared is Test {
 
     BribeCollector public collector;
     InfraredDistributor public distributor;
-
-    Voter public voter;
-    VotingEscrow public sIR;
 
     address public admin;
     address public keeper;
@@ -93,12 +87,6 @@ contract InvariantsInfrared is Test {
         distributor =
             InfraredDistributor(setupProxy(address(new InfraredDistributor())));
 
-        // IRED voting
-        voter = Voter(setupProxy(address(new Voter())));
-        sIR = new VotingEscrow(
-            address(this), address(ir), address(voter), address(infrared)
-        );
-
         collector.initialize(
             address(infrared), address(this), address(mockWbera), 10 ether
         );
@@ -113,7 +101,7 @@ contract InvariantsInfrared is Test {
             address(honey),
             address(collector),
             address(distributor),
-            address(voter),
+            address(0),
             address(ibera),
             1 days
         );
@@ -124,8 +112,6 @@ contract InvariantsInfrared is Test {
 
         infrared.setIBGT(address(ibgt));
 
-        // @dev must initialize after infrared so address(this) has keeper role
-        voter.initialize(address(infrared), address(sIR), governance, keeper);
         /* Handler Setup */
 
         // deploy the handler contracts

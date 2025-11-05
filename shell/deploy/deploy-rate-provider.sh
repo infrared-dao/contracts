@@ -10,7 +10,7 @@ RPC_URL="https://rpc.berachain.com"
 VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80094/etherscan'
 
 # Run the deployment script
-FOUNDRY_PROFILE=production forge script script/InfraredBERARateProviderDeployer.s.sol:InfraredBERARateProviderDeployer \
+FOUNDRY_PROFILE=production forge script script/deploy/InfraredBERARateProviderDeployer.s.sol:InfraredBERARateProviderDeployer \
     --sig "run(address)" $IBERA \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

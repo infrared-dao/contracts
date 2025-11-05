@@ -13,7 +13,7 @@ SAFE_TX_SERVICE="https://transaction.bp.w3us.site/"
 RPC_URL="https://rpc.berachain.com"
 
 
-forge script script/AddSafeDelegate.s.sol:AddSafeDelegate \
+forge script script/misc/AddSafeDelegate.s.sol:AddSafeDelegate \
     --sig "run(address,address,address,string)" $SAFE $DELEGATE_ADDRESS $ADMIN_ADDRESS "$SAFE_TX_SERVICE" \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

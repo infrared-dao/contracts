@@ -6,8 +6,6 @@ import {Errors} from "src/utils/Errors.sol";
 import {ERC20PresetMinterPauser} from "src/vendors/ERC20PresetMinterPauser.sol";
 
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
-import {Voter} from "src/voting/Voter.sol";
-import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 
 contract InfraredRegisterVaultTest is Helper {
     /*//////////////////////////////////////////////////////////////
@@ -121,8 +119,6 @@ contract InfraredRegisterVaultTest is Helper {
     }
 
     function deployIR() internal {
-        voter = Voter(setupProxy(address(new Voter())));
-
         ir = new InfraredGovernanceToken(
             address(infrared),
             infraredGovernance,
@@ -134,14 +130,7 @@ contract InfraredRegisterVaultTest is Helper {
         // gov only (i.e. this needs to be run by gov)
         vm.startPrank(infraredGovernance);
         infrared.setIR(address(ir));
-        infrared.setVoter(address(voter));
-        vm.stopPrank();
 
-        sIR = new VotingEscrow(
-            keeper, address(ir), address(voter), address(infrared)
-        );
-        voter.initialize(
-            address(infrared), address(sIR), infraredGovernance, keeper
-        );
+        vm.stopPrank();
     }
 }

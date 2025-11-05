@@ -4,13 +4,10 @@ pragma solidity 0.8.26;
 import {ERC20PresetMinterPauser} from
     "../../src/vendors/ERC20PresetMinterPauser.sol";
 
-import {Voter} from "src/voting/Voter.sol";
-import {VotingEscrow} from "src/voting/VotingEscrow.sol";
-
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-import {Infrared} from "src/core/Infrared.sol";
+import {Infrared} from "src/depreciated/core/Infrared.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
-import {BribeCollector} from "src/core/BribeCollector.sol";
+import {BribeCollector} from "src/depreciated/core/BribeCollector.sol";
 
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {IMultiRewards} from "src/interfaces/IMultiRewards.sol";
@@ -53,10 +50,6 @@ contract InfraredForkTest is HelperForkTest {
         ibera = deployer.ibera();
         depositor = deployer.depositor();
         receivor = deployer.receivor();
-
-        // voter = deployer.voter();
-        // sIR = deployer.sIR();
-        // ir = InfraredGovernanceToken(address(deployer.ir()));
 
         uint16 feeShareholders = 4; // 25% of fees
         vm.prank(infraredGovernance);

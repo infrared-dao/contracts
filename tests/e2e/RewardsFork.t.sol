@@ -16,26 +16,24 @@ import {IBerachainBGTStaker} from "src/interfaces/IBerachainBGTStaker.sol";
 import {IFeeCollector as IBerachainFeeCollector} from
     "@berachain/pol/interfaces/IFeeCollector.sol";
 
-import {Infrared} from "src/core/Infrared.sol";
+import {Infrared} from "src/depreciated/core/Infrared.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-import {Voter} from "src/voting/Voter.sol";
-import {VotingEscrow} from "src/voting/VotingEscrow.sol";
-import {InfraredBERA} from "src/staking/InfraredBERA.sol";
-import {InfraredBERAClaimor} from "src/staking/InfraredBERAClaimor.sol";
-import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAWithdrawor} from
-    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
+
+import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
+import {InfraredBERADepositor} from
+    "src/depreciated/staking/InfraredBERADepositor.sol";
+import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
-import {BribeCollector} from "src/core/BribeCollector.sol";
+import {BribeCollector} from "src/depreciated/core/BribeCollector.sol";
 
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockERC20} from "tests/unit/mocks/MockERC20.sol";
-import {InfraredDeployer} from "script/InfraredDeployer.s.sol";
+import {InfraredDeployer} from "script/deploy/InfraredDeployer.s.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 
 contract ForkTest is Test {

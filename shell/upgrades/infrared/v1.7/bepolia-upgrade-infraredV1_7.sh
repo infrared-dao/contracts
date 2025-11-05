@@ -27,7 +27,7 @@ forge build --sizes
 #         address _receivor,
 #         uint256 _payoutAmount
 #     ) external returns (address proxyAddr)
-forge script script/UpgradeInfraredTestnetV1_7.s.sol:UpgradeInfraredTestnetV1_7 \
+forge script script/upgrades/infrared/v1.7/UpgradeInfraredTestnetV1_7.s.sol:UpgradeInfraredTestnetV1_7 \
     --sig "deployCollector(address,address,address,address,address,uint256)" $INFRARED $KEEPER $IBGT $WBERA $RECEIVOR $PAYOUT_AMOUNT \
     --rpc-url $RPC_URL -vvvv --sender $KEEPER \
     --private-key $PRIVATE_KEY --verify \
@@ -36,7 +36,7 @@ forge script script/UpgradeInfraredTestnetV1_7.s.sol:UpgradeInfraredTestnetV1_7 
 HARVEST_BASE_COLLECTOR_PROXY=0xe6f6E4A3D7c64DacE2b048f80d8FF9Cea0b4990f
 
 # step 2: deploy new Infrared imp (note, upgrade and initialize are protected by onlyGov)
-forge script script/UpgradeInfraredTestnetV1_7.s.sol:UpgradeInfraredTestnetV1_7 \
+forge script script/upgrades/infrared/v1.7/UpgradeInfraredTestnetV1_7.s.sol:UpgradeInfraredTestnetV1_7 \
     --sig "deployInfraredImp()" \
     --rpc-url $RPC_URL -vvvv --sender $KEEPER \
     --private-key $PRIVATE_KEY --verify \
@@ -52,7 +52,7 @@ INFRAREDV1_7_IMP=0xAd3b4FFf6b40712326B7b04E104a87efb8BfB895
 #         address proxyAddr
 #     ) external
 
-forge script script/UpgradeInfraredTestnetV1_7.s.sol:UpgradeInfraredTestnetV1_7 \
+forge script script/upgrades/infrared/v1.7/UpgradeInfraredTestnetV1_7.s.sol:UpgradeInfraredTestnetV1_7 \
     --sig "upgradeInfrared(address,address,address)" $INFRARED $INFRAREDV1_7_IMP $HARVEST_BASE_COLLECTOR_PROXY \
     --rpc-url $RPC_URL -vvvv --sender $KEEPER \
     --private-key $PRIVATE_KEY \

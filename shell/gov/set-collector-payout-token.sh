@@ -11,7 +11,7 @@ WBERA="0x6969696969696969696969696969696969696969"
 
 PAYOUT_TOKEN=$WBERA
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "setPayoutToken(address,address,address)" $SAFE $COLLECTOR $PAYOUT_TOKEN  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

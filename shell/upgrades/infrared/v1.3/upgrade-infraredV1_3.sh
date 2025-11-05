@@ -22,7 +22,7 @@ PUBKEYS=(
 
 IFS=, PUBKEYS_STR="${PUBKEYS[*]}"
 
-forge script script/UpgradeInfraredV1_3.s.sol:UpgradeInfraredV1_3 \
+forge script script/upgrades/infrared/v1.3/UpgradeInfraredV1_3.s.sol:UpgradeInfraredV1_3 \
     --sig "run(address,address,address,bytes[])" $SAFE $INFRARED $INFRARED_V3_IMPLEMENTATION "[$PUBKEYS_STR]" \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

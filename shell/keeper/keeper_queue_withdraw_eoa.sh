@@ -6,7 +6,7 @@ source .env
 
 # Common variables
 RPC_URL="https://rpc.berachain.com"
-SCRIPT="script/InfraredBERAKeeper.s.sol:InfraredBERAKeeper"
+SCRIPT="script/keeper/InfraredBERAKeeper.s.sol:InfraredBERAKeeper"
 
 PUBKEY=0x84d0f5ed328e029f104f7a3bb5778d188b2197415119b95a9719be47fd0e16e3fbda08dbf5bdfde0a7dab95db1807e47
 WITHDRAWOR=0x8c0E122960dc2E97dc0059c07d6901Dce72818E1

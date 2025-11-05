@@ -12,7 +12,7 @@ STAKING_TOKEN=$IBGT
 REWARD_TOKEN=$IBGT
 
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "removeReward(address,address,address,address)" $SAFE $INFRARED $STAKING_TOKEN $REWARD_TOKEN \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

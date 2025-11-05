@@ -3,9 +3,11 @@ pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
 
-import {Infrared, IInfrared} from "src/core/Infrared.sol";
-import {InfraredV1_2} from "src/core/upgrades/InfraredV1_2.sol";
-import {InfraredV1_3, IInfraredV1_3} from "src/core/upgrades/InfraredV1_3.sol";
+import {Infrared, IInfrared} from "src/depreciated/core/Infrared.sol";
+import {InfraredV1_2} from "src/depreciated/core/InfraredV1_2.sol";
+import {
+    InfraredV1_3, IInfraredV1_3
+} from "src/depreciated/core/InfraredV1_3.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 

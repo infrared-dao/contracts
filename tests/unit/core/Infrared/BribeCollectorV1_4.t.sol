@@ -5,8 +5,8 @@ import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 
 import {Helper} from "./Helper.sol";
-import {InfraredV1_8} from "src/core/upgrades/InfraredV1_8.sol";
-import {BribeCollectorV1_4} from "src/core/upgrades/BribeCollectorV1_4.sol";
+import {InfraredV1_8} from "src/depreciated/core/InfraredV1_8.sol";
+import {BribeCollectorV1_4} from "src/core/BribeCollectorV1_4.sol";
 import {Errors} from "src/utils/Errors.sol";
 
 contract BribeCollectorV1_4Test is Helper {

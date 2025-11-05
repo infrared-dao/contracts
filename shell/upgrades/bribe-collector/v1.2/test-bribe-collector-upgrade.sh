@@ -17,7 +17,7 @@ echo "Anvil fork started with PID: $ANVIL_PID"
 
 # deploy new implementation
 echo "Deploying BribeCollectorV2..."
-DEPLOY_OUTPUT=$(forge script script/DeployBribeCollectorV1_2.s.sol:DeployBribeCollectorV1_2  --broadcast  --rpc-url $RPC_URL  --private-key $PRIVATE_KEY -vvvv 2>&1)
+DEPLOY_OUTPUT=$(forge script script/upgrades/bribe-collector/v1.2/DeployBribeCollectorV1_2.s.sol:DeployBribeCollectorV1_2  --broadcast  --rpc-url $RPC_URL  --private-key $PRIVATE_KEY -vvvv 2>&1)
 BRIBE_COLLECTOR_V2_IMPLEMENTATION=$(echo "$DEPLOY_OUTPUT" | grep -oP '(?<=new BribeCollectorV1_2@)0x[a-fA-F0-9]{40}' | head -n1)
 
 echo "Extracted Address: $BRIBE_COLLECTOR_V2_IMPLEMENTATION"

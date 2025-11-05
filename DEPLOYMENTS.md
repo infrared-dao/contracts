@@ -12,7 +12,7 @@
 | InfraredDistributor        | `0x1fAD980dfafF71E3Fdd9bef643ab2Ff2BdC4Ccd6` |
 | iBERA                      | `0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5` |
 | InfraredBERADepositor      | `0x04CddC538ea65908106416986aDaeCeFD4CAB7D7` |
-| InfraredBERAWithdraworLite | `0x8c0E122960dc2E97dc0059c07d6901Dce72818E1` |
+| InfraredBERAWithdrawor     | `0x8c0E122960dc2E97dc0059c07d6901Dce72818E1` |
 | InfraredBERAFeeReceivor    | `0xf6a4A6aCECd5311327AE3866624486b6179fEF97` |
 | IbgtRedeemer               | `0x3E8edA9821C588A57200B790204C0066A1681046` |
 | iBERARateProvider          | `0x776fD57Bbeb752BDeEB200310faFAe9A155C50a0` |

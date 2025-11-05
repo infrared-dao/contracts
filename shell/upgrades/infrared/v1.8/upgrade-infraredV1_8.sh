@@ -23,7 +23,7 @@ forge clean
 forge build --sizes
 
 # step 1: deploy new collector imp
-forge script script/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
+forge script script/upgrades/infrared/v1.8/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
     --sig "deployBribeCollectorImp()" \
     --rpc-url $RPC_URL -vvvv \
     --private-key $PRIVATE_KEY --verify \
@@ -33,7 +33,7 @@ forge script script/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
 BRIBE_COLLECTOR_IMP=
 
 # step 2: deploy new Infrared imp (note, upgrade and initialize are protected by onlyGov)
-forge script script/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
+forge script script/upgrades/infrared/v1.8/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
     --sig "deployInfraredImp()" \
     --rpc-url $RPC_URL -vvvv \
     --private-key $PRIVATE_KEY --verify \
@@ -51,13 +51,13 @@ INFRAREDV1_8_IMP=
 # )
 
 # # first pass simulate
-forge script script/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
+forge script script/upgrades/infrared/v1.8/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
     --sig "upgradeInfrared(bool,address,address,address,address)" false $BRIBE_COLLECTOR $INFRARED $INFRAREDV1_8_IMP $BRIBE_COLLECTOR_IMP \
     --rpc-url $RPC_URL -vvvv \
     --private-key $PRIVATE_KEY 
 
 # second pass execute
-forge script script/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
+forge script script/upgrades/infrared/v1.8/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
     --sig "upgradeInfrared(bool,address,address,address,address)" true $BRIBE_COLLECTOR $INFRARED $INFRAREDV1_8_IMP $BRIBE_COLLECTOR_IMP \
     --rpc-url $RPC_URL -vvvv \
     --private-key $PRIVATE_KEY 

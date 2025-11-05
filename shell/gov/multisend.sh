@@ -881,7 +881,7 @@ AMOUNTS=(
 # #         address[] calldata users, 
 # #         uint256[] calldata amounts
 
-# forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+# forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
 #     --sig "multiSendToken(address,address,uint256,address[],uint256[])" $SAFE $IBGT $TOTAL_AMOUNT "[$USERS_STR]" "[$AMOUNTS_STR]"  \
 #     --rpc-url $RPC_URL -vvvv #\
 #     # --private-key $PRIVATE_KEY \
@@ -928,7 +928,7 @@ for ((i=0; i<length; i+=batch_size)); do
 
     echo "Processing batch starting at index $i with ${#batch_users[@]} users and subtotal $subtotal"
 
-    forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+    forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
         --sig "multiSendToken(address,address,uint256,address[],uint256[])" $SAFE $IBGT $subtotal "[$batch_users_str]" "[$batch_amounts_str]"  \
         --rpc-url $RPC_URL \
         --private-key $PRIVATE_KEY \

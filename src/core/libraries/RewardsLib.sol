@@ -8,20 +8,20 @@ import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
 
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IBerachainBGTStaker} from "src/interfaces/IBerachainBGTStaker.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 import {IBerachainBGT} from "src/interfaces/IBerachainBGT.sol";
-import {IInfrared} from "src/interfaces/IInfrared.sol";
-import {IInfraredV1_9} from "src/interfaces/upgrades/IInfraredV1_9.sol";
+import {IInfraredV1_9} from "src/interfaces/IInfraredV1_9.sol";
 import {IReward} from "src/voting/interfaces/IReward.sol";
 import {IVoter} from "src/voting/interfaces/IVoter.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
 import {IInfraredGovernanceToken} from
     "src/interfaces/IInfraredGovernanceToken.sol";
-import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
+import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
 import {Errors} from "src/utils/Errors.sol";
 
 library RewardsLib {
@@ -688,7 +688,7 @@ library RewardsLib {
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
     /// @notice Callback from the BribeCollector to payout the WBERA bribes were auctioned off for
-    ///     ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/core/BribeCollector.sol#L87
+    ///     ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/depreciated/core/BribeCollector.sol#L87
     /// @param $        Storage pointer for reward accumulators
     /// @param _amount          The amount of WBERA our bribes were auctioned off for
     /// @param wbera            The address of the WBERA token
@@ -742,7 +742,7 @@ library RewardsLib {
     }
 
     /// @notice Callback from the BribeCollector to payout the iBGT bribes were auctioned off for
-    ///     ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/core/BribeCollector.sol#L87
+    ///     ref - https://github.com/infrared-dao/infrared-contracts/blob/develop/src/depreciated/core/BribeCollector.sol#L87
     /// @param $        Storage pointer for reward accumulators
     /// @param _amount          The amount of iBGT our bribes were auctioned off for
     /// @param ibgt            The address of the iBGT token

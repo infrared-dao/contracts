@@ -20,7 +20,7 @@ STAKING_TOKENS=(
 
 IFS=, STAKING_TOKENS_STR="${STAKING_TOKENS[*]}"
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "pauseMultipleVaultStaking(address,address,address[])" $SAFE $INFRARED "[$STAKING_TOKENS_STR]" \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

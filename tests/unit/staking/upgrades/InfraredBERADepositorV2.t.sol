@@ -4,7 +4,7 @@ pragma solidity ^0.8.22;
 import "./InfraredBERAV2Base.t.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {Errors} from "src/utils/Errors.sol";
-import {IInfraredBERAV2} from "src/interfaces/upgrades/IInfraredBERAV2.sol";
+import {IInfraredBERAV2} from "src/interfaces/IInfraredBERAV2.sol";
 import {BeaconRootsVerify} from "src/utils/BeaconRootsVerify.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {ProofHelper} from "./proofgeneration/ProofHelper.sol";

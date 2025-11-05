@@ -19,7 +19,7 @@ PUBKEY="0xab2f79eeae163596276d5a56e52be4796df33377b157531a839a0174a68ca36e245bee
 ADDR="0xc1b6eCB9bd61088AaB2928460390579bE66C2760"
 SIG="0x90d3a26920bd61588d1385ba4647ff3e3b680ac37f5214fb2fe407480eec9631b16f3fb9e0e17c3730c2df1ec49c12dd0d5a9bafd2f57c3a47e162c79dfcde9b5daaf943acac226c0a1d6b31155c9d601eaa8f6bcf5210220fc2e441bec4e019"
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "onboardValidator(address,address,address,address,bytes,bytes)" $SAFE $INFRARED $IBERA $ADDR $PUBKEY $SIG \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

@@ -7,7 +7,7 @@ source .env
 RPC_URL="https://rpc.berachain.com"
 
 # Run the deployment script
-FOUNDRY_PROFILE=production forge script script/DeployRedeemer.s.sol:DeployRedeemer \
+FOUNDRY_PROFILE=production forge script script/deploy/DeployRedeemer.s.sol:DeployRedeemer \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     --verify -vvvv \

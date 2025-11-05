@@ -4,7 +4,7 @@ pragma solidity 0.8.26;
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {InfraredUpgradeable} from "src/core/InfraredUpgradeable.sol";
-import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {Errors} from "src/utils/Errors.sol";
 

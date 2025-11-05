@@ -18,7 +18,7 @@ AMOUNT=809403213445001301746586
 #         address _token,
 #         uint256 _amount
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "recoverERC20(address,address,address,address,uint256)" $SAFE $INFRARED $TO $TOKEN $AMOUNT  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

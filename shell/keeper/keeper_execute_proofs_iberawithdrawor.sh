@@ -15,7 +15,7 @@ DEPOSITOR=0x51761dC3fFB5B54186a70ef1d55c44153671D1FF
 AMOUNT=4500123663637000000000
 PROOFS_PATH="/tests/data/proof5.json"
 
-forge script script/InfraredBERAKeeper.s.sol:InfraredBERAKeeper \
+forge script script/keeper/InfraredBERAKeeper.s.sol:InfraredBERAKeeper \
     --sig "executeWithdrawProofs(address,uint256,string)" $WITHDRAWOR $AMOUNT $PROOFS_PATH \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

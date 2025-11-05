@@ -29,7 +29,7 @@ ADDR="0x600B26b20d46FDE8Ae9C8623F77fc5c89a23F09D"
 # ADDR=""
 # PUBKEY="0x928d6f66bfd9cb1ef18da6843ad9db6c1b6ec7e3093705c95224e8f20232f243e7a627d09144360d4c1775d8fafdb0e7"
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "addValidator(address,address,address,bytes)" $SAFE $INFRARED $ADDR $PUBKEY \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

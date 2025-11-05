@@ -12,7 +12,7 @@ ASSET="0x98bDEEde9A45C28d229285d9d6e9139e9F505391"
 
 # migrateVault(address safe, address infrared, address _asset, uint8 versionToUpgradeTo)
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "migrateVault(address,address,address,uint8)" $SAFE $INFRARED $ASSET 1  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

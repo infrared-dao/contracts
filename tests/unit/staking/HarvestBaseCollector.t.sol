@@ -8,22 +8,31 @@ import {
     ERC1967Utils
 } from "@openzeppelin-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
-import {HarvestBaseCollector} from "src/staking/HarvestBaseCollector.sol";
+
+import {HarvestBaseCollectorV1_2} from
+    "src/staking/HarvestBaseCollectorV1_2.sol";
 import "tests/unit/core/Infrared/Helper.sol";
 import {Errors} from "src/utils/Errors.sol";
 
 contract HarvestBaseCollectorTest is Helper {
-    HarvestBaseCollector public harvestBaseCollector;
+    HarvestBaseCollectorV1_2 public harvestBaseCollector;
 
     uint256 payoutAmount;
+
+    event FeesClaimed(
+        address indexed caller,
+        address indexed recipient,
+        address indexed feeToken,
+        uint256 amount
+    );
 
     function setUp() public virtual override {
         super.setUp();
 
         payoutAmount = 10 ether;
 
-        harvestBaseCollector = HarvestBaseCollector(
-            payable(setupProxy(address(new HarvestBaseCollector())))
+        harvestBaseCollector = HarvestBaseCollectorV1_2(
+            payable(setupProxy(address(new HarvestBaseCollectorV1_2())))
         );
         // vm.prank(infraredGovernance);
         harvestBaseCollector.initialize(
@@ -224,6 +233,59 @@ contract HarvestBaseCollectorTest is Helper {
         vm.startPrank(keeper);
         wbera.approve(address(harvestBaseCollector), payoutAmount);
         harvestBaseCollector.claimFee(recipient, feeAmount);
+        vm.stopPrank();
+
+        // Assert
+        assertEq(address(receivor).balance, initialReceiverBal + payoutAmount);
+        assertEq(ibgt.balanceOf(recipient), initialRecipientBal + feeAmount);
+        assertEq(
+            wbera.balanceOf(address(harvestBaseCollector)),
+            initialContractWberaBal
+        );
+        assertEq(address(harvestBaseCollector).balance, initialContractEthBal);
+    }
+
+    function testClaimFeeSuccess2() public virtual {
+        // Arrange
+        address recipient = address(3);
+
+        uint256 feeAmount = 10 ether;
+        // simulate bribes collected by the harvestBaseCollector contract
+        deal(address(ibgt), address(harvestBaseCollector), 10 ether);
+
+        // uint256 payoutAmount = harvestBaseCollector.payoutAmount();
+
+        // since payoutToken is wbera, deal and deposit
+        vm.deal(keeper, payoutAmount);
+        vm.prank(keeper);
+        wbera.deposit{value: payoutAmount}();
+
+        uint256 initialReceiverBal = address(receivor).balance;
+        uint256 initialRecipientBal = ibgt.balanceOf(recipient);
+        uint256 initialContractWberaBal =
+            wbera.balanceOf(address(harvestBaseCollector));
+        uint256 initialContractEthBal = address(harvestBaseCollector).balance;
+
+        // Act
+        // vm.deal(address(wbera), 10 ether);
+        vm.startPrank(keeper);
+        wbera.approve(address(harvestBaseCollector), payoutAmount);
+        address[] memory _feeTokens = new address[](1);
+        _feeTokens[0] = address(ibgt);
+        uint256[] memory _feeAmounts = new uint256[](2);
+
+        vm.expectRevert(Errors.InvalidArrayLength.selector);
+        harvestBaseCollector.claimFees(recipient, _feeTokens, _feeAmounts);
+
+        _feeAmounts = new uint256[](1);
+        _feeAmounts[0] = feeAmount;
+
+        vm.expectRevert(Errors.ZeroAddress.selector);
+        harvestBaseCollector.claimFees(address(0), _feeTokens, _feeAmounts);
+
+        vm.expectEmit(true, true, true, true, address(harvestBaseCollector));
+        emit FeesClaimed(keeper, recipient, address(ibgt), feeAmount);
+        harvestBaseCollector.claimFees(recipient, _feeTokens, _feeAmounts);
         vm.stopPrank();
 
         // Assert

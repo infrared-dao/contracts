@@ -44,3 +44,5 @@ tmp*
 .claude/
 CLAUDE.md
 .claude_*
+
+coverage/

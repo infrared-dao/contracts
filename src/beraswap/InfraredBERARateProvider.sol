@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {IRateProvider} from "src/beraswap/IRateProvider.sol";
-import {IInfraredBERAV2} from "src/interfaces/upgrades/IInfraredBERAV2.sol";
+import {IInfraredBERAV2} from "src/interfaces/IInfraredBERAV2.sol";
 
 /**
  * @title iBERA Rate Provider

@@ -1,0 +1,125 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.26;
+
+import "forge-std/Script.sol";
+
+import {ERC1967Proxy} from
+    "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {ERC20PresetMinterPauser} from "src/vendors/ERC20PresetMinterPauser.sol";
+
+import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
+
+import {InfraredBGT} from "src/core/InfraredBGT.sol";
+import {Infrared} from "src/depreciated/core/Infrared.sol";
+import {BribeCollector} from "src/depreciated/core/BribeCollector.sol";
+import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
+
+import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
+import {InfraredBERADepositor} from
+    "src/depreciated/staking/InfraredBERADepositor.sol";
+import {InfraredBERAWithdraworLite} from
+    "src/depreciated/staking/InfraredBERAWithdraworLite.sol";
+import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
+import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
+
+contract InfraredDeployer is Script {
+    InfraredBGT public ibgt;
+    ERC20PresetMinterPauser public ir;
+
+    InfraredBERA public ibera;
+    InfraredBERADepositor public depositor;
+    InfraredBERAWithdraworLite public withdrawor;
+    InfraredBERAFeeReceivor public receivor;
+
+    BribeCollector public collector;
+    InfraredDistributor public distributor;
+    Infrared public infrared;
+
+    function run(
+        address _gov,
+        address _keeper,
+        address _bgt,
+        address _berachainRewardsFactory,
+        address _beraChef,
+        address _beaconDeposit,
+        address _wbera,
+        address _honey,
+        uint256 _rewardsDuration,
+        uint256 _bribeCollectorPayoutAmount
+    ) external {
+        vm.startBroadcast();
+
+        infrared = Infrared(payable(setupProxy(address(new Infrared()))));
+
+        collector = BribeCollector(setupProxy(address(new BribeCollector())));
+        distributor =
+            InfraredDistributor(setupProxy(address(new InfraredDistributor())));
+
+        // InfraredBERA
+        ibera = InfraredBERA(setupProxy(address(new InfraredBERA())));
+
+        depositor = InfraredBERADepositor(
+            setupProxy(address(new InfraredBERADepositor()))
+        );
+        withdrawor = InfraredBERAWithdraworLite(
+            payable(setupProxy(address(new InfraredBERAWithdraworLite())))
+        );
+
+        receivor = InfraredBERAFeeReceivor(
+            payable(setupProxy(address(new InfraredBERAFeeReceivor())))
+        );
+
+        // initialize proxies
+        collector.initialize(
+            address(infrared), _gov, _wbera, _bribeCollectorPayoutAmount
+        );
+        distributor.initialize(address(infrared), _gov, address(ibera));
+
+        Infrared.InitializationData memory data = Infrared.InitializationData(
+            _gov,
+            _keeper,
+            _bgt,
+            _berachainRewardsFactory,
+            _beraChef,
+            payable(_wbera),
+            _honey,
+            address(collector),
+            address(distributor),
+            address(0),
+            address(ibera),
+            _rewardsDuration
+        );
+        infrared.initialize(data);
+
+        ibgt = new InfraredBGT(
+            data._gov, address(infrared), data._gov, address(infrared)
+        );
+
+        infrared.setIBGT(address(ibgt));
+
+        // initialize ibera proxies
+        depositor.initialize(_gov, _keeper, address(ibera), _beaconDeposit);
+        withdrawor.initialize(_gov, _keeper, address(ibera));
+
+        receivor.initialize(_gov, _keeper, address(ibera), address(infrared));
+
+        // init deposit to avoid inflation attack
+        ibera.initialize{value: 10 ether}(
+            _gov,
+            _keeper,
+            address(infrared),
+            address(depositor),
+            address(withdrawor),
+            address(receivor)
+        );
+
+        vm.stopBroadcast();
+    }
+
+    function setupProxy(address implementation)
+        internal
+        returns (address proxy)
+    {
+        proxy = address(new ERC1967Proxy(implementation, ""));
+    }
+}

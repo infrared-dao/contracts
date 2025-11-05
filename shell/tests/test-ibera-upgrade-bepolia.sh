@@ -20,7 +20,7 @@ echo "Anvil fork started with PID: $ANVIL_PID"
 echo "Deploying iBERAv2..."
 WITHDRAWOR_LITE=0x901528D1c588662FF75b19Ade33618115131dA84
 WITHDRAW_CONTRACT=0x00000961Ef480Eb55e80D19ad83579A64c007002
-DEPLOY_OUTPUT=$(forge script script/UpgradeInfraredBERAWithdrawor.s.sol:UpgradeInfraredBERAWithdrawor --sig "run(address,address)" $WITHDRAWOR_LITE $WITHDRAW_CONTRACT  --broadcast  --rpc-url $RPC_URL  --private-key $PRIVATE_KEY -vvvv 2>&1)
+DEPLOY_OUTPUT=$(forge script script/upgrades/staking/UpgradeInfraredBERAWithdrawor.s.sol:UpgradeInfraredBERAWithdrawor --sig "run(address,address)" $WITHDRAWOR_LITE $WITHDRAW_CONTRACT  --broadcast  --rpc-url $RPC_URL  --private-key $PRIVATE_KEY -vvvv 2>&1)
 IBERA_WITHDRAWOR_IMPLEMENTATION=$(echo "$DEPLOY_OUTPUT" | grep -oP '(?<=new InfraredBERAWithdrawor@)0x[a-fA-F0-9]{40}' | head -n1)
 
 echo "Extracted Address: $IBERA_WITHDRAWOR_IMPLEMENTATION"

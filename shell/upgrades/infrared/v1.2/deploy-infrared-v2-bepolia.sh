@@ -7,7 +7,7 @@ RPC_URL="https://bepolia.rpc.berachain.com"
 
 VERIFYER_URL='https://api.routescan.io/v2/network/mainnet/evm/80069/etherscan'
 
-FOUNDRY_PROFILE=production forge script script/DeployInfraredV1_2.s.sol:DeployInfraredV1_2 \
+FOUNDRY_PROFILE=production forge script script/upgrades/infrared/v1.2/DeployInfraredV1_2.s.sol:DeployInfraredV1_2 \
     --broadcast  --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
     --verifier-url $VERIFYER_URL \

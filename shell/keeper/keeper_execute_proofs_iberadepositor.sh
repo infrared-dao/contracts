@@ -15,7 +15,7 @@ DEPOSITOR=0x51761dC3fFB5B54186a70ef1d55c44153671D1FF
 AMOUNT=255000000000000000000000
 PROOFS_PATH="/tests/data/proof3.json"
 
-forge script script/InfraredBERAKeeper.s.sol:InfraredBERAKeeper \
+forge script script/keeper/InfraredBERAKeeper.s.sol:InfraredBERAKeeper \
     --sig "executeDepositProofs(address,uint256,string)" $DEPOSITOR $AMOUNT $PROOFS_PATH \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

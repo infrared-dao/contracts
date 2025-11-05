@@ -5,7 +5,7 @@ import {Helper, IAccessControl} from "./Helper.sol";
 import {Errors} from "src/utils/Errors.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
-import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 
 contract ValidatorManagment is Helper {

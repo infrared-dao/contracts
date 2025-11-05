@@ -18,7 +18,7 @@ IFS=, KEEPERS_STR="${KEEPERS[*]}"
 
 RPC_URL="https://rpc.berachain.com"
 
-forge script script/UpgradeBribeCollectorV1_3.s.sol:UpgradeBribeCollectorV1_3 \
+forge script script/upgrades/bribe-collector/v1.3/UpgradeBribeCollectorV1_3.s.sol:UpgradeBribeCollectorV1_3 \
     --sig "run(address,address,address,address[])" $SAFE $BRIBE_COLLECTOR_PROXY $BRIBE_COLLECTOR_V1_3_IMPLEMENTATION "[$KEEPERS_STR]" \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

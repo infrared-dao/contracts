@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.22;
 
-import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
+import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
 import {IInfraredBERAWithdrawor} from
-    "src/interfaces/upgrades/IInfraredBERAWithdrawor.sol";
+    "src/interfaces/IInfraredBERAWithdrawor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {Errors} from "src/utils/Errors.sol";
 import {InfraredBERABaseE2ETest} from "./InfraredBERABase.t.sol";

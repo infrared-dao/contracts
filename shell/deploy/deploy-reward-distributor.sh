@@ -22,7 +22,7 @@ REWARD_TOKEN=0x334404782aB67b4F6B2A619873E579E971f9AAB7
 KEEPER=0x3e08c3728A69Ab3804Af74F55f500CEedb342Ac7
 
 # Run the deployment script
-FOUNDRY_PROFILE=production forge script script/DeployRewardDistributor.s.sol:DeployRewardDistributor \
+FOUNDRY_PROFILE=production forge script script/deploy/DeployRewardDistributor.s.sol:DeployRewardDistributor \
     --sig "run(address,address,address,address,address)" $SAFE $INFRARED $STAKING_TOKEN $REWARD_TOKEN $KEEPER \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

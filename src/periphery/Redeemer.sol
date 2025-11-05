@@ -6,7 +6,7 @@ import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 
 import {IBerachainBGT} from "src/interfaces/IBerachainBGT.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
-import {InfraredV1_8} from "src/core/upgrades/InfraredV1_8.sol";
+import {InfraredV1_8} from "src/depreciated/core/InfraredV1_8.sol";
 
 /// @title Redeemer Contract
 /// @notice Permissionless contract for redeeming iBGT tokens for BERA via the Infrared protocol.

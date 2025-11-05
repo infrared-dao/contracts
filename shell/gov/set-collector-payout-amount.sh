@@ -11,7 +11,7 @@ PAYOUT_AMOUNT=3000000000000000000000
 
 # function setPayoutAmount(address safe, address collector, uint256 _newPayoutAmount)
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "setPayoutAmount(address,address,uint256)" $SAFE $COLLECTOR $PAYOUT_AMOUNT  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

@@ -11,42 +11,41 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 import {BeaconDeposit} from "@berachain/pol/BeaconDeposit.sol";
 
 import {WrappedRewardToken} from "src/periphery/WrappedRewardToken.sol";
-import {Voter} from "src/voting/Voter.sol";
-import {VotingEscrow} from "src/voting/VotingEscrow.sol";
-import {InfraredBERA} from "src/staking/InfraredBERA.sol";
-import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAV2} from "src/staking/upgrades/InfraredBERAV2.sol";
-import {InfraredBERADepositorV2} from
-    "src/staking/upgrades/InfraredBERADepositorV2.sol";
-import {InfraredBERAWithdrawor} from
-    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
+
+import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
+import {InfraredBERADepositor} from
+    "src/depreciated/staking/InfraredBERADepositor.sol";
+import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
+import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {InfraredBERAWithdraworLite} from
-    "src/staking/InfraredBERAWithdraworLite.sol";
+    "src/depreciated/staking/InfraredBERAWithdraworLite.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
-import {BribeCollector} from "src/core/BribeCollector.sol";
-import {BribeCollectorV1_2} from "src/core/upgrades/BribeCollectorV1_2.sol";
-import {BribeCollectorV1_3} from "src/core/upgrades/BribeCollectorV1_3.sol";
-import {BribeCollectorV1_4} from "src/core/upgrades/BribeCollectorV1_4.sol";
+import {BribeCollector} from "src/depreciated/core/BribeCollector.sol";
+import {BribeCollectorV1_2} from "src/depreciated/core/BribeCollectorV1_2.sol";
+import {BribeCollectorV1_3} from "src/depreciated/core/BribeCollectorV1_3.sol";
+import {BribeCollectorV1_4} from "src/core/BribeCollectorV1_4.sol";
 
 // internal
-import {ERC20, Infrared} from "src/core/Infrared.sol";
-import {InfraredV1_2} from "src/core/upgrades/InfraredV1_2.sol";
-import {InfraredV1_3} from "src/core/upgrades/InfraredV1_3.sol";
-import {InfraredV1_4} from "src/core/upgrades/InfraredV1_4.sol";
-import {InfraredV1_5} from "src/core/upgrades/InfraredV1_5.sol";
-import {InfraredV1_7} from "src/core/upgrades/InfraredV1_7.sol";
-import {InfraredV1_8} from "src/core/upgrades/InfraredV1_8.sol";
-import {InfraredV1_9} from "src/core/upgrades/InfraredV1_9.sol";
+import {ERC20, Infrared} from "src/depreciated/core/Infrared.sol";
+import {InfraredV1_2} from "src/depreciated/core/InfraredV1_2.sol";
+import {InfraredV1_3} from "src/depreciated/core/InfraredV1_3.sol";
+import {InfraredV1_4} from "src/depreciated/core/InfraredV1_4.sol";
+import {InfraredV1_5} from "src/depreciated/core/InfraredV1_5.sol";
+import {InfraredV1_7} from "src/depreciated/core/InfraredV1_7.sol";
+import {InfraredV1_8} from "src/depreciated/core/InfraredV1_8.sol";
+import {InfraredV1_9} from "src/core/InfraredV1_9.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
-import {HarvestBaseCollector} from "src/staking/HarvestBaseCollector.sol";
+import {HarvestBaseCollector} from
+    "src/depreciated/staking/HarvestBaseCollector.sol";
 
-import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 // mocks
 import {MockERC20} from "tests/unit/mocks/MockERC20.sol";
 import {RewardVaultFactory} from "@berachain/pol/rewards/RewardVaultFactory.sol";
@@ -56,9 +55,6 @@ abstract contract Helper is POLTest {
     Infrared public infrared;
     InfraredBGT public ibgt;
     InfraredGovernanceToken public ir;
-
-    Voter public voter;
-    VotingEscrow public sIR;
 
     InfraredBERAV2 public ibera;
     InfraredBERADepositorV2 public depositor;

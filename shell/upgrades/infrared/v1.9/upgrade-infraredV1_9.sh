@@ -29,12 +29,12 @@ WIBGT=0x4f3C10D2bC480638048Fa67a7D00237a33670C1B
 # function upgradeInfrared(bool _send, address _infraredProxy, address _wibgt)
 
 # # dry run
-FOUNDRY_PROFILE=production forge script script/UpgradeInfraredV1_9.s.sol:UpgradeInfraredV1_9 \
+FOUNDRY_PROFILE=production forge script script/upgrades/infrared/v1.9/UpgradeInfraredV1_9.s.sol:UpgradeInfraredV1_9 \
     --sig "upgradeInfrared(bool,address,address,address,address)" "false" $INFRARED $WIBGT $IBGT $BRIBE_COLLECTOR \
     --fork-url $RPC_URL -vvvv
 
 # # live
-# FOUNDRY_PROFILE=production forge script script/UpgradeInfraredV1_9.s.sol:UpgradeInfraredV1_9 \
+# FOUNDRY_PROFILE=production forge script script/upgrades/infrared/v1.9/UpgradeInfraredV1_9.s.sol:UpgradeInfraredV1_9 \
 #     --sig "upgradeInfrared(bool,address,address,address,address)" "true" $INFRARED $WIBGT $IBGT $BRIBE_COLLECTOR \
 #     --rpc-url $RPC_URL -vvvv \
 #     --private-key $PRIVATE_KEY --verify \

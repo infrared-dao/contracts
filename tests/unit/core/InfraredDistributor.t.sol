@@ -7,7 +7,7 @@ import {IAccessControl} from "@openzeppelin/contracts/access/IAccessControl.sol"
 
 import "forge-std/Test.sol";
 
-import {BribeCollector} from "src/core/BribeCollector.sol";
+import {BribeCollector} from "src/depreciated/core/BribeCollector.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 
 import {MockERC20} from "tests/unit/mocks/MockERC20.sol";

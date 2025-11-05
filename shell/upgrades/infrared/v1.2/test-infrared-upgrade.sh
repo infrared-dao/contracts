@@ -18,7 +18,7 @@ echo "Anvil fork started with PID: $ANVIL_PID"
 
 # deploy new implementation
 echo "Deploying InfraredV2..."
-DEPLOY_OUTPUT=$(forge script script/DeployInfraredV2.s.sol:DeployInfraredV2  --broadcast  --rpc-url $RPC_URL  --private-key $PRIVATE_KEY -vvvv 2>&1)
+DEPLOY_OUTPUT=$(forge script script/upgrades/infrared/v1.2/DeployInfraredV2.s.sol:DeployInfraredV2  --broadcast  --rpc-url $RPC_URL  --private-key $PRIVATE_KEY -vvvv 2>&1)
 INFRARED_V2_IMPLEMENTATION=$(echo "$DEPLOY_OUTPUT" | grep -oP '(?<=new InfraredV2@)0x[a-fA-F0-9]{40}' | head -n1)
 
 echo "Extracted Address: $INFRARED_V2_IMPLEMENTATION"

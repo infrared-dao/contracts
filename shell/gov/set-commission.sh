@@ -14,7 +14,7 @@ PUBKEYS=(
 IFS=, PUBKEYS_STR="${PUBKEYS[*]}"
 
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "queueValCommissions(address,address,bytes[])" $SAFE $INFRARED "[$PUBKEYS_STR]"  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

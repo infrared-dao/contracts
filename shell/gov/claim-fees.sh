@@ -10,9 +10,11 @@ IBERA="0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5"
 IBGT="0xac03CABA51e17c86c921E1f6CBFBdC91F8BB2E6b"
 HONEY="0xFCBD14DC51f0A4d49d5E53C2E0950e0bC26d0Dce"
 WBERA="0x6969696969696969696969696969696969696969"
+WIBGT="0x4f3C10D2bC480638048Fa67a7D00237a33670C1B"
 TO=$SAFE
 TOKENS=(
     $IBGT
+    $WIBGT
     $IBERA
     $HONEY
     $WBERA
@@ -26,7 +28,7 @@ IFS=, TOKENS_STR="${TOKENS[*]}"
 #         address _to,
 #         address[] _tokens
 
-forge script script/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
+forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "claimProtocolFees(address,address,address,address[])" $SAFE $INFRARED $TO "[$TOKENS_STR]"  \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \

@@ -4,17 +4,16 @@ pragma solidity ^0.8.26;
 import "forge-std/Test.sol";
 
 // Core contracts
-import {InfraredBERA} from "src/staking/InfraredBERA.sol";
-import {InfraredBERADepositor} from "src/staking/InfraredBERADepositor.sol";
-import {InfraredBERAV2} from "src/staking/upgrades/InfraredBERAV2.sol";
-import {InfraredBERADepositorV2} from
-    "src/staking/upgrades/InfraredBERADepositorV2.sol";
-import {InfraredBERAWithdrawor} from
-    "src/staking/upgrades/InfraredBERAWithdrawor.sol";
+import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
+import {InfraredBERADepositor} from
+    "src/depreciated/staking/InfraredBERADepositor.sol";
+import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
+import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {InfraredBERAFeeReceivor} from "src/staking/InfraredBERAFeeReceivor.sol";
 import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
-import {IInfraredBERA} from "src/interfaces/IInfraredBERA.sol";
-import {IInfrared} from "src/interfaces/IInfrared.sol";
+import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
+import {IInfrared} from "src/depreciated/interfaces/IInfrared.sol";
 import {IBeaconDeposit} from "@berachain/pol/interfaces/IBeaconDeposit.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 

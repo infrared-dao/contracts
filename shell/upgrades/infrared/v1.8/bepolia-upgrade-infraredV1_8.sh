@@ -27,7 +27,7 @@ forge build --sizes
 #     address _infraredProxy,
 # )
 
-forge script script/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
+forge script script/upgrades/infrared/v1.8/UpgradeInfraredV1_8.s.sol:UpgradeInfraredV1_8 \
     --sig "upgradeInfraredTestnet(address,address)" $BRIBE_COLLECTOR $INFRARED \
     --rpc-url $RPC_URL -vvvv \
     --private-key $PRIVATE_KEY --verify --broadcast

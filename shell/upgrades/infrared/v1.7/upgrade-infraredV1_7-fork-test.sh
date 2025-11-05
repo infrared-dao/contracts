@@ -38,7 +38,7 @@ echo "Deploying new collector and proxy ..."
 #         address _receivor,
 #         uint256 _payoutAmount
 #     ) external returns (address proxyAddr)
-forge script script/UpgradeInfraredV1_7.s.sol:UpgradeInfraredV1_7 --sig "deployCollector(address,address,address,address,address,uint256)" $INFRARED $KEEPER $IBGT $WBERA $RECEIVOR $PAYOUT_AMOUNT --rpc-url $RPC_URL -vvvv --private-key $PRIVATE_KEY --broadcast
+forge script script/upgrades/infrared/v1.7/UpgradeInfraredV1_7.s.sol:UpgradeInfraredV1_7 --sig "deployCollector(address,address,address,address,address,uint256)" $INFRARED $KEEPER $IBGT $WBERA $RECEIVOR $PAYOUT_AMOUNT --rpc-url $RPC_URL -vvvv --private-key $PRIVATE_KEY --broadcast
 
 
 # todo: capture returned proxy address
@@ -47,7 +47,7 @@ HARVEST_BASE_COLLECTOR_PROXY=0x79A3eE989b5641b72642f25784E92607D5172C97
 # step 2: deploy new Infrared imp (note, upgrade and initialize are protected by onlyGov)
 # deploy new implementation
 echo "Deploying Infrared v1.7 ..."
-DEPLOY_OUTPUT=$(forge script script/UpgradeInfraredV1_7.s.sol:UpgradeInfraredV1_7  --sig "deployInfraredImp()"  --rpc-url $RPC_URL -vvvv --private-key $PRIVATE_KEY --verfiy --broadcast 2>&1)
+DEPLOY_OUTPUT=$(forge script script/upgrades/infrared/v1.7/UpgradeInfraredV1_7.s.sol:UpgradeInfraredV1_7  --sig "deployInfraredImp()"  --rpc-url $RPC_URL -vvvv --private-key $PRIVATE_KEY --verfiy --broadcast 2>&1)
 INFRAREDV1_7_IMP=$(echo "$DEPLOY_OUTPUT" | grep -oP '(?<=new InfraredV1_7@)0x[a-fA-F0-9]{40}' | head -n1)
 
 echo "Extracted Address: $INFRAREDV1_7_IMP"
@@ -72,7 +72,7 @@ INFRAREDV1_7_IMP=0x78B5ebb84Db848c55e553fe1928474F926d59D84
 
 # first pass simulate
 echo "upgrading InfraredV1_7  ..."
-forge script script/UpgradeInfraredV1_7.s.sol:UpgradeInfraredV1_7 \
+forge script script/upgrades/infrared/v1.7/UpgradeInfraredV1_7.s.sol:UpgradeInfraredV1_7 \
     --sig "upgradeInfrared(bool,address,address,address)" false $INFRARED $INFRAREDV1_7_IMP $HARVEST_BASE_COLLECTOR_PROXY \
     --rpc-url $RPC_URL -vvvv #\
     # --private-key $PRIVATE_KEY 

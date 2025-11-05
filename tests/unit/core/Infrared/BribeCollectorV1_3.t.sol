@@ -2,7 +2,7 @@
 pragma solidity 0.8.26;
 
 import {BribeCollectorTest} from "./BribeCollector.t.sol";
-import {BribeCollectorV1_3} from "src/core/upgrades/BribeCollectorV1_3.sol";
+import {BribeCollectorV1_3} from "src/depreciated/core/BribeCollectorV1_3.sol";
 import {Errors} from "src/utils/Errors.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 

@@ -11,11 +11,9 @@ import {ERC1967Proxy} from
 import {ERC20PresetMinterPauser} from "src/vendors/ERC20PresetMinterPauser.sol";
 
 import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
-import {Voter} from "src/voting/Voter.sol";
-import {VotingEscrow} from "src/voting/VotingEscrow.sol";
 
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-import {Infrared} from "src/core/Infrared.sol";
+import {Infrared} from "src/depreciated/core/Infrared.sol";
 
 contract RegisterVaultForkTest is InfraredForkTest {
     function testRegisterVaultWithoutRewardsVault() public {
@@ -72,8 +70,6 @@ contract RegisterVaultForkTest is InfraredForkTest {
     }
 
     function deployIR() internal {
-        voter = Voter(setupProxy(address(new Voter())));
-
         ir = new InfraredGovernanceToken(
             address(infrared),
             infraredGovernance,
@@ -85,15 +81,7 @@ contract RegisterVaultForkTest is InfraredForkTest {
         // gov only (i.e. this needs to be run by gov)
         vm.startPrank(infraredGovernance);
         infrared.setIR(address(ir));
-        infrared.setVoter(address(voter));
         vm.stopPrank();
-
-        sIR = new VotingEscrow(
-            keeper, address(ir), address(voter), address(infrared)
-        );
-        voter.initialize(
-            address(infrared), address(sIR), infraredGovernance, keeper
-        );
     }
 
     function setupProxy(address implementation)

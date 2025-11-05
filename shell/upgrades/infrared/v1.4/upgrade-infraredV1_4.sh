@@ -10,7 +10,7 @@ INFRARED_V4_IMPLEMENTATION=""
 
 RPC_URL="https://rpc.berachain.com"
 
-forge script script/UpgradeInfraredV1_4.s.sol:UpgradeInfraredV1_4 \
+forge script script/upgrades/infrared/v1.4/UpgradeInfraredV1_4.s.sol:UpgradeInfraredV1_4 \
     --sig "run(address,address,address)" $SAFE $INFRARED $INFRARED_V4_IMPLEMENTATION \
     --rpc-url $RPC_URL \
     --private-key $PRIVATE_KEY \
