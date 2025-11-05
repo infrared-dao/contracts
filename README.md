@@ -1,8 +1,8 @@
 # Infrared Protocol 🔴
 
-[![pipeline](https://github.com/infrared-dao/infrared-contracts/actions/workflows/pipeline.yml/badge.svg)](https://github.com/infrared-dao/infrared-contracts/actions/workflows/pipeline.yml)
-[![Slither analysis](https://github.com/infrared-dao/infrared-contracts/actions/workflows/slither.yml/badge.svg)](https://github.com/infrared-dao/infrared-contracts/actions/workflows/slither.yml)
-[![Deploy Natspec docs to Pages](https://github.com/infrared-dao/infrared-contracts/actions/workflows/docs-deploy.yml/badge.svg)](https://github.com/infrared-dao/infrared-contracts/actions/workflows/docs-deploy.yml)
+[![pipeline](https://github.com/infrared-dao/contracts/actions/workflows/pipeline.yml/badge.svg)](https://github.com/infrared-dao/contracts/actions/workflows/pipeline.yml)
+[![Slither analysis](https://github.com/infrared-dao/contracts/actions/workflows/slither.yml/badge.svg)](https://github.com/infrared-dao/contracts/actions/workflows/slither.yml)
+
 
 > **Liquid Staking Infrastructure for Berachain's Proof-of-Liquidity**
 
@@ -67,7 +67,7 @@ The Infrared Protocol addresses critical limitations in Berachain's native staki
 ### Contract Modules
 
 #### 🔵 Core Contracts - POL Integration & BGT Management
-[Full documentation →](https://github.com/infrared-dao/infrared-contracts/blob/develop/src/core/README.md)
+[Full documentation →](https://github.com/infrared-dao/contracts/blob/develop/src/core/README.md)
 
 The core module facilitates interaction with Berachain's Proof-of-Liquidity reward system, managing BGT accumulation, iBGT issuance, and reward distribution.
 
@@ -82,7 +82,7 @@ The core module facilitates interaction with Berachain's Proof-of-Liquidity rewa
 **Key Flows**: Users deposit → InfraredVaults stake into BerachainRewardsVaults → BGT rewards accumulate → Infrared claims & converts to iBGT → Distribution to stakers
 
 #### 🟢 Staking Contracts - BERA Liquid Staking
-[Full documentation →](https://github.com/infrared-dao/infrared-contracts/blob/develop/src/staking/README.md)
+[Full documentation →](https://github.com/infrared-dao/contracts/blob/develop/src/staking/README.md)
 
 The staking module enables liquid staking of BERA (native gas token) through iBERA tokens, maintaining liquidity while participating in consensus.
 
@@ -112,8 +112,8 @@ The staking module enables liquid staking of BERA (native gas token) through iBE
 
 ```bash
 # Clone the repository
-git clone https://github.com/infrared-dao/infrared-contracts.git
-cd infrared-contracts
+git clone https://github.com/infrared-dao/contracts.git
+cd contracts
 
 # Setup development environment (installs dependencies and creates .env)
 make dev-setup
@@ -179,17 +179,17 @@ make snapshot
 Add Infrared to your Foundry project:
 
 ```bash
-forge install infrared-dao/infrared-contracts
+forge install infrared-dao/contracts
 ```
 
 Update `foundry.toml`:
 
 ```toml
 [dependencies]
-infrared-contracts = { version = "1.0.0" }
+contracts = { version = "1.0.0" }
 
 [remappings]
-"@infrared/=lib/infrared-contracts/src/"
+"@infrared/=lib/contracts/src/"
 ```
 
 ---

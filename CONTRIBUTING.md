@@ -18,8 +18,8 @@ Before opening an issue, be sure to search through the existing open and closed 
 
 When requesting a new feature, include as many details as you can, especially around the use cases that motivate it. Features are prioritized according to the impact they may have on the ecosystem, so we appreciate information showing that the impact could be high.
 
-[security policy]: https://github.com/infrared-dao/infrared-contracts/security
-[open an issue]: https://github.com/infrared-dao/infrared-contracts/issues/new/choose
+[security policy]: https://github.com/infrared-dao/contracts/security
+[open an issue]: https://github.com/infrared-dao/contracts/issues/new/choose
 
 ## Submitting a pull request
 
@@ -33,4 +33,4 @@ Changelog entries should be added to each pull request by using [Changesets](htt
 
 When opening the pull request you will be presented with a template and a series of instructions. Read through it carefully and follow all the steps. Expect a review and feedback from the maintainers afterwards.
 
-If you're looking for a good place to start, look for issues labelled ["good first issue"](https://github.com/infrared-dao/infrared-contracts/labels/good%20first%20issue)!
+If you're looking for a good place to start, look for issues labelled ["good first issue"](https://github.com/infrared-dao/contracts/labels/good%20first%20issue)!
