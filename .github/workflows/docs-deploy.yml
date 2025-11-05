@@ -40,12 +40,6 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Copy over sub directory docs
-        run: |
-          cp docs/core.md docs/src/src/core/README.md
-          cp docs/staking.md docs/src/src/staking/README.md
-          cp docs/voting.md docs/src/src/voting/README.md
-
       - name: Run Forge doc
         run: |
           forge doc --build
