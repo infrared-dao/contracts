@@ -6,7 +6,7 @@ on:
     branches: [main, develop]
     paths:
       - "**.sol"
-      - ".github/workflows/docs-deploy.yaml"
+      - ".github/workflows/docs-deploy.yml"
   workflow_dispatch: # Enable manual triggering
 
 env:
