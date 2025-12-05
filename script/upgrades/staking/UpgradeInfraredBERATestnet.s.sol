@@ -9,7 +9,7 @@ import {ERC1967Proxy} from
 import {InfraredBERAWithdraworLite} from
     "src/depreciated/staking/InfraredBERAWithdraworLite.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
-import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERAV2} from "src/depreciated/staking/InfraredBERAV2.sol";
 import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
 
 contract UpgradeInfraredBERATestnet is Script {

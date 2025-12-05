@@ -15,7 +15,7 @@ import {WrappedRewardToken} from "src/periphery/WrappedRewardToken.sol";
 import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
 import {InfraredBERADepositor} from
     "src/depreciated/staking/InfraredBERADepositor.sol";
-import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERAV2} from "src/depreciated/staking/InfraredBERAV2.sol";
 import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {InfraredBERAWithdraworLite} from

@@ -161,6 +161,14 @@ contract InfraredKeeperScriptEOA is Script {
         vm.stopBroadcast();
     }
 
+    function cancelBoosts(bytes[] calldata _pubkeys, uint128[] calldata _amts)
+        external
+    {
+        vm.startBroadcast();
+        infrared.cancelBoosts(_pubkeys, _amts);
+        vm.stopBroadcast();
+    }
+
     function _checkEnoughTimePassed(uint32 blockNumberLast)
         private
         view

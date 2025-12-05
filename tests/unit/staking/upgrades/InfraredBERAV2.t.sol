@@ -2,7 +2,7 @@
 pragma solidity ^0.8.22;
 
 import "./InfraredBERAV2Base.t.sol";
-import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERAV2} from "src/depreciated/staking/InfraredBERAV2.sol";
 import {IInfraredBERAV2} from "src/interfaces/IInfraredBERAV2.sol";
 import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
 import {IInfraredBERAWithdrawor} from

@@ -6,10 +6,19 @@ import "forge-std/console.sol";
 
 import {BeaconRootsVerify} from "src/utils/BeaconRootsVerify.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
-import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERAV2_1 as InfraredBERAV2} from
+    "src/staking/InfraredBERAV2_1.sol";
 import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
 
+import {InfraredV1_9 as Infrared} from "src/core/InfraredV1_9.sol";
+import {IBGT as IBerachainBGT} from "@berachain/pol/interfaces/IBGT.sol";
+
 contract InfraredBERAKeeper is Script {
+    Infrared infrared =
+        Infrared(payable(0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126));
+    IBerachainBGT bgt =
+        IBerachainBGT(0x656b95E550C07a9ffe548bd4085c72418Ceb1dba);
+
     using stdJson for string;
 
     bytes32[] validatorProof;
@@ -24,6 +33,8 @@ contract InfraredBERAKeeper is Script {
 
     bytes32 stateRoot;
     uint256 nextBlockTimestamp;
+
+    uint256 totalPendingWithdrawals;
 
     struct JsonHeader {
         bytes32 body_root;
@@ -44,16 +55,130 @@ contract InfraredBERAKeeper is Script {
         bytes32 withdrawal_credentials;
     }
 
+    error PendingWithdrawals();
+
     /// @dev queue's a ticket to rebalance entire stak of given validator
+    /// @dev remove validator from set after
     function queueExitRebalance(
         address _withdrawor,
         address _ibera,
-        bytes calldata _pubkey
+        bytes calldata _pubkey,
+        string calldata proofFilePath
     ) external {
         uint256 _stake = InfraredBERAV2(_ibera).stakes(_pubkey);
         address _depositor = InfraredBERAV2(_ibera).depositor();
+
+        // check no pending withdrawals
+        if (
+            InfraredBERAWithdrawor(payable(_withdrawor))
+                .getTotalPendingWithdrawals(keccak256(_pubkey)) > 0
+        ) revert PendingWithdrawals();
+
+        // set proof data
+        string memory json;
+        {
+            string memory root = vm.projectRoot();
+            string memory path = string.concat(root, proofFilePath);
+            json = vm.readFile(path);
+        }
+
+        bytes memory strRaw = json.parseRaw(".validator_proof");
+        validatorProof = abi.decode(strRaw, (bytes32[]));
+
+        strRaw = json.parseRaw(".balance_proof");
+        balanceProof = abi.decode(strRaw, (bytes32[]));
+
+        strRaw = json.parseRaw(".state_root");
+        stateRoot = abi.decode(strRaw, (bytes32));
+
+        strRaw = json.parseRaw(".validator_index");
+        validatorIndex = abi.decode(strRaw, (uint256));
+
+        // strRaw = json.parseRaw(".validator_leaf");
+        // validatorLeaf = abi.decode(strRaw, (bytes32));
+
+        strRaw = json.parseRaw(".balance_leaf");
+        balanceLeaf = abi.decode(strRaw, (bytes32));
+
+        strRaw = json.parseRaw(".metadata.timestamp");
+        nextBlockTimestamp = abi.decode(strRaw, (uint256));
+        nextBlockTimestamp = nextBlockTimestamp + 2;
+
+        strRaw = json.parseRaw(".validator_data");
+        JsonValidator memory _validator = abi.decode(strRaw, (JsonValidator));
+
+        totalPendingWithdrawals =
+            stdJson.readUint(json, ".metadata.total_pending_withdrawals");
+        // check again no pending withdrawals on CL
+        if (totalPendingWithdrawals > 0) revert PendingWithdrawals();
+
+        validatorStruct = BeaconRootsVerify.Validator({
+            pubkey: _validator.pubkey,
+            withdrawalCredentials: _validator.withdrawal_credentials,
+            effectiveBalance: _validator.effective_balance,
+            slashed: _validator.slashed,
+            activationEligibilityEpoch: _validator.activation_eligibility_epoch,
+            activationEpoch: _validator.activation_epoch,
+            exitEpoch: _validator.exit_epoch,
+            withdrawableEpoch: _validator.withdrawable_epoch
+        });
+
+        strRaw = json.parseRaw(".header");
+        JsonHeader memory _header = abi.decode(strRaw, (JsonHeader));
+
+        header = BeaconRootsVerify.BeaconBlockHeader({
+            slot: _header.slot,
+            proposerIndex: _header.proposer_index,
+            parentRoot: _header.parent_root,
+            stateRoot: _header.state_root,
+            bodyRoot: _header.body_root
+        });
+
+        // bytes32 expectedRoot =
+        //     BeaconRootsVerify.calculateBeaconHeaderMerkleRoot(header);
+
+        // bytes32 rootByTimestamp =
+        //     BeaconRootsVerify.getParentBeaconBlockRoot(nextBlockTimestamp);
+
+        // if (
+        //     BeaconRootsVerify.calculateBeaconHeaderMerkleRoot(header)
+        //         != BeaconRootsVerify.getParentBeaconBlockRoot(nextBlockTimestamp)
+        // ) revert();
+
+        uint128[] memory _amts = new uint128[](1);
+        (, _amts[0]) =
+            bgt.boostedQueue(address(infrared), validatorStruct.pubkey);
+        bytes[] memory _pubkeys = new bytes[](1);
+        _pubkeys[0] = validatorStruct.pubkey;
+
         vm.startBroadcast();
+        // cancel queued boosts
+        if (_amts[0] > 0) {
+            infrared.cancelBoosts(_pubkeys, _amts);
+        }
+
+        // unboost bgt
+        _amts[0] = bgt.boosted(address(infrared), validatorStruct.pubkey);
+        if (_amts[0] > 0) {
+            infrared.queueDropBoosts(_pubkeys, _amts);
+        }
+
+        // queue rebalance
         InfraredBERAWithdrawor(payable(_withdrawor)).queue(_depositor, _stake);
+        // execute withdraw
+        InfraredBERAWithdrawor(payable(_withdrawor)).execute{
+            value: InfraredBERAWithdrawor(payable(_withdrawor)).getFee()
+        }(
+            header,
+            validatorStruct,
+            validatorProof,
+            balanceProof,
+            validatorIndex,
+            balanceLeaf,
+            0,
+            nextBlockTimestamp
+        );
+
         vm.stopBroadcast();
     }
 
@@ -61,7 +186,7 @@ contract InfraredBERAKeeper is Script {
         address _withdrawor,
         uint256 amount,
         string calldata proofFilePath
-    ) external {
+    ) public {
         // set proof data
         string memory json;
         {
@@ -123,10 +248,10 @@ contract InfraredBERAKeeper is Script {
         // bytes32 rootByTimestamp =
         //     BeaconRootsVerify.getParentBeaconBlockRoot(nextBlockTimestamp);
 
-        if (
-            BeaconRootsVerify.calculateBeaconHeaderMerkleRoot(header)
-                != BeaconRootsVerify.getParentBeaconBlockRoot(nextBlockTimestamp)
-        ) revert();
+        // if (
+        //     BeaconRootsVerify.calculateBeaconHeaderMerkleRoot(header)
+        //         != BeaconRootsVerify.getParentBeaconBlockRoot(nextBlockTimestamp)
+        // ) revert();
 
         vm.startBroadcast();
         InfraredBERAWithdrawor(payable(_withdrawor)).execute{
@@ -139,6 +264,87 @@ contract InfraredBERAKeeper is Script {
             validatorIndex,
             balanceLeaf,
             amount,
+            nextBlockTimestamp
+        );
+        vm.stopBroadcast();
+    }
+
+    /// @dev Calls registerViaProofs to sync validator stake from consensus layer
+    /// @param _ibera The InfraredBERA contract address
+    /// @param proofFilePath Path to the JSON proof file
+    function registerViaProofs(
+        address _withdrawor,
+        address _ibera,
+        string calldata proofFilePath
+    ) external {
+        // set proof data
+        string memory json;
+        {
+            string memory root = vm.projectRoot();
+            string memory path = string.concat(root, proofFilePath);
+            json = vm.readFile(path);
+        }
+
+        bytes memory strRaw = json.parseRaw(".validator_proof");
+        validatorProof = abi.decode(strRaw, (bytes32[]));
+
+        strRaw = json.parseRaw(".balance_proof");
+        balanceProof = abi.decode(strRaw, (bytes32[]));
+
+        strRaw = json.parseRaw(".validator_index");
+        validatorIndex = abi.decode(strRaw, (uint256));
+
+        strRaw = json.parseRaw(".balance_leaf");
+        balanceLeaf = abi.decode(strRaw, (bytes32));
+
+        strRaw = json.parseRaw(".metadata.timestamp");
+        nextBlockTimestamp = abi.decode(strRaw, (uint256));
+        nextBlockTimestamp = nextBlockTimestamp + 2;
+
+        strRaw = json.parseRaw(".validator_data");
+        JsonValidator memory _validator = abi.decode(strRaw, (JsonValidator));
+
+        totalPendingWithdrawals =
+            stdJson.readUint(json, ".metadata.total_pending_withdrawals");
+
+        // check again no pending withdrawals on CL
+        if (totalPendingWithdrawals > 0) revert PendingWithdrawals();
+
+        if (
+            InfraredBERAWithdrawor(payable(_withdrawor))
+                .getTotalPendingWithdrawals(keccak256(_validator.pubkey)) > 0
+        ) revert PendingWithdrawals();
+
+        validatorStruct = BeaconRootsVerify.Validator({
+            pubkey: _validator.pubkey,
+            withdrawalCredentials: _validator.withdrawal_credentials,
+            effectiveBalance: _validator.effective_balance,
+            slashed: _validator.slashed,
+            activationEligibilityEpoch: _validator.activation_eligibility_epoch,
+            activationEpoch: _validator.activation_epoch,
+            exitEpoch: _validator.exit_epoch,
+            withdrawableEpoch: _validator.withdrawable_epoch
+        });
+
+        strRaw = json.parseRaw(".header");
+        JsonHeader memory _header = abi.decode(strRaw, (JsonHeader));
+
+        header = BeaconRootsVerify.BeaconBlockHeader({
+            slot: _header.slot,
+            proposerIndex: _header.proposer_index,
+            parentRoot: _header.parent_root,
+            stateRoot: _header.state_root,
+            bodyRoot: _header.body_root
+        });
+
+        vm.startBroadcast();
+        InfraredBERAV2(_ibera).registerViaProofs(
+            header,
+            validatorStruct,
+            validatorProof,
+            balanceProof,
+            validatorIndex,
+            balanceLeaf,
             nextBlockTimestamp
         );
         vm.stopBroadcast();
@@ -210,10 +416,10 @@ contract InfraredBERAKeeper is Script {
         // bytes32 rootByTimestamp =
         //     BeaconRootsVerify.getParentBeaconBlockRoot(nextBlockTimestamp);
 
-        if (
-            BeaconRootsVerify.calculateBeaconHeaderMerkleRoot(header)
-                != BeaconRootsVerify.getParentBeaconBlockRoot(nextBlockTimestamp)
-        ) revert();
+        // if (
+        //     BeaconRootsVerify.calculateBeaconHeaderMerkleRoot(header)
+        //         != BeaconRootsVerify.getParentBeaconBlockRoot(nextBlockTimestamp)
+        // ) revert();
         // console.logBytes32(BeaconRootsVerify.calculateBeaconHeaderMerkleRoot(header));
         // revert();
 

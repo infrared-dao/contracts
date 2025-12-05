@@ -14,7 +14,8 @@ import {IMultiRewards} from "src/interfaces/IMultiRewards.sol";
 import {BribeCollectorV1_4} from "src/core/BribeCollectorV1_4.sol";
 import {HarvestBaseCollectorV1_2} from
     "src/staking/HarvestBaseCollectorV1_2.sol";
-import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERAV2_1 as InfraredBERAV2} from
+    "src/staking/InfraredBERAV2_1.sol";
 
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 
@@ -809,7 +810,7 @@ contract InfraredMultisigGovernance is BatchScript {
 
         // queue validator incentive commissions
         uint256 len = _pubkeys.length;
-        uint96 maxCommissionRate = 10000; // 100% = 10000 in BeraChef
+        uint96 maxCommissionRate = 0; // 100% = 10000 in BeraChef
         for (uint256 i; i < len; i++) {
             bytes memory data = abi.encodeWithSignature(
                 "queueValCommission(bytes,uint96)",

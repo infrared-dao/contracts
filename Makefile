@@ -84,6 +84,7 @@ help: ## Show this help message
 check-all: ## Display all protocol state information
 	@echo "$(GREEN)=== Infrared Protocol State ($(NETWORK)) ===$(NC)"
 	@make -s check-deposits
+	@make -s check-deposits-health
 	@make -s check-pending
 	@make -s check-confirmed
 	@make -s check-bgt
@@ -91,6 +92,11 @@ check-all: ## Display all protocol state information
 check-deposits: ## Check total iBERA deposits
 	@echo "$(YELLOW)Total Deposits:$(NC)"
 	@cast call $(IBERA_PROXY) "deposits()(uint256)" --rpc-url $(RPC_URL)
+
+check-deposits-health: ## Check deposits accounting health (detects bypass deposits or rejected withdrawals)
+	@forge script script/state/CheckDepositsHealth.s.sol:CheckDepositsHealth \
+		--rpc-url $(RPC_URL) \
+		--sig "run(address,address)" $(IBERA_PROXY) $(INFRARED_PROXY)
 
 check-pending: ## Check pending validator stakes
 	@echo "$(YELLOW)Pending Stakes:$(NC)"

@@ -13,14 +13,14 @@ PUBKEYS=(
 )
 
 AMOUNTS=(
-    2511088695951128453128
+    5224895212967412105216
 )
 
 IFS=, PUBKEYS_STR="${PUBKEYS[*]}"
 IFS=, AMOUNTS_STR="${AMOUNTS[*]}"
 
 forge script $SCRIPT \
-    --sig "queueDropBoosts(bytes[],uint128[])" "[$PUBKEYS_STR]" "[$AMOUNTS_STR]" \
+    --sig "cancelBoosts(bytes[],uint128[])" "[$PUBKEYS_STR]" "[$AMOUNTS_STR]" \
     --rpc-url $RPC_URL \
     --keystore $KEYSTORE --password $PASSWORD \
     --broadcast -vvvv --sender 0x3e08c3728A69Ab3804Af74F55f500CEedb342Ac7
