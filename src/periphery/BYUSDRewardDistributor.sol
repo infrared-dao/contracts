@@ -360,21 +360,13 @@ contract BYUSDRewardDistributor is Owned {
 
     /**
      * @notice Calculates the expected reward amount to be distributed in the next distribution cycle
-     * @dev Accounts for leftover rewards from incomplete periods and residual amounts in vault
-     *      Returns 0 if distribution conditions are not met (too soon, zero supply, insufficient balance)
+     * @dev Returns 0 if distribution conditions are not met (too soon, zero supply, insufficient balance)
      * @return amount The amount of reward tokens expected to be distributed, or 0 if conditions not met
      */
     function getExpectedAmount() public view returns (uint256 amount) {
         IInfraredVault vault = infrared.vaultRegistry(stakingToken);
-        (
-            ,
-            uint256 rewardsDuration,
-            uint256 periodFinish,
-            uint256 rewardRate,
-            ,
-            ,
-            uint256 residual
-        ) = vault.rewardData(address(rewardsToken));
+        (, uint256 rewardsDuration,,,,,) =
+            vault.rewardData(address(rewardsToken));
 
         if (rewardsDuration == 0) return 0;
         if (block.timestamp < lastDistributionTime + distributionInterval) {
@@ -384,17 +376,7 @@ contract BYUSDRewardDistributor is Owned {
         uint256 totalSupply = vault.totalSupply();
         if (totalSupply == 0) return 0;
 
-        // Calculate leftover rewards: (periodFinish - block.timestamp) * rewardRate
-        uint256 leftover = block.timestamp >= periodFinish
-            ? 0
-            : (periodFinish - block.timestamp) * rewardRate;
-
-        uint256 totalRewardsNeeded = rewardsToken.balanceOf(address(this));
-
-        // Subtract leftover rewards to find the additional amount needed
-        amount = totalRewardsNeeded > (leftover + residual)
-            ? totalRewardsNeeded - (leftover + residual)
-            : 0;
+        amount = rewardsToken.balanceOf(address(this));
     }
 
     /**
@@ -450,12 +432,8 @@ contract BYUSDRewardDistributor is Owned {
      * @notice Deposit underlying token that will unlock linearly over time
      * @param amount   Amount of underlying to lock
      * @param duration Total lock duration in seconds (e.g. 30 days)
-     * @dev Only keeper (treasury/multisig) can fund rewards to prevent spam and retain control
      */
-    function depositUnderlying(uint256 amount, uint256 duration)
-        external
-        onlyKeeper
-    {
+    function depositUnderlying(uint256 amount, uint256 duration) external {
         if (amount == 0 || amount > type(uint128).max) revert InvalidAmount();
         if (duration == 0 || duration > 365 * 24 * 60 * 60) {
             revert InvalidDuration();

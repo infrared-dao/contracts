@@ -563,12 +563,13 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function recoverERC20FromVault(
+        address safe,
         address payable infrared,
         address _asset,
         address _to,
         address _token,
         uint256 _amount
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
             "recoverERC20FromVault(address,address,address,uint256)",
             _asset,
@@ -577,9 +578,29 @@ contract InfraredMultisigGovernance is BatchScript {
             _amount
         );
         addToBatch(infrared, 0, data);
-        vm.startBroadcast();
+
         executeBatch(true);
-        vm.stopBroadcast();
+    }
+
+    function recoverERC20FromOldVault(
+        bool _send,
+        address safe,
+        address payable infrared,
+        address _vault,
+        address _to,
+        address _token,
+        uint256 _amount
+    ) external isBatch(safe) {
+        bytes memory data = abi.encodeWithSignature(
+            "recoverERC20FromOldVault(address,address,address,uint256)",
+            _vault,
+            _to,
+            _token,
+            _amount
+        );
+        addToBatch(infrared, 0, data);
+
+        executeBatch(_send);
     }
 
     function delegateBGT(address payable infrared, address _delegatee)
@@ -619,6 +640,33 @@ contract InfraredMultisigGovernance is BatchScript {
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
+    }
+
+    function withdrawWbyusdAndAddIncentives(
+        bool _send,
+        address safe,
+        address infrared,
+        address staking,
+        address wByusd,
+        address byusdDistributor,
+        uint256 amount
+    ) external isBatch(safe) {
+        bytes memory data =
+            abi.encodeWithSignature("withdrawRewards(uint256)", amount);
+        addToBatch(byusdDistributor, 0, data);
+
+        data = abi.encodeWithSignature(
+            "approve(address,uint256)", infrared, amount
+        );
+        addToBatch(wByusd, 0, data);
+
+        data = abi.encodeWithSignature(
+            "addIncentives(address,address,uint256)", staking, wByusd, amount
+        );
+
+        addToBatch(infrared, 0, data);
+
+        executeBatch(_send);
     }
 
     function claimProtocolFees(

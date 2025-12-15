@@ -6,7 +6,7 @@ import "forge-std/Script.sol";
 import {BYUSDRewardDistributor} from "src/periphery/BYUSDRewardDistributor.sol";
 
 contract DeployBYUSDRewardDistributor is Script {
-    uint256 constant INITIAL_DISTRIBUTION_INTERVAL = 12 hours;
+    uint256 constant INITIAL_DISTRIBUTION_INTERVAL = 1 hours;
 
     function run(
         address infraredGovernance,
