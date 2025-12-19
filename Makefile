@@ -54,6 +54,7 @@ WBERA ?= 0x6969696969696969696969696969696969696969
 BGT ?= 0x656b95E550C07a9ffe548bd4085c72418Ceb1dba
 WIBGT ?= 0x4f3C10D2bC480638048Fa67a7D00237a33670C1B
 SAFE_ADDRESS ?= 0x182a31A27A0D39d735b31e80534CFE1fCd92c38f
+SAFE_ADDRESS_BNB ?= 0x33B4892FccB4fd11716F1dcBfABbCe4A4DA6AB9e
 
 
 # Colors for output
@@ -630,3 +631,394 @@ info-networks: ## Show available networks
 	@echo "  mainnet - Berachain mainnet"
 	@echo ""
 	@echo "$(YELLOW)Usage:$(NC) make <target> NETWORK=<network>"
+
+#################################
+# LayerZero OFT Bridge Commands
+#################################
+
+# Environment: testnet (default) or mainnet
+# Usage: make oft-check-adapter-setup ENV=mainnet
+ENV ?= testnet
+
+# RPC URLs
+ifeq ($(ENV),mainnet)
+    # For mainnet, use base RPC URLs (already loaded from .env)
+    MAINNET_FLAG := true
+    DEPLOY_SIG := runMainnet()
+else
+    # For testnet, override with _TESTNET variants
+    BERACHAIN_RPC := $(BERACHAIN_RPC_TESTNET)
+    BINANCE_RPC := $(BINANCE_RPC_TESTNET)
+    MAINNET_FLAG := false
+    DEPLOY_SIG := run()
+endif
+
+# Testnet/Mainnet Check Scripts
+oft-check-adapter-setup: ## Check OFT adapter prerequisites on Berachain (usage: ENV=mainnet/testnet)
+	@echo "Checking OFT prerequisites on Berachain ($(ENV))..."
+	forge script script/oft/CheckOFTPrerequisites.s.sol:CheckOFTPrerequisites \
+		--sig "run(bool)" $(MAINNET_FLAG) \
+		--rpc-url $(BERACHAIN_RPC)
+
+oft-check-oft-setup: ## Check OFT prerequisites on Binance (usage: ENV=mainnet/testnet)
+	@echo "Checking OFT prerequisites on Binance ($(ENV))..."
+	forge script script/oft/CheckOFTPrerequisites.s.sol:CheckOFTPrerequisitesBinance \
+		--sig "run(bool)" $(MAINNET_FLAG) \
+		--rpc-url $(BINANCE_RPC)
+
+# Deployment Scripts
+oft-deploy-adapter: ## Deploy IROFTAdapter on Berachain (usage: ENV=mainnet/testnet)
+	@echo "Deploying IROFTAdapter on Berachain ($(ENV))..."
+	@forge script script/deploy/DeployIROFTAdapter.s.sol:DeployIROFTAdapter \
+		--sig "$(DEPLOY_SIG)" \
+		--rpc-url $(BERACHAIN_RPC) \
+		--broadcast \
+		--verify --private-key $(PRIVATE_KEY) --etherscan-api-key $(ETHERSCAN_API_KEY)
+
+oft-deploy-oft: ## Deploy IROFT on Binance Chain (usage: ENV=mainnet/testnet)
+	@echo "Deploying IROFT on Binance Chain ($(ENV))..."
+	@forge script script/deploy/DeployIROFT.s.sol:DeployIROFT \
+		--sig "$(DEPLOY_SIG)" \
+		--rpc-url $(BINANCE_RPC) \
+		--broadcast \
+		--verify --private-key $(PRIVATE_KEY) --legacy --etherscan-api-key $(ETHERSCAN_API_KEY)
+
+# Configuration Scripts
+oft-set-send-config: ## Set send config on OFT adapter (Berachain)
+	@echo "Setting send config on Berachain ($(ENV))..."
+ifeq ($(ENV),mainnet)
+	@echo "For mainnet, use multisig: make oft-set-send-config-multisig SAFE=<address>"
+else
+	@forge script script/oft/SetConfig.s.sol:SetSendConfig \
+		--rpc-url $(BERACHAIN_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY)
+endif
+
+oft-set-receive-config: ## Set receive config on OFT (Binance <- Berachain)
+	@echo "Setting receive config on Binance ($(ENV))..."
+ifeq ($(ENV),mainnet)
+	@echo "For mainnet, use multisig: make oft-set-receive-config-multisig SAFE=<address>"
+else
+	@forge script script/oft/SetConfig.s.sol:SetReceiveConfig \
+		--rpc-url $(BINANCE_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY) --legacy
+endif
+
+oft-set-send-config-binance: ## Set send config on OFT (Binance -> Berachain)
+	@echo "Setting send config on Binance ($(ENV))..."
+ifeq ($(ENV),mainnet)
+	@echo "For mainnet, use multisig: make oft-set-send-config-binance-multisig SAFE=<address>"
+else
+	@forge script script/oft/SetConfig.s.sol:SetSendConfigBinance \
+		--rpc-url $(BINANCE_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY) --legacy
+endif
+
+oft-set-receive-config-berachain: ## Set receive config on adapter (Berachain <- Binance)
+	@echo "Setting receive config on Berachain ($(ENV))..."
+ifeq ($(ENV),mainnet)
+	@echo "For mainnet, use multisig: make oft-set-receive-config-berachain-multisig SAFE=<address>"
+else
+	@forge script script/oft/SetConfig.s.sol:SetReceiveConfigBerachain \
+		--rpc-url $(BERACHAIN_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY)
+endif
+
+# Multisig Configuration (Mainnet only)
+oft-set-send-config-multisig: ## Prepare multisig TX for send config (usage: SAFE=0x...)
+	@echo "Preparing multisig TX: Set send config on Berachain..."
+	forge script script/oft/SetConfig.s.sol:SetSendConfig \
+		--sig "runMultisig(bool,address)" true $(SAFE_ADDRESS) \
+		--rpc-url $(BERACHAIN_RPC) --sender $(SENDER)
+
+oft-set-receive-config-multisig: ## Prepare multisig TX for receive config (usage: SAFE=0x...)
+	@echo "Preparing multisig TX: Set receive config on Binance..."
+	forge script script/oft/SetConfig.s.sol:SetReceiveConfig \
+		--sig "runMultisig(bool,address)" true $(SAFE_ADDRESS_BNB) \
+		--rpc-url $(BINANCE_RPC) --sender $(SENDER) -vvv
+
+oft-set-send-config-binance-multisig: ## Prepare multisig TX for Binance send config (usage: SAFE=0x...)
+	@echo "Preparing multisig TX: Set send config on Binance..."
+	forge script script/oft/SetConfig.s.sol:SetSendConfigBinance \
+		--sig "runMultisig(bool,address)" true $(SAFE_ADDRESS_BNB) \
+		--rpc-url $(BINANCE_RPC) --sender $(SENDER)
+
+oft-set-receive-config-berachain-multisig: ## Prepare multisig TX for Berachain receive config (usage: SAFE=0x...)
+	@echo "Preparing multisig TX: Set receive config on Berachain..."
+	forge script script/oft/SetConfig.s.sol:SetReceiveConfigBerachain \
+		--sig "runMultisig(bool,address)" true $(SAFE_ADDRESS) \
+		--rpc-url $(BERACHAIN_RPC) --sender $(SENDER)
+
+oft-configure-adapter-peer: ## Configure peer on IROFTAdapter (Berachain side)
+	@echo "Configuring peer on IROFTAdapter ($(ENV))..."
+ifeq ($(ENV),mainnet)
+	@echo "For mainnet, use multisig: make oft-configure-adapter-peer-multisig SAFE=<address>"
+else
+	@forge script script/oft/ConfigureOFTPeers.s.sol:ConfigureAdapterPeer \
+		--rpc-url $(BERACHAIN_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY)
+endif
+
+oft-configure-oft-peer: ## Configure peer on IROFT (Binance side)
+	@echo "Configuring peer on IROFT ($(ENV))..."
+ifeq ($(ENV),mainnet)
+	@echo "For mainnet, use multisig: make oft-configure-oft-peer-multisig SAFE=<address>"
+else
+	@forge script script/oft/ConfigureOFTPeers.s.sol:ConfigureOFTPeer \
+		--rpc-url $(BINANCE_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY) --legacy
+endif
+
+# Multisig Peer Configuration (Mainnet only)
+oft-configure-adapter-peer-multisig: ## Prepare multisig TX for adapter peer config (usage: SAFE=0x...)
+	@echo "Preparing multisig TX: Configure adapter peer..."
+	forge script script/oft/ConfigureOFTPeers.s.sol:ConfigureAdapterPeer \
+		--sig "runMultisig(bool,address)" true $(SAFE_ADDRESS) \
+		--rpc-url $(BERACHAIN_RPC) --sender $(SENDER)
+
+oft-configure-oft-peer-multisig: ## Prepare multisig TX for OFT peer config (usage: SAFE=0x...)
+	@echo "Preparing multisig TX: Configure OFT peer..."
+	forge script script/oft/ConfigureOFTPeers.s.sol:ConfigureOFTPeer \
+		--sig "runMultisig(bool,address)" true $(SAFE_ADDRESS_BNB) \
+		--rpc-url $(BINANCE_RPC) --sender $(SENDER)
+
+# Enforced Options Configuration
+oft-set-enforced-options-adapter: ## Set enforced options on IROFTAdapter (Berachain side)
+	@echo "Setting enforced options on IROFTAdapter ($(ENV))..."
+ifeq ($(ENV),mainnet)
+	@echo "For mainnet, use multisig: make oft-set-enforced-options-adapter-multisig SAFE=<address>"
+else
+	@forge script script/oft/SetEnforcedOptions.s.sol:SetEnforcedOptionsAdapter \
+		--rpc-url $(BERACHAIN_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY)
+endif
+
+oft-set-enforced-options-oft: ## Set enforced options on IROFT (Binance side)
+	@echo "Setting enforced options on IROFT ($(ENV))..."
+ifeq ($(ENV),mainnet)
+	@echo "For mainnet, use multisig: make oft-set-enforced-options-oft-multisig SAFE=<address>"
+else
+	@forge script script/oft/SetEnforcedOptions.s.sol:SetEnforcedOptionsOFT \
+		--rpc-url $(BINANCE_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY) --legacy
+endif
+
+oft-set-enforced-options-all: ## Set enforced options on both adapter and OFT
+	@echo "$(GREEN)=== Setting Enforced Options ($(ENV)) ===$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 1/2: Setting enforced options on Adapter (Berachain)...$(NC)"
+	@make oft-set-enforced-options-adapter ENV=$(ENV)
+	@echo ""
+	@echo "$(YELLOW)Step 2/2: Setting enforced options on OFT (Binance)...$(NC)"
+	@make oft-set-enforced-options-oft ENV=$(ENV)
+	@echo ""
+	@echo "$(GREEN)✅ Enforced Options Set Successfully$(NC)"
+
+# Multisig Enforced Options Configuration (Mainnet only)
+oft-set-enforced-options-adapter-multisig: ## Prepare multisig TX for adapter enforced options (usage: SAFE=0x...)
+	@echo "Preparing multisig TX: Set enforced options on adapter..."
+	@forge script script/oft/SetEnforcedOptions.s.sol:SetEnforcedOptionsAdapter \
+		--sig "runMultisig(bool,address)" true $(SAFE_ADDRESS) \
+		--rpc-url $(BERACHAIN_RPC) --private-key $(PRIVATE_KEY) -vvvv
+
+oft-set-enforced-options-oft-multisig: ## Prepare multisig TX for OFT enforced options (usage: SAFE=0x...)
+	@echo "Preparing multisig TX: Set enforced options on OFT..."
+	@forge script script/oft/SetEnforcedOptions.s.sol:SetEnforcedOptionsOFT \
+		--sig "runMultisig(bool,address)" true $(SAFE_ADDRESS_BNB) \
+		--rpc-url $(BINANCE_RPC) --private-key $(PRIVATE_KEY) -vvvv
+
+# Verification Scripts
+oft-verify-adapter: ## Verify IROFTAdapter setup on Berachain
+	@echo "Verifying IROFTAdapter setup ($(ENV))..."
+	forge script script/oft/VerifyOFTSetup.s.sol:VerifyAdapterSetupMainnet \
+		--rpc-url $(BERACHAIN_RPC) 
+
+oft-verify-oft: ## Verify IROFT setup on Binance
+	@echo "Verifying IROFT setup ($(ENV))..."
+	forge script script/oft/VerifyOFTSetup.s.sol:VerifyOFTSetupMainnet \
+		--rpc-url $(BINANCE_RPC)
+
+oft-verify-dvn-berachain: ## Verify DVN configuration on Berachain (both directions)
+	@echo "Verifying DVN configuration on Berachain ($(ENV))..."
+	forge script script/oft/VerifyDVNConfig.s.sol:VerifyDVNConfigBerachain \
+		--rpc-url $(BERACHAIN_RPC)
+
+oft-verify-dvn-binance: ## Verify DVN configuration on Binance (both directions)
+	@echo "Verifying DVN configuration on Binance ($(ENV))..."
+	forge script script/oft/VerifyDVNConfig.s.sol:VerifyDVNConfigBinance \
+		--rpc-url $(BINANCE_RPC)
+
+oft-verify-all: ## Verify complete OFT setup (peers + DVN configs)
+	@echo "=== Verifying Complete OFT Setup ($(ENV)) ==="
+	@echo ""
+	@echo "--- Berachain Adapter ---"
+	@make -s oft-verify-adapter
+	@echo ""
+	@echo "--- Berachain DVN Config ---"
+	@make -s oft-verify-dvn-berachain
+	@echo ""
+	@echo "--- Binance OFT ---"
+	@make -s oft-verify-oft
+	@echo ""
+	@echo "--- Binance DVN Config ---"
+	@make -s oft-verify-dvn-binance
+	@echo ""
+	@echo "=== Verification Complete ==="
+
+# Testing Scripts
+oft-quote-fee: ## Quote cross-chain transfer fee from Berachain to Binance
+	@echo "Quoting cross-chain transfer fee ($(ENV))..."
+	forge script script/oft/TestOFTBridge.s.sol:QuoteSendFee \
+		--sig "$(DEPLOY_SIG)" \
+		--rpc-url $(BERACHAIN_RPC)
+
+oft-send-from-berachain: ## Send IR tokens from Berachain to Binance
+	@echo "Sending IR from Berachain to Binance ($(ENV))..."
+	@forge script script/oft/TestOFTBridge.s.sol:SendFromBerachain \
+		--sig "$(DEPLOY_SIG)" \
+		--rpc-url $(BERACHAIN_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY)
+
+oft-send-from-binance: ## Send IR tokens from Binance to Berachain
+	@echo "Sending IR from Binance to Berachain ($(ENV))..."
+	@forge script script/oft/TestOFTBridge.s.sol:SendFromBinance \
+		--sig "$(DEPLOY_SIG)" \
+		--rpc-url $(BINANCE_RPC) \
+		--broadcast -vvvv \
+		--private-key $(PRIVATE_KEY) --legacy
+
+oft-send-from-berachain-mainnet: ## Send IR tokens from Berachain to Binance
+	@echo "Sending IR from Berachain to Binance ($(ENV))..."
+	@forge script script/oft/TestOFTBridge.s.sol:SendFromBerachain \
+		--sig "runMainnet(bool,address)" true $(SAFE_ADDRESS) \
+		--rpc-url $(BERACHAIN_RPC) \
+		-vvvv \
+		--private-key $(PRIVATE_KEY)
+
+oft-send-from-binance-mainnet: ## Send IR tokens from Binance to Berachain
+	@echo "Sending IR from Binance to Berachain ($(ENV))..."
+	@forge script script/oft/TestOFTBridge.s.sol:SendFromBinance \
+		--sig "runMainnet(bool,address)" true $(SAFE_ADDRESS_BNB) \
+		--rpc-url $(BINANCE_RPC) \
+		-vvvv \
+		--private-key $(PRIVATE_KEY) --legacy
+
+
+oft-check-balance: ## Check IR balance on Berachain
+	@echo "Checking IR balance ($(ENV))..."
+	forge script script/oft/TestOFTBridge.s.sol:CheckBalance \
+		--sig "$(DEPLOY_SIG)" \
+		--rpc-url $(BERACHAIN_RPC)
+
+# Complete deployment workflow
+oft-deploy-complete: ## Deploy complete OFT bridge (testnet only)
+	@echo "$(GREEN)=== Deploying Complete OFT Bridge ($(ENV)) ===$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Step 1/7: Deploying IROFTAdapter on Berachain...$(NC)"
+	@make oft-deploy-adapter ENV=$(ENV)
+	@echo ""
+	@read -p "Update ADAPTER_ADDRESS_TESTNET in .env and press Enter to continue..."
+	@echo ""
+	@echo "$(YELLOW)Step 2/7: Deploying IROFT on Binance...$(NC)"
+	@make oft-deploy-oft ENV=$(ENV)
+	@echo ""
+	@read -p "Update OFT_ADDRESS_TESTNET in .env and press Enter to continue..."
+	@echo ""
+	@echo "$(YELLOW)Step 3/7: Configuring adapter peer...$(NC)"
+	@make oft-configure-adapter-peer ENV=$(ENV)
+	@echo ""
+	@echo "$(YELLOW)Step 4/7: Configuring OFT peer...$(NC)"
+	@make oft-configure-oft-peer ENV=$(ENV)
+	@echo ""
+	@echo "$(YELLOW)Step 5/7: Setting DVN configs (Berachain -> Binance)...$(NC)"
+	@make oft-set-send-config ENV=$(ENV)
+	@make oft-set-receive-config ENV=$(ENV)
+	@echo ""
+	@echo "$(YELLOW)Step 6/7: Setting DVN configs (Binance -> Berachain)...$(NC)"
+	@make oft-set-send-config-binance ENV=$(ENV)
+	@make oft-set-receive-config-berachain ENV=$(ENV)
+	@echo ""
+	@echo "$(YELLOW)Step 7/7: Verifying complete setup...$(NC)"
+	@make oft-verify-all ENV=$(ENV)
+	@echo ""
+	@echo "$(GREEN)✅ OFT Bridge Deployment Complete!$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Test the bridge with:$(NC)"
+	@echo "  make oft-bridge-to-binance ENV=$(ENV)"
+	@echo "  make oft-bridge-to-berachain ENV=$(ENV)"
+
+oft-setup-dvns: ## Setup all DVN configurations (both directions)
+	@echo "$(GREEN)=== Setting up DVN Configurations ===$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Configuring Berachain -> Binance path...$(NC)"
+	@make oft-set-send-config ENV=$(ENV)
+	@make oft-set-receive-config ENV=$(ENV)
+	@echo ""
+	@echo "$(YELLOW)Configuring Binance -> Berachain path...$(NC)"
+	@make oft-set-send-config-binance ENV=$(ENV)
+	@make oft-set-receive-config-berachain ENV=$(ENV)
+	@echo ""
+	@echo "$(GREEN)✅ DVN Setup Complete$(NC)"
+	@echo ""
+	@echo "Verify with: make oft-verify-all ENV=$(ENV)"
+
+oft-help: ## Show OFT-specific help and usage
+	@echo "$(GREEN)=== Infrared OFT Bridge Commands ===$(NC)"
+	@echo ""
+	@echo "$(YELLOW)Environment:$(NC) Set ENV=testnet or ENV=mainnet (default: testnet)"
+	@echo ""
+	@echo "$(YELLOW)Quick Start (Testnet):$(NC)"
+	@echo "  1. Configure .env with all required variables"
+	@echo "  2. make oft-deploy-complete ENV=testnet"
+	@echo "  3. make oft-bridge-to-binance ENV=testnet"
+	@echo "  4. make oft-bridge-to-berachain ENV=testnet"
+	@echo ""
+	@echo "$(YELLOW)Deployment Commands:$(NC)"
+	@echo "  oft-check-adapter-setup    - Check prerequisites on Berachain"
+	@echo "  oft-check-oft-setup        - Check prerequisites on Binance"
+	@echo "  oft-deploy-adapter         - Deploy IROFTAdapter (Berachain)"
+	@echo "  oft-deploy-oft             - Deploy IROFT (Binance)"
+	@echo "  oft-deploy-complete        - Deploy everything (testnet only)"
+	@echo ""
+	@echo "$(YELLOW)Configuration Commands:$(NC)"
+	@echo "  oft-configure-adapter-peer        - Set peer on adapter"
+	@echo "  oft-configure-oft-peer            - Set peer on OFT"
+	@echo "  oft-setup-dvns                    - Setup all DVN configs (both directions)"
+	@echo "  oft-set-enforced-options-adapter  - Set enforced gas options on adapter"
+	@echo "  oft-set-enforced-options-oft      - Set enforced gas options on OFT"
+	@echo "  oft-set-enforced-options-all      - Set enforced options on both chains"
+	@echo ""
+	@echo "$(YELLOW)DVN Configuration (4 required):$(NC)"
+	@echo "  oft-set-send-config              - Berachain -> Binance send"
+	@echo "  oft-set-receive-config           - Binance <- Berachain receive"
+	@echo "  oft-set-send-config-binance      - Binance -> Berachain send"
+	@echo "  oft-set-receive-config-berachain - Berachain <- Binance receive"
+	@echo ""
+	@echo "$(YELLOW)Verification Commands:$(NC)"
+	@echo "  oft-verify-adapter         - Verify adapter setup"
+	@echo "  oft-verify-oft             - Verify OFT setup"
+	@echo "  oft-verify-dvn-berachain   - Verify Berachain DVN configs"
+	@echo "  oft-verify-dvn-binance     - Verify Binance DVN configs"
+	@echo "  oft-verify-all             - Verify complete setup"
+	@echo ""
+	@echo "$(YELLOW)Bridge Operations:$(NC)"
+	@echo "  oft-quote-fee              - Quote cross-chain transfer fee"
+	@echo "  oft-bridge-to-binance      - Send IR tokens to Binance"
+	@echo "  oft-bridge-to-berachain    - Send IR tokens to Berachain"
+	@echo "  oft-balance                - Check IR token balance"
+	@echo ""
+	@echo "$(YELLOW)Environment Variables Required:$(NC)"
+	@echo "  RECIPIENT   - Address to receive tokens"
+	@echo "  AMOUNT      - Amount to send (in wei, 18 decimals)"
+	@echo "  USER        - Address for balance checks"
+	@echo ""
+	@echo "$(YELLOW)For detailed guide:$(NC) See docs/OFT_COMPLETE_SETUP_GUIDE.md"

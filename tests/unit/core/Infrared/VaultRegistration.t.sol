@@ -5,7 +5,8 @@ import {Helper, IAccessControl, IInfraredVault, MockERC20} from "./Helper.sol";
 import {Errors} from "src/utils/Errors.sol";
 import {ERC20PresetMinterPauser} from "src/vendors/ERC20PresetMinterPauser.sol";
 
-import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
+import {InfraredGovernanceToken} from
+    "src/depreciated/core/InfraredGovernanceToken.sol";
 
 contract InfraredRegisterVaultTest is Helper {
     /*//////////////////////////////////////////////////////////////

@@ -5,6 +5,7 @@
 
 | Contract                   | Address                                      |
 |----------------------------|----------------------------------------------|
+| IR (Infrared Token)        | `0xa1B644AEC990Ad6023811cED36E6A2d6D128C7C9` |
 | iBGT                       | `0xac03CABA51e17c86c921E1f6CBFBdC91F8BB2E6b` |
 | ibgtVault                  | `0x4EF0c533D065118907f68e6017467Eb05DBb2c8C` |
 | Infrared                   | `0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126` |
@@ -20,3 +21,5 @@
 | InfraredBERARateProvider   | `0x776fD57Bbeb752BDeEB200310faFAe9A155C50a0` |
 | wiBGT                      | `0x4f3C10D2bC480638048Fa67a7D00237a33670C1B` |
 | BatchClaimor               | `0x1D6844b42784d3ADbD7fDFa5887d56d22Aa9FB67` |
+| IR OFT Adapter             | `0xfd0fA49F8aA1d61dA390E10EAD23C650B0F9C2B5` |
+| MerkleDistributor          | `0x5F791523314ca809A1146184311e35001b6E6FC8` |
