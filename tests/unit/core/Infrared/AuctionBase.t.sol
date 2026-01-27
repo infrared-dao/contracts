@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.26;
 
-import {InfraredV1_9} from "src/core/InfraredV1_9.sol";
+import {InfraredV1_9} from "src/depreciated/core/InfraredV1_9.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {Errors} from "src/utils/Errors.sol";
 import "tests/unit/core/Infrared/Helper.sol";

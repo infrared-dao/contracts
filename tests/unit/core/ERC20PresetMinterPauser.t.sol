@@ -2,7 +2,8 @@
 pragma solidity 0.8.26;
 
 import "forge-std/Test.sol";
-import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
+import {InfraredGovernanceToken} from
+    "src/depreciated/core/InfraredGovernanceToken.sol";
 
 contract ERC20PresetMinterPauserTest is Test {
     InfraredGovernanceToken token;

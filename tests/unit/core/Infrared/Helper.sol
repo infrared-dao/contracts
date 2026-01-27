@@ -15,7 +15,7 @@ import {WrappedRewardToken} from "src/periphery/WrappedRewardToken.sol";
 import {InfraredBERA} from "src/depreciated/staking/InfraredBERA.sol";
 import {InfraredBERADepositor} from
     "src/depreciated/staking/InfraredBERADepositor.sol";
-import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERAV2} from "src/depreciated/staking/InfraredBERAV2.sol";
 import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";
 import {InfraredBERAWithdraworLite} from
@@ -37,9 +37,10 @@ import {InfraredV1_4} from "src/depreciated/core/InfraredV1_4.sol";
 import {InfraredV1_5} from "src/depreciated/core/InfraredV1_5.sol";
 import {InfraredV1_7} from "src/depreciated/core/InfraredV1_7.sol";
 import {InfraredV1_8} from "src/depreciated/core/InfraredV1_8.sol";
-import {InfraredV1_9} from "src/core/InfraredV1_9.sol";
+import {InfraredV1_9} from "src/depreciated/core/InfraredV1_9.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
-import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
+import {InfraredGovernanceToken} from
+    "src/depreciated/core/InfraredGovernanceToken.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 import {DataTypes} from "src/utils/DataTypes.sol";
 import {HarvestBaseCollector} from

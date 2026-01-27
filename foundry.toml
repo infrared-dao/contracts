@@ -22,7 +22,12 @@ remappings = [
     'solady/test/=lib/solady/test/',
     '@berachain/=lib/contracts/src/',
     '@prb/=lib/prb-test/src/',
-    '@forge-safe/=lib/forge-safe/src/'
+    '@forge-safe/=lib/forge-safe/src/',
+    '@layerzerolabs/oft-evm/=lib/devtools/packages/oft-evm/',
+    '@layerzerolabs/oapp-evm/=lib/devtools/packages/oapp-evm/',
+    '@layerzerolabs/lz-evm-protocol-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/protocol',
+    '@layerzerolabs/lz-evm-messagelib-v2/=lib/LayerZero-v2/packages/layerzero-v2/evm/messagelib',
+    'solidity-bytes-utils/=lib/solidity-bytes-utils/'
 ]
 fs_permissions = [{ access = "read-write", path = "./" }]
 ffi = true
@@ -33,31 +38,10 @@ extra_output = ["storageLayout"]
 [profile.ci]
 fuzz = { runs = 50 }
 verbosity = 4
-remappings = [
-    '@forge-std/=lib/forge-std/src/',
-    # '@openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/',
-    '@openzeppelin/contracts/=lib/openzeppelin-contracts-upgradeable/lib/openzeppelin-contracts/contracts/',
-    '@openzeppelin-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/',
-    '@openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/',
-    '@openzeppelin-foundry-upgrades/=lib/openzeppelin-foundry-upgrades/src/',
-    '@solmate/=lib/solmate/src/',
-    'solady/src/=lib/solady/src/',
-    'solady/test/=lib/solady/test/',
-    '@berachain/=lib/contracts/src/',
-    '@prb/=lib/prb-test/src/',
-    '@forge-safe/=lib/forge-safe/src/'
-]
 
 [profile.production]
 optimizer = true
 optimizer_runs = 50
-
-[profile.production.optimizer_details]
-constantOptimizer = true
-yul = true
-
-[profile.production.optimizer_details.yulDetails]
-stackAllocation = true
 
 [invariant]
 # The number of runs that must execute for each invariant test group
@@ -75,7 +59,9 @@ mainnet = "${RPC_URL_MAINNET}"
 
 [etherscan]
 berachain = {key = "${BERASCAN_API_KEY}", url = "https://api.berascan.com/api"}
-bepolia = {chain = "80069", key = "verifyContract", url = "https://api.routescan.io/v2/network/testnet/evm/80069/etherscan"}
+binance = {key = "${BSC_EXPLORER_API_KEY}"}
+bsc-testnet = {key = "${BERASCAN_API_KEY}"}
+berachain-bepolia = {key = "${BERASCAN_API_KEY}"}
 
 [fmt]
 line_length = 80

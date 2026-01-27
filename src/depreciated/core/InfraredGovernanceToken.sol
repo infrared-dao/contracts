@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
-import {ERC20PresetMinterPauser} from "../vendors/ERC20PresetMinterPauser.sol";
+import {ERC20PresetMinterPauser} from "src/vendors/ERC20PresetMinterPauser.sol";
 
 /**
  * @title Infrared Governance Token
  * @notice This contract is the IR token.
+ * @dev Not deployed and depreciated for InfraredGovernanceTokenV1_2
  */
 contract InfraredGovernanceToken is ERC20PresetMinterPauser {
     error ZeroAddress();

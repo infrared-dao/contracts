@@ -32,7 +32,7 @@ import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
 import {ValidatorManagerLib} from "src/core/libraries/ValidatorManagerLib.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {VaultManagerLib} from "src/core/libraries/VaultManagerLib.sol";
-import {RewardsLib} from "src/core/libraries/RewardsLib.sol";
+import {RewardsLib} from "src/depreciated/core/libraries/RewardsLib.sol";
 
 /*
 

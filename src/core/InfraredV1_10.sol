@@ -6,7 +6,7 @@ import {EnumerableSet} from
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
-import {IInfraredV1_9} from "src/interfaces/IInfraredV1_9.sol";
+import {IInfraredV1_10} from "src/interfaces/IInfraredV1_10.sol";
 import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
 import {IRewardVaultFactory as IBerachainRewardsVaultFactory} from
@@ -19,12 +19,14 @@ import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {IInfraredGovernanceToken} from
     "src/interfaces/IInfraredGovernanceToken.sol";
-import {IBribeCollector} from "src/depreciated/interfaces/IBribeCollector.sol";
+import {IBribeCollectorV1_4 as IBribeCollector} from
+    "src/interfaces/IBribeCollectorV1_4.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
-import {ConfigTypes, IInfraredV1_7} from "src/interfaces/IInfraredV1_7.sol";
+import {ConfigTypes, IInfraredV1_10} from "src/interfaces/IInfraredV1_10.sol";
 import {InfraredUpgradeable} from "src/core/InfraredUpgradeable.sol";
-import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
+import {IInfraredBERAV2 as IInfraredBERA} from
+    "src/interfaces/IInfraredBERAV2.sol";
 import {ValidatorManagerLib} from "src/core/libraries/ValidatorManagerLib.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
 import {VaultManagerLib} from "src/core/libraries/VaultManagerLib.sol";
@@ -69,8 +71,8 @@ import {RewardsLib} from "src/core/libraries/RewardsLib.sol";
 /// @notice Provides core functionalities for managing validators, vaults, and reward distribution in the Infrared protocol.
 /// @dev Serves as the main entry point for interacting with the Infrared protocol
 /// @dev The contract is upgradeable, ensuring flexibility for governance-led upgrades and chain compatibility.
-/// @custom:oz-upgrades-from src/core/InfraredV1_8.sol:InfraredV1_8
-contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
+/// @custom:oz-upgrades-from src/core/upgrades/InfraredV1_9.sol:InfraredV1_9
+contract InfraredV1_10 is InfraredUpgradeable, IInfraredV1_10 {
     using SafeTransferLib for ERC20;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ValidatorManagerLib for ValidatorManagerLib.ValidatorStorage;
@@ -143,8 +145,11 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
     /// @notice address of wrapped ibgtVault
     address public wiBGT;
 
+    /// @notice address of IR auction contract
+    address public irCollector;
+
     /// Reserve storage slots for future upgrades for safety
-    uint256[38] private __gap;
+    uint256[37] private __gap;
 
     /// @return vs The validator storage struct
     function _validatorStorage()
@@ -195,10 +200,18 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initializeV1_9(address _wiBGT) external onlyGovernor {
-        if (_wiBGT == address(0)) revert Errors.ZeroAddress();
-        wiBGT = _wiBGT;
-        ERC20(address(ibgt)).safeApprove(_wiBGT, type(uint256).max);
+    function initializeV1_10(address _ir, address _irCollector)
+        external
+        onlyGovernor
+    {
+        if (_ir == address(0) || _irCollector == address(0)) {
+            revert Errors.ZeroAddress();
+        }
+        ir = IInfraredGovernanceToken(_ir);
+        _vaultStorage().updateWhitelistedRewardTokens(_ir, true);
+
+        emit IRSet(msg.sender, _ir);
+        irCollector = _irCollector;
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -335,12 +348,7 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
 
         // harvest old vault
         uint256 bgtAmt = _rewardsStorage().harvestVault(
-            oldVault,
-            address(_bgt),
-            address(ibgt),
-            address(voter),
-            address(ir),
-            rewardsDuration()
+            oldVault, address(_bgt), address(ibgt)
         );
         emit VaultHarvested(msg.sender, _asset, address(oldVault), bgtAmt);
 
@@ -511,6 +519,14 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
         emit InfraredBERABribeSplitUpdated(msg.sender, prevWeight, _weight);
     }
 
+    /// @notice Updates the weight for IR bribes
+    /// @param _weight uint256 The weight value
+    function updateIRBribeSplit(uint256 _weight) external onlyGovernor {
+        uint256 prevWeight = _rewardsStorage().irSplitRatio;
+        _rewardsStorage().updateIRSplit(_weight);
+        emit IRSplitUpdated(msg.sender, prevWeight, _weight);
+    }
+
     /// @notice Updates the fee rate charged on different harvest functions
     /// @notice Please harvest all assosiated rewards for a given type before updating
     /// @dev Fee rate in units of 1e6 or hundredths of 1 bip
@@ -536,44 +552,6 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
         emit ProtocolFeesClaimed(msg.sender, _to, _token, _amount);
     }
 
-    /// @notice Sets the address of the IR contract
-    /// @dev Infrared must be granted MINTER_ROLE on IR to set the address
-    /// @param _ir The address of the IR contract
-    function setIR(address _ir) external onlyGovernor {
-        if (_ir == address(0)) revert Errors.ZeroAddress();
-        if (address(ir) != address(0)) revert Errors.AlreadySet();
-        if (
-            !IInfraredGovernanceToken(_ir).hasRole(
-                IInfraredGovernanceToken(_ir).MINTER_ROLE(), address(this)
-            )
-        ) {
-            revert Errors.Unauthorized(address(this));
-        }
-        ir = IInfraredGovernanceToken(_ir);
-        _vaultStorage().updateWhitelistedRewardTokens(_ir, true);
-
-        emit IRSet(msg.sender, _ir);
-    }
-
-    /// @notice Sets the address of the Voter contract
-    /// @param _voter The address of the IR contract
-    function setVoter(address _voter) external onlyGovernor {
-        if (_voter == address(0)) revert Errors.ZeroAddress();
-        if (address(voter) != address(0)) revert Errors.AlreadySet();
-
-        voter = IVoter(_voter);
-        emit VoterSet(msg.sender, _voter);
-    }
-
-    /// @notice Updates the mint rate for IR
-    /// @param _irMintRate The new mint rate for IR
-    function updateIRMintRate(uint256 _irMintRate) external onlyGovernor {
-        uint256 oldRate = _rewardsStorage().irMintRate;
-        _rewardsStorage().updateIRMintRate(_irMintRate);
-
-        emit UpdatedIRMintRate(oldRate, _irMintRate, msg.sender);
-    }
-
     /// @notice Admin function to toggle the auction base flag
     /// @dev should be true while iBGT is worth more than BERA
     function toggleAuctionBase() external onlyKeeper {
@@ -589,17 +567,13 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
     /*                       REWARDS                              */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function chargedFeesOnRewards(
-        uint256 _amt,
-        uint256 _feeTotal,
-        uint256 _feeProtocol
-    )
+    function chargedFeesOnRewards(uint256 _amt, uint256 _feeTotal)
         public
         pure
-        returns (uint256 amtRecipient, uint256 amtVoter, uint256 amtProtocol)
+        returns (uint256 amtRecipient, uint256 amtProtocol)
     {
         if (_feeTotal > RewardsLib.UNIT_DENOMINATOR) revert Errors.InvalidFee();
-        return RewardsLib.chargedFeesOnRewards(_amt, _feeTotal, _feeProtocol);
+        return RewardsLib.chargedFeesOnRewards(_amt, _feeTotal);
     }
 
     /// @notice Claims all the BGT base and commission rewards minted to this contract for validators.
@@ -623,14 +597,8 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
     /// @param _asset address The address of the staking asset that the vault is for.
     function harvestVault(address _asset) external whenNotPaused {
         IInfraredVault vault = vaultRegistry(_asset);
-        uint256 bgtAmt = _rewardsStorage().harvestVault(
-            vault,
-            address(_bgt),
-            address(ibgt),
-            address(voter),
-            address(ir),
-            rewardsDuration()
-        );
+        uint256 bgtAmt =
+            _rewardsStorage().harvestVault(vault, address(_bgt), address(ibgt));
         emit VaultHarvested(msg.sender, _asset, address(vault), bgtAmt);
     }
 
@@ -645,8 +613,7 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
             IInfraredVault(_vault),
             vaultRegistry(_asset),
             address(_bgt),
-            address(ibgt),
-            address(voter)
+            address(ibgt)
         );
 
         emit VaultHarvested(msg.sender, _asset, address(_vault), bgtAmt);
@@ -687,42 +654,58 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
         external
         onlyCollector
     {
-        if (_token != address(wbera) && _token != address(ibgt)) {
+        if (
+            _token != address(wbera) && _token != address(ibgt)
+                && _token != address(ir)
+        ) {
             revert Errors.RewardTokenNotSupported();
         }
 
         uint256 amtInfraredBERA;
         uint256 amtIbgtVault;
+        uint256 amtSIR;
 
         if (_token == address(wbera)) {
-            (amtInfraredBERA, amtIbgtVault) = _rewardsStorage()
+            (amtInfraredBERA, amtIbgtVault, amtSIR) = _rewardsStorage()
                 .collectBribesInWBERA(
                 _amount,
                 address(wbera),
                 address(ibera),
                 address(ibgtVault),
-                address(voter),
+                address(irCollector),
                 rewardsDuration()
             );
-        } else {
-            (amtInfraredBERA, amtIbgtVault) = _rewardsStorage()
+        } else if (_token == address(ibgt)) {
+            (amtInfraredBERA, amtIbgtVault, amtSIR) = _rewardsStorage()
                 .collectBribesInIBGT(
                 _amount,
                 address(ibgt),
                 address(ibgtVault),
-                address(voter),
+                address(irCollector),
+                address(harvestBaseCollector),
+                rewardsDuration()
+            );
+        } else {
+            (amtInfraredBERA, amtIbgtVault, amtSIR) = _rewardsStorage()
+                .collectBribesInIR(
+                _amount,
+                address(ir),
+                address(ibgtVault),
+                address(irCollector),
                 address(harvestBaseCollector),
                 rewardsDuration()
             );
         }
 
-        emit BribesCollected(msg.sender, _token, amtInfraredBERA, amtIbgtVault);
+        emit BribesCollected(
+            msg.sender, _token, amtInfraredBERA, amtIbgtVault, amtSIR
+        );
     }
 
     /// @notice Credits all accumulated rewards to the operator
     function harvestOperatorRewards() public whenNotPaused {
         uint256 _amt = _rewardsStorage().harvestOperatorRewards(
-            address(ibera), address(voter), address(distributor)
+            address(ibera), address(distributor)
         );
         emit OperatorRewardsDistributed(
             address(ibera), address(distributor), _amt
@@ -734,7 +717,7 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
     function harvestBoostRewards() external whenNotPaused {
         (address _token, uint256 _amount) = _rewardsStorage()
             .harvestBoostRewards(
-            address(_bgt), address(ibgtVault), address(voter), rewardsDuration()
+            address(_bgt), address(ibgtVault), rewardsDuration()
         );
         emit RewardSupplied(address(ibgtVault), _token, _amount);
     }
@@ -979,7 +962,6 @@ contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
             vault,
             address(_bgt),
             address(ibgt),
-            address(voter),
             address(user)
         );
         emit ExternalVaultClaimed(user, _asset, address(vault), bgtAmt);

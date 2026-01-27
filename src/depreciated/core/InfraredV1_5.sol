@@ -6,7 +6,7 @@ import {IRewardVault as IBerachainRewardsVault} from
     "lib/contracts/src/pol/interfaces/IRewardVault.sol";
 import {IInfraredV1_5} from "src/depreciated/interfaces/IInfraredV1_5.sol";
 import {Errors} from "src/utils/Errors.sol";
-import {RewardsLib} from "src/core/libraries/RewardsLib.sol";
+import {RewardsLib} from "src/depreciated/core/libraries/RewardsLib.sol";
 
 /**
  * @title Infrared Protocol Core Contract V1.5

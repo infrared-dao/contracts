@@ -28,7 +28,8 @@ import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {BribeCollector} from "src/depreciated/core/BribeCollector.sol";
 
-import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
+import {InfraredGovernanceToken} from
+    "src/depreciated/core/InfraredGovernanceToken.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -37,7 +38,7 @@ import {InfraredDeployer} from "script/deploy/InfraredDeployer.s.sol";
 import {IInfraredVault, InfraredVault} from "src/core/InfraredVault.sol";
 
 contract HelperForkTest is Test {
-    string constant MAINNET_RPC_URL = "https://berachain.drpc.org";
+    string constant MAINNET_RPC_URL = "https://berachain-rpc.publicnode.com";
 
     uint64 internal constant HISTORY_BUFFER_LENGTH = 8191;
 

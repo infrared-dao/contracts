@@ -28,7 +28,8 @@ import {InfraredBERAConstants} from "src/staking/InfraredBERAConstants.sol";
 import {InfraredDistributor} from "src/core/InfraredDistributor.sol";
 import {BribeCollector} from "src/depreciated/core/BribeCollector.sol";
 
-import {InfraredGovernanceToken} from "src/core/InfraredGovernanceToken.sol";
+import {InfraredGovernanceToken} from
+    "src/depreciated/core/InfraredGovernanceToken.sol";
 import {IWBERA} from "src/interfaces/IWBERA.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";

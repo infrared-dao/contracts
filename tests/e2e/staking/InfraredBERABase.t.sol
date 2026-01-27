@@ -20,7 +20,7 @@ import {BeaconRootsVerify} from "src/utils/BeaconRootsVerify.sol";
 import {ConsensusLayerVerifierTest} from
     "tests/e2e/ConsensusLayerVerifier.t.sol";
 import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
-import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERAV2} from "src/depreciated/staking/InfraredBERAV2.sol";
 
 contract InfraredBERABaseE2ETest is ConsensusLayerVerifierTest {
     using stdJson for string;

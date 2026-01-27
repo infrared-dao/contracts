@@ -8,7 +8,7 @@ import {BeraChef} from "@berachain/pol/rewards/BeraChef.sol";
 import {BribeCollectorV1_4} from "src/core/BribeCollectorV1_4.sol";
 import {IInfraredV1_9} from "src/interfaces/IInfraredV1_9.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
-import {InfraredV1_9} from "src/core/InfraredV1_9.sol";
+import {InfraredV1_9} from "src/depreciated/core/InfraredV1_9.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
 import {InfraredBERAWithdrawor} from "src/staking/InfraredBERAWithdrawor.sol";

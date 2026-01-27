@@ -11,7 +11,10 @@ INFRARED="0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126"
 # PUBKEY="0x8007e88a66ad54839375b012eb602b798b59a507dc78dc966040458553de82c0fce583932121d539ae00ae73f5ed54e8"
 
 # StakeLabs2
-PUBKEY="0x84d0f5ed328e029f104f7a3bb5778d188b2197415119b95a9719be47fd0e16e3fbda08dbf5bdfde0a7dab95db1807e47"
+# PUBKEY="0x84d0f5ed328e029f104f7a3bb5778d188b2197415119b95a9719be47fd0e16e3fbda08dbf5bdfde0a7dab95db1807e47"
+
+# A41
+PUBKEY="0x90d64ab2a8ab9b5faace9225d205d47dc0b8155592b354b860134928f7f39f15f54d909dad7897868aba6dc7e7eef6c8"
 
 forge script script/gov/InfraredMultisigGovernance.s.sol:InfraredMultisigGovernance \
     --sig "removeValidator(address,address,bytes)" $SAFE $INFRARED $PUBKEY \

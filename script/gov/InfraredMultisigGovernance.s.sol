@@ -9,12 +9,13 @@ import {
     IInfraredVault,
     InfraredV1_9,
     ValidatorTypes
-} from "src/core/InfraredV1_9.sol";
+} from "src/depreciated/core/InfraredV1_9.sol";
 import {IMultiRewards} from "src/interfaces/IMultiRewards.sol";
 import {BribeCollectorV1_4} from "src/core/BribeCollectorV1_4.sol";
 import {HarvestBaseCollectorV1_2} from
     "src/staking/HarvestBaseCollectorV1_2.sol";
-import {InfraredBERAV2} from "src/staking/InfraredBERAV2.sol";
+import {InfraredBERAV2_1 as InfraredBERAV2} from
+    "src/staking/InfraredBERAV2_1.sol";
 
 import {ConfigTypes} from "src/core/libraries/ConfigTypes.sol";
 
@@ -218,9 +219,8 @@ contract InfraredMultisigGovernance is BatchScript {
             "updateWhiteListedRewardTokens(address,bool)", _token, _whitelisted
         );
         addToBatch(infrared, 0, data);
-        vm.startBroadcast();
+
         executeBatch(true);
-        vm.stopBroadcast();
     }
 
     function updateMultipleWhiteListedRewardTokens(
@@ -562,12 +562,13 @@ contract InfraredMultisigGovernance is BatchScript {
     }
 
     function recoverERC20FromVault(
+        address safe,
         address payable infrared,
         address _asset,
         address _to,
         address _token,
         uint256 _amount
-    ) external {
+    ) external isBatch(safe) {
         bytes memory data = abi.encodeWithSignature(
             "recoverERC20FromVault(address,address,address,uint256)",
             _asset,
@@ -576,9 +577,29 @@ contract InfraredMultisigGovernance is BatchScript {
             _amount
         );
         addToBatch(infrared, 0, data);
-        vm.startBroadcast();
+
         executeBatch(true);
-        vm.stopBroadcast();
+    }
+
+    function recoverERC20FromOldVault(
+        bool _send,
+        address safe,
+        address payable infrared,
+        address _vault,
+        address _to,
+        address _token,
+        uint256 _amount
+    ) external isBatch(safe) {
+        bytes memory data = abi.encodeWithSignature(
+            "recoverERC20FromOldVault(address,address,address,uint256)",
+            _vault,
+            _to,
+            _token,
+            _amount
+        );
+        addToBatch(infrared, 0, data);
+
+        executeBatch(_send);
     }
 
     function delegateBGT(address payable infrared, address _delegatee)
@@ -618,6 +639,33 @@ contract InfraredMultisigGovernance is BatchScript {
         vm.startBroadcast();
         executeBatch(true);
         vm.stopBroadcast();
+    }
+
+    function withdrawWbyusdAndAddIncentives(
+        bool _send,
+        address safe,
+        address infrared,
+        address staking,
+        address wByusd,
+        address byusdDistributor,
+        uint256 amount
+    ) external isBatch(safe) {
+        bytes memory data =
+            abi.encodeWithSignature("withdrawRewards(uint256)", amount);
+        addToBatch(byusdDistributor, 0, data);
+
+        data = abi.encodeWithSignature(
+            "approve(address,uint256)", infrared, amount
+        );
+        addToBatch(wByusd, 0, data);
+
+        data = abi.encodeWithSignature(
+            "addIncentives(address,address,uint256)", staking, wByusd, amount
+        );
+
+        addToBatch(infrared, 0, data);
+
+        executeBatch(_send);
     }
 
     function claimProtocolFees(
@@ -809,7 +857,7 @@ contract InfraredMultisigGovernance is BatchScript {
 
         // queue validator incentive commissions
         uint256 len = _pubkeys.length;
-        uint96 maxCommissionRate = 10000; // 100% = 10000 in BeraChef
+        uint96 maxCommissionRate = 0; // 100% = 10000 in BeraChef
         for (uint256 i; i < len; i++) {
             bytes memory data = abi.encodeWithSignature(
                 "queueValCommission(bytes,uint96)",
