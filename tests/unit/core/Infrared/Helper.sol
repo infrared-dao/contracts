@@ -37,7 +37,7 @@ import {InfraredV1_4} from "src/depreciated/core/InfraredV1_4.sol";
 import {InfraredV1_5} from "src/depreciated/core/InfraredV1_5.sol";
 import {InfraredV1_7} from "src/depreciated/core/InfraredV1_7.sol";
 import {InfraredV1_8} from "src/depreciated/core/InfraredV1_8.sol";
-import {InfraredV1_9} from "src/core/InfraredV1_9.sol";
+import {InfraredV1_9} from "src/depreciated/core/InfraredV1_9.sol";
 import {InfraredBGT} from "src/core/InfraredBGT.sol";
 import {InfraredGovernanceToken} from
     "src/depreciated/core/InfraredGovernanceToken.sol";

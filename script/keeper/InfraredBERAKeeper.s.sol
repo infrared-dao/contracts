@@ -10,7 +10,7 @@ import {InfraredBERAV2_1 as InfraredBERAV2} from
     "src/staking/InfraredBERAV2_1.sol";
 import {InfraredBERADepositorV2} from "src/staking/InfraredBERADepositorV2.sol";
 
-import {InfraredV1_9 as Infrared} from "src/core/InfraredV1_9.sol";
+import {InfraredV1_10 as Infrared} from "src/core/InfraredV1_10.sol";
 import {IBGT as IBerachainBGT} from "@berachain/pol/interfaces/IBGT.sol";
 
 contract InfraredBERAKeeper is Script {

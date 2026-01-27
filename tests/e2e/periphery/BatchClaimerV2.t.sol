@@ -8,7 +8,7 @@ import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {MockERC20} from "@solmate/test/utils/mocks/MockERC20.sol";
 
-import {InfraredV1_9} from "src/core/InfraredV1_9.sol";
+import {InfraredV1_9} from "src/depreciated/core/InfraredV1_9.sol";
 import {BatchClaimerV2_2} from "src/periphery/BatchClaimerV2_2.sol";
 import {WrappedRewardToken} from "src/periphery/WrappedRewardToken.sol";
 

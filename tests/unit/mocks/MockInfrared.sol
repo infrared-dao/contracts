@@ -25,6 +25,7 @@ contract MockInfrared {
     event VaultHarvested(address vault);
 
     mapping(address => IInfraredVault) public vaultRegistry;
+    mapping(address => bool) public shouldRevertForVault;
 
     constructor(address _ibgt, address _ir, address _rewardsFactory) {
         ibgt = IInfraredBGT(_ibgt);
@@ -69,5 +70,38 @@ contract MockInfrared {
 
     function registerVault(address stakingToken, address[] memory) external {
         vaultRegistry[stakingToken] = IInfraredVault(address(1));
+    }
+
+    // Mock whitelist function for testing
+    mapping(address => bool) public whitelistedRewardTokens;
+
+    function updateWhiteListedRewardTokens(address token, bool status)
+        external
+    {
+        whitelistedRewardTokens[token] = status;
+    }
+
+    function addIncentives(address stakingToken, address, uint256) external {
+        if (shouldRevertForVault[stakingToken]) {
+            revert("Simulated failure");
+        }
+        // Mock implementation - just a placeholder
+    }
+
+    // New setter function
+    function setShouldRevertForVault(address vault, bool shouldRevert)
+        external
+    {
+        shouldRevertForVault[vault] = shouldRevert;
+    }
+
+    function collectBribes(address token, uint256 amount) external {
+        // Mock implementation - just a placeholder
+    }
+
+    function setVaultRegistry(address stakingToken, address registry)
+        external
+    {
+        vaultRegistry[stakingToken] = IInfraredVault(registry);
     }
 }

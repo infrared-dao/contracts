@@ -9,7 +9,7 @@ import {ERC1967Proxy} from
     "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {BatchScript} from "@forge-safe/BatchScript.sol";
 import {UnsafeUpgrades} from "openzeppelin-foundry-upgrades/Upgrades.sol"; // Use Unsafe for manual control; validations done separately
-import {InfraredV1_9} from "src/core/InfraredV1_9.sol";
+import {InfraredV1_9} from "src/depreciated/core/InfraredV1_9.sol";
 import {WrappedRewardToken} from "src/periphery/WrappedRewardToken.sol";
 import {BatchClaimerV2_2} from "src/periphery/BatchClaimerV2_2.sol";
 

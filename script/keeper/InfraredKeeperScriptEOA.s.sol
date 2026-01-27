@@ -6,7 +6,7 @@ import "forge-std/Script.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {IInfraredV1_9 as IInfrared} from "src/interfaces/IInfraredV1_9.sol";
 import {IInfraredBGT} from "src/interfaces/IInfraredBGT.sol";
-import {InfraredV1_9 as Infrared} from "src/core/InfraredV1_9.sol";
+import {InfraredV1_9 as Infrared} from "src/depreciated/core/InfraredV1_9.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
 import {InfraredBERADepositorV2 as InfraredBERADepositor} from
     "src/staking/InfraredBERADepositorV2.sol";

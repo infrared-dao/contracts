@@ -9,7 +9,7 @@ import {
     IInfraredVault,
     InfraredV1_9,
     ValidatorTypes
-} from "src/core/InfraredV1_9.sol";
+} from "src/depreciated/core/InfraredV1_9.sol";
 import {IMultiRewards} from "src/interfaces/IMultiRewards.sol";
 import {BribeCollectorV1_4} from "src/core/BribeCollectorV1_4.sol";
 import {HarvestBaseCollectorV1_2} from
@@ -219,9 +219,8 @@ contract InfraredMultisigGovernance is BatchScript {
             "updateWhiteListedRewardTokens(address,bool)", _token, _whitelisted
         );
         addToBatch(infrared, 0, data);
-        vm.startBroadcast();
+
         executeBatch(true);
-        vm.stopBroadcast();
     }
 
     function updateMultipleWhiteListedRewardTokens(

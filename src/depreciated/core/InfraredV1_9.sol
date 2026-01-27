@@ -6,12 +6,12 @@ import {EnumerableSet} from
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
+import {IInfraredV1_9} from "src/interfaces/IInfraredV1_9.sol";
 import {IRewardVault as IBerachainRewardsVault} from
     "@berachain/pol/interfaces/IRewardVault.sol";
 import {IRewardVaultFactory as IBerachainRewardsVaultFactory} from
     "@berachain/pol/interfaces/IRewardVaultFactory.sol";
 import {IBerachainBGT} from "src/interfaces/IBerachainBGT.sol";
-import {DataTypes} from "src/utils/DataTypes.sol";
 import {Errors} from "src/utils/Errors.sol";
 import {InfraredVaultDeployer} from "src/utils/InfraredVaultDeployer.sol";
 import {IVoter} from "src/voting/interfaces/IVoter.sol";
@@ -22,12 +22,8 @@ import {IInfraredGovernanceToken} from
 import {IBribeCollector} from "src/depreciated/interfaces/IBribeCollector.sol";
 import {IInfraredDistributor} from "src/interfaces/IInfraredDistributor.sol";
 import {IInfraredVault} from "src/interfaces/IInfraredVault.sol";
-import {
-    ConfigTypes,
-    IInfraredV1_2
-} from "src/depreciated/interfaces/IInfraredV1_2.sol";
+import {ConfigTypes, IInfraredV1_7} from "src/interfaces/IInfraredV1_7.sol";
 import {InfraredUpgradeable} from "src/core/InfraredUpgradeable.sol";
-import {InfraredVault} from "src/core/InfraredVault.sol";
 import {IInfraredBERA} from "src/depreciated/interfaces/IInfraredBERA.sol";
 import {ValidatorManagerLib} from "src/core/libraries/ValidatorManagerLib.sol";
 import {ValidatorTypes} from "src/core/libraries/ValidatorTypes.sol";
@@ -73,7 +69,8 @@ import {RewardsLib} from "src/depreciated/core/libraries/RewardsLib.sol";
 /// @notice Provides core functionalities for managing validators, vaults, and reward distribution in the Infrared protocol.
 /// @dev Serves as the main entry point for interacting with the Infrared protocol
 /// @dev The contract is upgradeable, ensuring flexibility for governance-led upgrades and chain compatibility.
-contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
+/// @custom:oz-upgrades-from src/core/InfraredV1_8.sol:InfraredV1_8
+contract InfraredV1_9 is InfraredUpgradeable, IInfraredV1_9 {
     using SafeTransferLib for ERC20;
     using EnumerableSet for EnumerableSet.Bytes32Set;
     using ValidatorManagerLib for ValidatorManagerLib.ValidatorStorage;
@@ -135,8 +132,19 @@ contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
     bytes32 public constant REWARDS_STORAGE_LOCATION =
         0xad12e6d08cc0150709acd6eed0bf697c60a83227922ab1d254d1ca4d3072ca00;
 
+    // upgrade v1.7 vars
+
+    /// @notice address of harvest base collector for ibgt auction
+    address public harvestBaseCollector;
+
+    /// @notice flag to indicate whether to auction base rewards for bera or redeem
+    bool public auctionBase;
+
+    /// @notice address of wrapped ibgtVault
+    address public wiBGT;
+
     /// Reserve storage slots for future upgrades for safety
-    uint256[40] private __gap;
+    uint256[38] private __gap;
 
     /// @return vs The validator storage struct
     function _validatorStorage()
@@ -187,16 +195,10 @@ contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
     /*                       INITIALIZATION                       */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    function initializeV1_2(address[] calldata _stakingTokens)
-        external
-        onlyGovernor
-    {
-        // migrate initial reward pools
-        uint256 len = _stakingTokens.length;
-        for (uint256 i; i < len; i++) {
-            address _token = _stakingTokens[i];
-            _migrateVault(_token, uint8(1));
-        }
+    function initializeV1_9(address _wiBGT) external onlyGovernor {
+        if (_wiBGT == address(0)) revert Errors.ZeroAddress();
+        wiBGT = _wiBGT;
+        ERC20(address(ibgt)).safeApprove(_wiBGT, type(uint256).max);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -516,7 +518,7 @@ contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
     /// @param _fee uint256 The fee rate to update to
     function updateFee(ConfigTypes.FeeType _t, uint256 _fee)
         external
-        onlyGovernor
+        onlyKeeper
     {
         uint256 prevFee = fees(uint256(_t));
         _rewardsStorage().updateFee(_t, _fee);
@@ -572,6 +574,17 @@ contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
         emit UpdatedIRMintRate(oldRate, _irMintRate, msg.sender);
     }
 
+    /// @notice Admin function to toggle the auction base flag
+    /// @dev should be true while iBGT is worth more than BERA
+    function toggleAuctionBase() external onlyKeeper {
+        if (auctionBase) {
+            auctionBase = false;
+        } else {
+            auctionBase = true;
+        }
+        emit AuctionBaseFlagUpdated(auctionBase);
+    }
+
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
     /*                       REWARDS                              */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
@@ -591,8 +604,18 @@ contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
 
     /// @notice Claims all the BGT base and commission rewards minted to this contract for validators.
     function harvestBase() public whenNotPaused {
-        uint256 bgtAmt =
-            RewardsLib.harvestBase(address(ibgt), address(_bgt), address(ibera));
+        uint256 bgtAmt;
+        if (auctionBase) {
+            // mint ibgt for bgt, auction ibgt for bera, send to ibera receivor
+            bgtAmt = RewardsLib.auctionBase(
+                address(ibgt), address(_bgt), harvestBaseCollector
+            );
+        } else {
+            // redeem bgt for bera, send to ibera receivor
+            bgtAmt = RewardsLib.harvestBase(
+                address(ibgt), address(_bgt), address(ibera)
+            );
+        }
         emit BaseHarvested(msg.sender, bgtAmt);
     }
 
@@ -664,19 +687,34 @@ contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
         external
         onlyCollector
     {
-        if (_token != address(wbera)) {
+        if (_token != address(wbera) && _token != address(ibgt)) {
             revert Errors.RewardTokenNotSupported();
         }
 
-        (uint256 amtInfraredBERA, uint256 amtIbgtVault) = _rewardsStorage()
-            .collectBribesInWBERA(
-            _amount,
-            address(wbera),
-            address(ibera),
-            address(ibgtVault),
-            address(voter),
-            rewardsDuration()
-        );
+        uint256 amtInfraredBERA;
+        uint256 amtIbgtVault;
+
+        if (_token == address(wbera)) {
+            (amtInfraredBERA, amtIbgtVault) = _rewardsStorage()
+                .collectBribesInWBERA(
+                _amount,
+                address(wbera),
+                address(ibera),
+                address(ibgtVault),
+                address(voter),
+                rewardsDuration()
+            );
+        } else {
+            (amtInfraredBERA, amtIbgtVault) = _rewardsStorage()
+                .collectBribesInIBGT(
+                _amount,
+                address(ibgt),
+                address(ibgtVault),
+                address(voter),
+                address(harvestBaseCollector),
+                rewardsDuration()
+            );
+        }
 
         emit BribesCollected(msg.sender, _token, amtInfraredBERA, amtIbgtVault);
     }
@@ -699,6 +737,14 @@ contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
             address(_bgt), address(ibgtVault), address(voter), rewardsDuration()
         );
         emit RewardSupplied(address(ibgtVault), _token, _amount);
+    }
+
+    /// @notice Redeem iBGT for BERA via BGT redeem
+    /// @dev Only Keeper is allowed to execute
+    function redeemIbgtForBera(uint256 amount) external onlyKeeper {
+        if (amount == 0) revert Errors.ZeroAmount();
+        RewardsLib.redeemIbgtForBera(address(_bgt), address(ibgt), amount);
+        emit IbgtRedeemed(msg.sender, amount);
     }
 
     /*´:°•.°+.*•´.*:˚.°*.˚•´.°:°•.°•.*•´.*:˚.°*.˚•´.°:°•.°+.*•´.*:*/
@@ -912,4 +958,97 @@ contract InfraredV1_2 is InfraredUpgradeable, IInfraredV1_2 {
     }
 
     receive() external payable {}
+
+    // v1.5
+    /// @notice Claims all the BGT rewards for the user associated with the berachain vault given staking token.
+    /// @param _asset address The address of the staking asset that the vault is for.
+    /// @param user address The address of the user to get rewards for and mint ibgt to
+    function claimExternalVaultRewards(address _asset, address user)
+        external
+        whenNotPaused
+    {
+        // permissioned access: sender can be user or keeper
+        address sender = msg.sender;
+        if (!hasRole(KEEPER_ROLE, sender) && sender != user) {
+            revert Errors.Unauthorized(sender);
+        }
+        IBerachainRewardsVault vault =
+            IBerachainRewardsVault(rewardsFactory.getVault(_asset));
+        uint256 bgtAmt = RewardsLib.harvestVaultForUser(
+            _rewardsStorage(),
+            vault,
+            address(_bgt),
+            address(ibgt),
+            address(voter),
+            address(user)
+        );
+        emit ExternalVaultClaimed(user, _asset, address(vault), bgtAmt);
+    }
+
+    /// @notice View expected iBGT rewards to claim for the user associated with the berachain vault given staking token.
+    /// @param _asset address The address of the staking asset that the vault is for.
+    /// @param user address The address of the user to get rewards for and mint ibgt to
+    /// @return iBgtAmount amount of iBGT to be minted to user
+    function externalVaultRewards(address _asset, address user)
+        external
+        view
+        returns (uint256 iBgtAmount)
+    {
+        IBerachainRewardsVault vault =
+            IBerachainRewardsVault(rewardsFactory.getVault(_asset));
+        iBgtAmount = RewardsLib.externalVaultRewards(
+            _rewardsStorage(), vault, address(user)
+        );
+    }
+
+    // v1.3
+    /// @notice Queues a commission rate change for a validator on incentive tokens.
+    /// @dev Only the governor can call this function.
+    /// @dev Reverts if a commission rate change is already queued.
+    /// @param _pubkey The validator's pubkey.
+    /// @param _commissionRate The commission rate of the validator on the incentive tokens.
+    function queueValCommission(bytes calldata _pubkey, uint96 _commissionRate)
+        external
+        onlyGovernor
+    {
+        _queueValCommission(_pubkey, _commissionRate);
+    }
+
+    function _queueValCommission(bytes calldata _pubkey, uint96 _commissionRate)
+        internal
+    {
+        if (!isInfraredValidator(_pubkey)) revert Errors.InvalidValidator();
+        chef.queueValCommission(_pubkey, _commissionRate);
+        emit ValidatorCommissionQueued(msg.sender, _pubkey, _commissionRate);
+    }
+
+    /// @notice Queues commission rate changes for multiple validators on incentive tokens.
+    /// @dev Only the governor can call this function.
+    /// @dev Reverts if any validator is invalid or if any have a commission rate change already queued.
+    /// @param _pubkeys The array of validator pubkeys.
+    /// @param _commissionRate The commission rate to set for all validators in the array.
+    function queueMultipleValCommissions(
+        bytes[] calldata _pubkeys,
+        uint96 _commissionRate
+    ) external onlyGovernor {
+        uint256 length = _pubkeys.length;
+        for (uint256 i = 0; i < length; i++) {
+            _queueValCommission(_pubkeys[i], _commissionRate);
+        }
+    }
+
+    /// @notice Activates the queued commission rate of a validator on incentive tokens.
+    /// @dev Anyone can call this function once the queued commission is ready.
+    /// @param _pubkey The validator's pubkey.
+    function activateQueuedValCommission(bytes calldata _pubkey) external {
+        if (!isInfraredValidator(_pubkey)) revert Errors.InvalidValidator();
+        chef.activateQueuedValCommission(_pubkey);
+
+        // Get the current commission rate to include in the event
+        uint96 newCommissionRate =
+            chef.getValCommissionOnIncentiveTokens(_pubkey);
+        emit ValidatorCommissionActivated(
+            msg.sender, _pubkey, newCommissionRate
+        );
+    }
 }

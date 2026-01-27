@@ -23,3 +23,5 @@
 | BatchClaimor               | `0x1D6844b42784d3ADbD7fDFa5887d56d22Aa9FB67` |
 | IR OFT Adapter             | `0xfd0fA49F8aA1d61dA390E10EAD23C650B0F9C2B5` |
 | MerkleDistributor          | `0x5F791523314ca809A1146184311e35001b6E6FC8` |
+| StakedIR                   | `0xb5E9cfD2751363F38a696626C18DB4aFf7512756` |
+| IRAuction                  | `0x283071D22d8d70340beBD5E09e03262EBC3DEFdb` |
