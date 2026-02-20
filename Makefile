@@ -131,7 +131,7 @@ check-exchange-rate: ## Check iBERA/BERA exchange rate
 	@echo "$(YELLOW)iBERA Exchange Rate:$(NC)"
 	@echo "Deposits: $$(cast call $(IBERA_PROXY) 'deposits()(uint256)' --rpc-url $(RPC_URL))"
 	@echo "Total Supply: $$(cast call $(IBERA_PROXY) 'totalSupply()(uint256)' --rpc-url $(RPC_URL))"
-	@echo "iBERA rate (value of 1 iBERA (1e18 wei) in bera)": $$(cast call $(IBERA_RATE) 'getRate()(uint256)' --rpc-url $(RPC_URL))" 
+	@echo "iBERA rate (value of 1 iBERA (1e18 wei) in bera): $$(cast call $(IBERA_RATE) 'getRate()(uint256)' --rpc-url $(RPC_URL))" 
 
 check-protocol-fees: ## Check fees in iBGT, wBERA, HONEY, iBERA
 	@echo "$(YELLOW)Protocol fees accumulated:$(NC)"
