@@ -1,272 +1,199 @@
-# Infrared Protocol - Operations Guide
+# Infrared Protocol Operations Guide
 
-**Last Updated:** October 14, 2025
-**Deployed Contract:** `0x2114079132C56827237f581eF1a0625680d29576`
+## Table of Contents
 
----
-
-## Overview
-
-This guide documents operational procedures for the Infrared Protocol, including:
-- Keeper bot operations (automated maintenance)
-- Governance operations (multisig-controlled)
-- State monitoring and health checks
-- Emergency procedures
-
-All operations are streamlined through the `Makefile` for consistent execution.
-
----
-
-## Quick Start
-
-### 1. Setup Environment
-
-```bash
-# Copy environment template
-cp .env.example .env
-
-# Edit .env with your configuration
-# Required variables:
-# - PRIVATE_KEY (for keeper operations)
-# - BERASCAN_API_KEY (for verification)
-```
-
-### 2. Configure Contract Addresses
-
-Edit the `Makefile` or export environment variables:
-
-```bash
-export INFRARED_PROXY=0x2114079132C56827237f581eF1a0625680d29576
-export IBERA_PROXY=<your-ibera-address>
-export IBGT_PROXY=<your-ibgt-address>
-export BRIBE_COLLECTOR=<your-bribe-collector-address>
-export SAFE_ADDRESS=<your-safe-multisig-address>
-```
-
-### 3. Verify Setup
-
-```bash
-# Show current configuration
-make config-show
-
-# Validate contract addresses
-make config-validate
-
-# Run health check
-make health-check NETWORK=mainnet
-```
+1. [Production Services Architecture](#1-production-services-architecture)
+2. [Automated Operations](#2-automated-operations)
+3. [Governance Operations](#3-governance-operations)
+4. [State Monitoring](#4-state-monitoring)
+5. [Emergency Procedures](#5-emergency-procedures)
+6. [Manual Makefile Operations](#6-manual-makefile-operations)
+   - [6.1 Manual Harvest](#manual-harvest-emergency-only)
+   - [6.2 Manual Boost Management](#manual-boost-management-emergency-only)
+   - [6.3 Manual Cutting Board Management](#manual-cutting-board-management)
+   - [6.4 Manual Bribe & Auction Claiming](#manual-bribe--auction-claiming)
+   - [6.5 Manual iBERA Keeper Operations](#manual-ibera-keeper-operations)
+7. [Reference](#7-reference)
 
 ---
 
-## Keeper Operations
+## 1. Production Services Architecture
 
-**Role:** KEEPER_ROLE
-**Frequency:** Automated via cron or monitoring service
-**Security:** Requires KEEPER_ROLE grant from governance
+In production, most protocol operations are handled by dedicated off-chain services. The Makefile commands in this repo are for development, debugging, and emergency manual intervention.
 
-### Daily Operations
+### Core Operation Services
 
-#### 1. Harvest All Rewards (Every 24 hours)
+| Service | Repository | Responsibility |
+|---------|-----------|---------------|
+| **backend** | [infrared-dao/backend](https://github.com/infrared-dao/backend) | Go service handling reward harvesting for all vaults |
+| **ibera-keeper** | [infrared-dao/ibera-keeper](https://github.com/infrared-dao/ibera-keeper) | iBERA CL deposit queue processing and withdrawal orchestration |
+| **infrared-strategy** | [infrared-dao/infrared-strategy](https://github.com/infrared-dao/infrared-strategy) | Validator cutting board management and BGT boost optimization |
+| **auction-bot** | [infrared-dao/auction-bot](https://github.com/infrared-dao/auction-bot) | Automated bribe collection and auction lifecycle management |
 
-```bash
-# Run complete harvest cycle
-make keeper-harvest NETWORK=mainnet
+### Supporting Services
 
-# Or run individually:
-make keeper-harvest-base NETWORK=mainnet
-make keeper-harvest-vault ASSET=0x... NETWORK=mainnet
-make keeper-harvest-boost NETWORK=mainnet
-make keeper-harvest-operator NETWORK=mainnet
+| Service | Repository | Responsibility |
+|---------|-----------|---------------|
+| **bera-proofs** | [infrared-dao/bera-proofs](https://github.com/infrared-dao/bera-proofs) | Berachain consensus layer proof generation |
+| **uniswap-optimizer** | [infrared-dao/uniswap-optimizer](https://github.com/infrared-dao/uniswap-optimizer) | IR/iBGT market liquidity optimization |
+| **merkle-claims** | [infrared-dao/merkle-claims](https://github.com/infrared-dao/merkle-claims) | IR token airdrop merkle proof generation and claim processing |
+
+### Service Interaction Diagram
+
 ```
-
-**Gas Estimates:**
-- `harvestBase()`: ~300k gas
-- `harvestVault()`: ~250k gas per vault
-- `harvestBoostRewards()`: ~200k gas
-- `harvestOperatorRewards()`: ~200k gas
-
-**Monitoring:**
-- Track last harvest timestamp per vault
-- Alert if not harvested within 26-28 hours
-- Monitor gas prices to optimize timing
-
-#### 2. Harvest Bribes (Every 24 hours)
-
-```bash
-make keeper-harvest-bribes NETWORK=mainnet
+                    ┌───────────────────────────────┐
+                    │      infrared-strategy        │
+                    │  • Cutting board updates      │
+                    │  • BGT boost queue/activate   │
+                    └──────────────┬────────────────┘
+                                   │ KEEPER_ROLE
+                    ┌──────────────▼────────────────┐
+                    │         Infrared.sol          │
+                    │    (Core Protocol Contract)   │
+                    └──┬───────────────────┬────────┘
+                       │                   │
+          ┌────────────▼────┐     ┌────────▼──────────────┐
+          │    backend      │     │      auction-bot      │
+          │  • harvestBase  │     │  • claimFees()        │
+          │  • harvestVault │     │  • Auction lifecycle  │
+          │  • harvestBoost │     └───────────────────────┘
+          │  • harvestBribes│
+          └─────────────────┘
+                    ┌───────────────────────────────┐
+                    │        ibera-keeper           │
+                    │  • processDeposits()          │
+                    │  • queueWithdrawals()         │
+                    │  • Beacon chain proofs        │
+                    └──────────────┬────────────────┘
+                                   │
+                    ┌──────────────▼────────────────┐
+                    │       InfraredBERA.sol        │
+                    │    (iBERA Liquid Staking)     │
+                    └───────────────────────────────┘
 ```
-
-**Purpose:** Collects bribe rewards from voting positions
-
-**Gas Estimate:** ~150k-300k gas (varies by number of tokens)
-
-### Hourly Operations
-
-#### 3. Process Validator Deposits (Every hour)
-
-```bash
-make keeper-deposit-validator NETWORK=mainnet
-```
-
-**Triggers when:**
-- Pending deposit queue > 32 BERA (minimum validator deposit)
-- Available validator has deposit signature set
-
-**Monitoring:**
-- Alert if queue > 100 BERA for > 2 hours
-- Track validator activation success rate
-
-#### 4. Activate Validator Commissions (As needed)
-
-```bash
-make keeper-activate-commissions NETWORK=mainnet
-```
-
-**Purpose:** Activates queued validator commission changes
-
-**Frequency:** Check every 12 hours, execute when block height reached
-
-### Boost Management (As needed)
-
-```bash
-# Queue boost for validator
-make keeper-queue-boost PUBKEY=0x... AMOUNT=1000000000000000000 NETWORK=mainnet
-
-# Activate queued boosts
-make keeper-activate-boost NETWORK=mainnet
-
-# Drop boost from validator
-make keeper-drop-boost PUBKEY=0x... AMOUNT=1000000000000000000 NETWORK=mainnet
-```
-
-**Note:** Boosts are measured in wei (1e18 = 1 BGT)
 
 ---
 
-## State Monitoring
+## 2. Automated Operations
 
-### Comprehensive Health Check
+These operations are handled by backend services. See each service's repository for deployment and configuration instructions.
 
-```bash
-make health-check NETWORK=mainnet
+### 2.1 Reward Harvesting — `backend`
+
+**Service:** [infrared-dao/backend](https://github.com/infrared-dao/backend)
+
+The backend Go service runs the full harvest cycle for all registered InfraredVaults. It calls the harvest functions on Infrared.sol with `KEEPER_ROLE`.
+
+**Harvest functions called:**
+- `harvestBase()` — BGT from BerachainRewardsVault, converts to iBGT and distributes
+- `harvestVault(asset)` — Per-vault reward harvesting
+- `harvestBoostRewards()` — BGT delegation boost rewards to iBGT holders
+- `harvestOperatorRewards()` — Operator commission distribution
+
+**Frequency:** Every 24 hours (configurable)
+
+**Fee split on each harvest:**
+```
+Protocol Fee = Reward * HarvestFeeRate / 1e6
+User Reward = Reward - Protocol Fee
 ```
 
-**Output includes:**
-- Total deposits (iBERA)
-- Pending stakes (awaiting validator activation)
-- Confirmed stakes (active validators)
-- BGT balance
-- Exchange rate (deposits / totalSupply)
+### 2.2 iBERA Deposits & Withdrawals — `ibera-keeper`
 
-### Individual State Checks
+**Service:** [infrared-dao/ibera-keeper](https://github.com/infrared-dao/ibera-keeper)
 
-```bash
-# Check total iBERA deposits
-make check-deposits NETWORK=mainnet
+Manages the full lifecycle of BERA → iBERA liquid staking at the consensus layer:
 
-# Check pending validator stakes
-make check-pending NETWORK=mainnet
+- **Deposits**: Monitors deposit queue; when ≥ 32 BERA is queued, processes deposits to validator via Berachain deposit precompile
+- **Withdrawals**: Generates EIP-7002 withdrawal credentials, queues and monitors CL withdrawal completion
+- **Proofs**: Works with [bera-proofs](https://github.com/infrared-dao/bera-proofs) for consensus layer state verification
 
-# Check confirmed validator stakes
-make check-confirmed NETWORK=mainnet
+**Timelines:**
+- Deposit queue processing: up to 1 hour
+- Withdrawal processing: ~27 hours (EIP-7002)
 
-# Check BGT balance
-make check-bgt NETWORK=mainnet
+### 2.3 Validator Strategy — `infrared-strategy`
 
-# Check iBGT total supply
-make check-ibgt-supply NETWORK=mainnet
+**Service:** [infrared-dao/infrared-strategy](https://github.com/infrared-dao/infrared-strategy)
 
-# Check specific validator stake
-make check-validator PUBKEY=0x... NETWORK=mainnet
+Manages BGT emission allocation and boost strategy across all Infrared validators:
 
-# Check vault registry
-make check-vault ASSET=0x... NETWORK=mainnet
+- **Cutting boards**: Queues and activates validator reward allocations (`queueNewCuttingBoard`)
+- **BGT boosts**: Optimizes BGT delegation across validators (queue/activate/drop)
+- **Auction integration**: Respects active `ValidatorControlAuction` NFT holders — does not override controlled validators during their allocation period
 
-# Check user rewards
-make check-rewards USER=0x... NETWORK=mainnet
+Holds `KEEPER_ROLE` on Infrared.sol.
 
-# Check exchange rate
-make check-exchange-rate NETWORK=mainnet
-```
+### 2.4 Bribe Auctions — `auction-bot`
 
-### Continuous Monitoring
+**Service:** [infrared-dao/auction-bot](https://github.com/infrared-dao/auction-bot)
 
-```bash
-# Monitor withdrawal queue (runs continuously)
-make monitor-queue NETWORK=mainnet
-```
+Automates the bribe collection lifecycle:
 
-**Alert Thresholds:**
-- Pending withdrawals > 50% of deposits: WARNING
-- Pending withdrawals > 75% of deposits: CRITICAL
-- Queue time > 30 hours: WARNING
-- Queue time > 36 hours: CRITICAL
+1. Calls `infrared.harvestBribes(tokens)` to collect accumulated bribes to BribeCollector
+2. Monitors BribeCollector and starts new auctions when conditions are met
+3. Calls `collector.claimFees()` to distribute auction proceeds back to protocol
+
+**See also:** `docs/CUTTING_BOARD_AUCTIONS.md` for the separate Validator Control Auction system.
+
+### 2.5 Supporting Services
+
+**bera-proofs** — [infrared-dao/bera-proofs](https://github.com/infrared-dao/bera-proofs)
+Generates Berachain consensus layer state proofs used by ibera-keeper for deposit/withdrawal verification.
+
+**uniswap-optimizer** — [infrared-dao/uniswap-optimizer](https://github.com/infrared-dao/uniswap-optimizer)
+Maintains healthy IR and iBGT liquidity on Berachain DEXes by rebalancing and optimizing LP positions.
+
+**merkle-claims** — [infrared-dao/merkle-claims](https://github.com/infrared-dao/merkle-claims)
+Handles IR token airdrop distribution: generates merkle trees from snapshot data and serves proofs for the claim contract.
 
 ---
 
-## Governance Operations
+## 3. Governance Operations
 
-**Role:** DEFAULT_ADMIN_ROLE (Multisig Safe)
-**Security:** Requires threshold signatures from Safe multisig
-**Process:** All governance operations create Safe transactions for approval
+**Role:** `DEFAULT_ADMIN_ROLE` (Safe multisig)
+**Process:** All governance operations create Safe transactions requiring threshold signatures.
 
-### Validator Management
+### 3.1 Validator Management
 
-#### Add Validator
+#### Onboard Validator
 
 ```bash
-make gov-add-validator \
+make gov-onboard-validator \
   PUBKEY=0x... \
   OPERATOR=0x... \
+  SIGNATURE=0x... \
   NETWORK=mainnet
 ```
 
-**Pre-requisites:**
-- Validator public key (48 bytes, BLS12-381)
-- Operator address (receives commissions)
-- Safe multisig approval
+**Prerequisites:** [Validator signed deposit message, Validator public key, EVM address that will collect fees and rewards.](https://infrared.finance/docs/developers/validators)
 
-**Post-deployment:**
-1. Set deposit signature: `make gov-set-deposit-sig PUBKEY=0x... SIGNATURE=0x...`
-2. Queue commission (optional): `make gov-queue-commissions PUBKEY=0x...`
-3. Monitor for first 32 BERA deposit
+**Post-deployment steps:**
+1. Add to ibera-keeper config.
+2. Set validator commission.
+
+**⚠️ Important:** Always run `harvestBase()` and `harvestOperatorRewards()` before adding validators to avoid reward accounting issues. The backend service handles this; if adding manually, harvest first.
 
 #### Remove Validator
 
 ```bash
-make gov-remove-validator \
-  PUBKEY=0x... \
-  NETWORK=mainnet
+make gov-remove-validator PUBKEY=0x... NETWORK=mainnet
 ```
 
-**⚠️ WARNING:** This will:
-1. Harvest all pending rewards
-2. Remove validator from active set
-3. Initiate withdrawal process (EIP-7002)
+Initiates EIP-7002 withdrawal (~27 hours for full exit). Harvest all rewards before removal.
 
-**Expected Duration:** 27 hours for full withdrawal
-
-### Vault & Reward Management
+### 3.2 Vault & Reward Management
 
 #### Whitelist Reward Token
 
 ```bash
-make gov-whitelist-token \
-  TOKEN=0x... \
-  NETWORK=mainnet
+make gov-whitelist-token TOKEN=0x... NETWORK=mainnet
 ```
 
-**Automatic Checks (in script):**
-- ✅ ERC20 compliance (totalSupply, balanceOf, allowance)
-- ✅ Proxy detection (EIP-1967)
-- ✅ Not already whitelisted
-
-**Manual Review Required:**
-- Token contract verified on Berascan
-- No fee-on-transfer mechanism
-- No rebasing mechanism
+Script auto-checks ERC20 compliance and proxy detection. Manual review required:
+- Contract verified on Berascan
+- No fee-on-transfer or rebasing mechanism
 - Trusted token issuer
-- Liquidity depth acceptable
 
 #### Add Reward to Vault
 
@@ -278,565 +205,427 @@ make gov-add-reward \
   NETWORK=mainnet
 ```
 
-**Duration Examples:**
-- 1 week: 604800 seconds
-- 1 day: 86400 seconds
-- 2 weeks: 1209600 seconds
+Duration in seconds: 1 week = 604800, 1 day = 86400.
 
-**Post-deployment:**
-- Verify reward token whitelisted
-- Confirm reward duration set correctly
-- Test with small incentive amount
-
-#### Update Fee
+#### Register New Vault
 
 ```bash
-make gov-update-fee \
-  FEE_TYPE=0 \
-  FEE=50000 \
-  NETWORK=mainnet
+# Vault is auto-created on first staking token registration
+# via infrared.registerVault(stakingToken)
+make gov-register-vault ASSET=0x... NETWORK=mainnet
 ```
 
-**Fee Types (see `make info-fee-types`):**
-```
-0: HarvestVaultFeeRate       (keeper fee for vault harvests)
-1: HarvestBribesFeeRate      (keeper fee for bribe harvests)
-2: HarvestOperatorFeeRate    (keeper fee for operator harvests)
-3: HarvestBoostFeeRate       (keeper fee for boost harvests)
-4: HarvestVaultProtocolRate  (protocol fee for vault harvests)
-5: HarvestBribesProtocolRate (protocol fee for bribe harvests)
-6: HarvestOperatorProtocolRate (protocol fee for operator harvests)
-7: HarvestBoostProtocolRate  (protocol fee for boost harvests)
-```
-
-**Fee Format:** Basis points (1e6 = 100%)
-- 5%: 50000
-- 10%: 100000
-- 0.5%: 5000
-
-**⚠️ Safety Check:** Should add max fee validation (10% cap) in next upgrade
-
-### Emergency Operations
-
-#### Pause Vault Staking
+### 3.3 Fee Configuration
 
 ```bash
-make gov-pause-vault \
-  ASSET=0x... \
-  NETWORK=mainnet
+make gov-update-fee FEE_TYPE=<n> FEE=<amount> NETWORK=mainnet
 ```
 
-**Effect:**
-- Disables new deposits to vault
-- Withdrawals still enabled
-- Existing stakes unaffected
+**Always harvest all rewards before changing fees.**
 
-**When to use:**
-- Vault contract vulnerability discovered
-- Asset contract compromised
-- Abnormal vault behavior
+| FeeType | Constant | Description |
+|---------|----------|-------------|
+| 0 | `HarvestOperatorFeeRate` | Keeper fee on operator harvests |
+| 1 | `HarvestOperatorProtocolRate` | Protocol fee on operator harvests |
+| 2 | `HarvestVaultFeeRate` | Keeper fee on vault harvests |
+| 3 | `HarvestVaultProtocolRate` | Protocol fee on vault harvests |
+| 4 | `HarvestBribesFeeRate` | Keeper fee on bribe harvests |
+| 5 | `HarvestBribesProtocolRate` | Protocol fee on bribe harvests |
+| 6 | `HarvestBoostFeeRate` | Keeper fee on boost harvests |
+| 7 | `HarvestBoostProtocolRate` | Protocol fee on boost harvests |
 
-#### Unpause Vault Staking
+**Fee format:** Units of 1e6 (1e6 = 100%). Examples: 5% = 50000, 10% = 100000.
+
+### 3.4 Access Control
 
 ```bash
-make gov-unpause-vault \
-  ASSET=0x... \
-  NETWORK=mainnet
+# Grant KEEPER_ROLE (applies to Infrared + InfraredBERA)
+make gov-grant-keeper KEEPER=0x... NETWORK=mainnet
+
+# Revoke KEEPER_ROLE
+make gov-revoke-keeper KEEPER=0x... NETWORK=mainnet
 ```
 
-**Pre-requisites:**
-- Issue resolved and verified
-- Team consensus on safety
-- Monitoring in place
-
-#### Emergency Pause All Vaults
-
-```bash
-make emergency-pause-all NETWORK=mainnet
-```
-
-**⚠️ CRITICAL:** This pauses ALL vaults
-
-**When to use:**
-- Protocol-wide vulnerability
-- Core contract exploit
-- Under active attack
-
-**Requires:** Interactive confirmation
-
-### Access Control
-
-#### Grant Keeper Role
-
-```bash
-make gov-grant-keeper \
-  KEEPER=0x... \
-  NETWORK=mainnet
-```
-
-**Grants KEEPER_ROLE on:**
-- Infrared contract
-- InfraredBERA contract
-
-**Before granting:**
-- Verify keeper address correct
-- Review keeper bot security
-- Test on testnet first
-
-#### Revoke Keeper Role
-
-```bash
-make gov-revoke-keeper \
-  KEEPER=0x... \
-  NETWORK=mainnet
-```
-
-**When to use:**
-- Keeper bot compromised
-- Rotating keeper addresses
-- Deprecating old keeper
-
-### Asset Recovery
-
-#### Recover ERC20 from Protocol
+### 3.5 Asset Recovery
 
 ```bash
 make gov-recover-erc20 \
   TOKEN=0x... \
   RECIPIENT=0x... \
-  AMOUNT=1000000000000000000 \
+  AMOUNT=<wei> \
   NETWORK=mainnet
 ```
 
-**Use cases:**
-- Accidentally sent tokens
-- Deprecated reward tokens
-- Protocol fee collection
+Cannot recover active staking tokens (would break accounting).
 
-**⚠️ WARNING:** Cannot recover:
-- Staking tokens (would break accounting)
-- Active reward tokens
-
-### Bribe Collector Management
-
-#### Set Payout Token
+### 3.6 Bribe Collector Configuration
 
 ```bash
-make gov-set-bribe-payout \
-  TOKEN=0x... \
-  NETWORK=mainnet
+# Set payout token (currently iBGT)
+make gov-set-bribe-payout TOKEN=0x... NETWORK=mainnet
 ```
-
-**Current:** iBGT (per V1.8 upgrade)
-
-**Before changing:**
-- Ensure token whitelisted
-- Verify sufficient liquidity
-- Test conversion paths
-
-#### Queue Validator Commissions
-
-```bash
-make gov-queue-commissions \
-  PUBKEY=0x... \
-  NETWORK=mainnet
-```
-
-**Purpose:** Queue 100% commission rate for validator
-
-**Activation:** Requires keeper to call `activateValCommissions()` after block height
 
 ---
 
-## Expected Timelines
+## 4. State Monitoring
 
-### Deposits
-- **User submits:** Instant (receives iBERA shares)
-- **Queue wait:** Up to 1 hour (depends on keeper frequency)
-- **Validator activation:** Up to 27 hours (depends on Beacon chain)
-- **First rewards:** Next epoch after activation
-
-### Withdrawals
-- **User submits:** Instant (burns iBERA shares)
-- **Queue wait:** Exactly 27 hours (target)
-- **Withdrawal available:** After EIP-7002 processing
-- **Claim:** User calls `claim()` on withdrawor
-
-### Harvests
-- **Frequency:** Every 24 hours (keeper bot)
-- **Distribution:** Immediate after harvest
-- **User claims:** Any time after distribution
-
----
-
-## Monitoring & Alerts
-
-### Critical Alerts
-
-**Immediate Response Required:**
-1. Exchange rate deviation > 10%
-2. Withdrawal queue > 75% of deposits
-3. Validator slashing detected
-4. Abnormal BGT balance drop
-5. Failed harvest > 36 hours
-
-### Warning Alerts
-
-**Review Within 1 Hour:**
-1. Exchange rate deviation > 5%
-2. Withdrawal queue > 50% of deposits
-3. Harvest missed (> 26 hours)
-4. Keeper bot offline > 2 hours
-5. Pending deposits > 100 BERA
-
-### Monitoring Commands
+### Health Check
 
 ```bash
-# Continuous queue monitoring
-make monitor-queue NETWORK=mainnet
+make health-check NETWORK=mainnet
+```
 
-# Daily health check (add to cron)
+### Key State Queries
+
+```bash
+make check-deposits NETWORK=mainnet        # Total iBERA deposits
+make check-pending NETWORK=mainnet         # Pending validator stakes
+make check-confirmed NETWORK=mainnet       # Confirmed CL stakes
+make check-bgt NETWORK=mainnet             # BGT balance
+make check-ibgt-supply NETWORK=mainnet     # iBGT total supply
+make check-exchange-rate NETWORK=mainnet   # iBERA/BERA rate
+make check-validator PUBKEY=0x... NETWORK=mainnet
+make check-vault ASSET=0x... NETWORK=mainnet
+make check-rewards USER=0x... NETWORK=mainnet
+```
+
+### Alert Thresholds
+
+**Critical — immediate response required:**
+- Exchange rate deviation > 10%
+- Withdrawal queue > 75% of deposits
+- Validator slashing detected
+- Failed harvest > 36 hours
+- Abnormal BGT balance drop
+
+**Warning — review within 1 hour:**
+- Exchange rate deviation > 5%
+- Withdrawal queue > 50% of deposits
+- Harvest missed > 26 hours
+- Backend service offline > 2 hours
+- Pending deposits > 100 BERA
+
+### Cron Monitoring (supplemental to backend services)
+
+```bash
+# Daily health snapshot
 0 8 * * * cd /path/to/repo && make health-check NETWORK=mainnet
 
-# Exchange rate monitoring (every 6 hours)
-0 */6 * * * cd /path/to/repo && make state-exchange-rate NETWORK=mainnet
+# Exchange rate check
+0 */6 * * * cd /path/to/repo && make check-exchange-rate NETWORK=mainnet
 ```
 
 ---
 
-## Development Workflow
+## 5. Emergency Procedures
 
-### Setup Development Environment
-
-```bash
-make dev-setup
-```
-
-**Creates:**
-- `.env` from template
-- Installs dependencies via Forge
-
-### Development Test Cycle
+### Pause Vault Staking
 
 ```bash
-# Quick test cycle
-make dev-test
+# Pause a single vault (PAUSER_ROLE or governance)
+make gov-pause-vault ASSET=0x... NETWORK=mainnet
 
-# Comprehensive checks
-make dev-check
+# Pause all vaults (requires confirmation)
+make emergency-pause-all NETWORK=mainnet
+
+# Unpause (governance only)
+make gov-unpause-vault ASSET=0x... NETWORK=mainnet
 ```
 
-### Run Specific Tests
-
-```bash
-# All tests
-make test
-
-# Unit tests only
-make test-unit
-
-# Integration tests
-make test-integration
-
-# Invariant tests
-make test-invariant
-
-# Fork tests (requires RPC)
-make test-fork NETWORK=mainnet
-
-# Specific test function
-make test-specific TEST=testMintBurn
-
-# Gas reporting
-make test-gas
-
-# Coverage report
-make test-coverage
-```
-
----
-
-## Build & Deploy
-
-### Build Contracts
-
-```bash
-# Development build
-make build
-
-# Production build (optimizer runs: 50)
-make build-production
-
-# Clean artifacts
-make clean
-```
-
-### Deploy Contracts
-
-**⚠️ MAINNET DEPLOYMENT:** Only via governance multisig
-
-```bash
-# Deploy Infrared (use with extreme caution)
-make deploy-infrared NETWORK=mainnet
-
-# Deploy InfraredBERA (use with extreme caution)
-make deploy-ibera NETWORK=mainnet
-```
-
-**Pre-deployment Checklist:**
-- [ ] Contracts audited
-- [ ] Tests passing (100% coverage)
-- [ ] Governance approval obtained
-- [ ] Deployment plan reviewed
-- [ ] Rollback plan documented
-- [ ] Testnet deployment successful
-- [ ] Safe multisig ready
-
----
-
-## Utility Commands
-
-### Code Quality
-
-```bash
-# Format Solidity files
-make format
-
-# Check formatting
-make format-check
-
-# Run Slither static analysis
-make lint
-
-# Create gas snapshot
-make snapshot
-```
-
-### Documentation
-
-```bash
-# Generate documentation
-make docs
-
-# Serve docs locally
-make docs-serve
-```
-
-### Dependencies
-
-```bash
-# Install dependencies
-make install
-
-# Update dependencies
-make update
-```
-
----
-
-## Information Commands
-
-### Show Fee Types
-
-```bash
-make info-fee-types
-```
-
-### Show Role Hashes
-
-```bash
-make info-roles NETWORK=mainnet
-```
-
-### Show Available Networks
-
-```bash
-make info-networks
-```
-
-### Show Current Configuration
-
-```bash
-make config-show
-```
-
----
-
-## Troubleshooting
-
-### Issue: Harvest Fails with "Too Early"
-
-**Cause:** Trying to harvest before 24-hour window
-
-**Solution:** Wait until `block.timestamp >= periodFinish`
-
-```bash
-# Check period finish for vault
-cast call <VAULT_ADDRESS> "rewardData(address)(uint256,uint256,uint256,uint256,uint256,uint256,uint256)" <REWARD_TOKEN> --rpc-url <RPC_URL>
-```
-
-### Issue: Keeper Transaction Reverts
-
-**Common causes:**
-1. Insufficient KEEPER_ROLE
-2. Gas price too low
-3. Nonce mismatch
-
-**Check role:**
-```bash
-cast call $(INFRARED_PROXY) "hasRole(bytes32,address)(bool)" <KEEPER_ROLE_HASH> <KEEPER_ADDRESS> --rpc-url <RPC_URL>
-```
-
-### Issue: Governance Transaction Won't Execute
-
-**Common causes:**
-1. Insufficient Safe signatures
-2. Transaction expired
-3. Nonce incorrect
-
-**Verify Safe threshold:**
-- Check Safe UI for pending transactions
-- Ensure threshold signatures collected
-- Verify transaction nonce matches
-
-### Issue: State Check Returns Zero
-
-**Possible causes:**
-1. Wrong contract address
-2. Wrong network
-3. Contract not initialized
-
-**Verify:**
-```bash
-make config-validate
-make config-show
-```
-
----
-
-## Security Considerations
-
-### Private Key Management
-
-**NEVER commit private keys to repository**
-
-```bash
-# Use environment variables
-export PRIVATE_KEY=0x...
-
-# Or use hardware wallet (Ledger/Trezor)
-# See Foundry docs: https://book.getfoundry.sh/reference/cast/cast-send
-```
+**When to pause:**
+- Vault contract vulnerability discovered
+- Asset contract compromised
+- Active protocol attack
 
 ### Safe Multisig Best Practices
 
-1. **Simulate Before Signing**
-   - Use Safe Transaction Builder
-   - Verify all parameters
-   - Check gas limits
+1. **Simulate before signing** — Use Safe Transaction Builder; verify all parameters
+2. **Verify addresses** — Double-check target contract, function signature, all parameters
+3. **Batch transaction review** — Understand each operation, verify dependency order
+4. **Quorum availability** — Keep threshold signers reachable 24/7
 
-2. **Verify Contract Addresses**
-   - Double-check target contract
-   - Confirm function signature
-   - Validate all parameters
+### Keeper Security
 
-3. **Review Batch Transactions**
-   - Understand each operation
-   - Verify order of operations
-   - Check for dependencies
+- Use dedicated wallet with only gas funds
+- Monitor backend service logs for failed transactions
+- Rotate keeper keys if compromise suspected: revoke old key, grant new key, update service config
 
-4. **Emergency Procedures**
-   - Keep quorum available 24/7
-   - Document emergency contacts
-   - Test emergency pause process
+### Escalation
 
-### Keeper Bot Security
-
-1. **Access Control**
-   - Use dedicated wallet for keeper
-   - Limit wallet balance (only gas funds)
-   - Monitor for unauthorized access
-
-2. **Operational Security**
-   - Run keeper bot in secure environment
-   - Monitor logs for anomalies
-   - Alert on failed transactions
-
-3. **Rate Limiting**
-   - Prevent DOS from excessive calls
-   - Implement exponential backoff
-   - Cap gas prices
+1. **Protocol emergency:** Contact governance multisig signers immediately
+2. **Backend service failure:** Check service logs, restart, alert DevOps
+3. **Security incident:** Pause affected contracts, notify auditors, follow incident response
+4. **Contract bugs:** Open issue at https://github.com/infrared-dao/infrared-contracts/issues
 
 ---
 
-## Reference: Fee Calculations
+## 6. Manual Makefile Operations
 
-### Harvest Fees
+These commands are for development, debugging, and emergency manual intervention. **In production, use the backend services.**
 
-```
-Total Reward = R
-Keeper Fee = R * HarvestVaultFeeRate / 1e6
-Protocol Fee = R * HarvestVaultProtocolRate / 1e6
-User Reward = R - Keeper Fee - Protocol Fee
+### Setup
+
+```bash
+cp .env.example .env      # Configure environment
+make config-show          # Show current config
+make config-validate      # Validate contract addresses
 ```
 
-**Example:** 1000 BGT harvested, 5% keeper fee, 5% protocol fee
+### Manual Harvest (emergency only)
+
+```bash
+make keeper-harvest NETWORK=mainnet               # All harvests
+make keeper-harvest-base NETWORK=mainnet
+make keeper-harvest-vault ASSET=0x... NETWORK=mainnet
+make keeper-harvest-boost NETWORK=mainnet
+make keeper-harvest-operator NETWORK=mainnet
+make keeper-harvest-bribes NETWORK=mainnet
 ```
-Keeper Fee = 1000 * 50000 / 1000000 = 50 BGT
-Protocol Fee = 1000 * 50000 / 1000000 = 50 BGT
-User Reward = 1000 - 50 - 50 = 900 BGT
+
+### Manual Boost Management (emergency only)
+
+```bash
+make keeper-queue-boost PUBKEY=0x... AMOUNT=<wei> NETWORK=mainnet
+make keeper-activate-boost NETWORK=mainnet
+make keeper-drop-boost PUBKEY=0x... AMOUNT=<wei> NETWORK=mainnet
 ```
+
+### Manual Cutting Board Management
+
+In production, `infrared-strategy` manages cutting board queuing and activation automatically, respecting active `ValidatorControlAuction` NFT holders. Use the steps below for manual intervention when `infrared-strategy` is unavailable or a specific validator requires immediate correction.
+
+**Queue a new cutting board (KEEPER_ROLE required):**
+
+`queueNewCuttingBoard` is called directly via forge script. The `startBlock` must be a future block. Weights must be valid vault addresses with basis points summing to 10000.
+
+```bash
+forge script script/keeper/InfraredKeeperScript.s.sol:InfraredKeeperScript \
+  --sig "queueNewCuttingBoard(bytes,uint64,(address,uint96)[])" \
+  $PUBKEY $START_BLOCK "[($VAULT_ADDR,$WEIGHT)]" \
+  --rpc-url $RPC_URL \
+  --private-key $PRIVATE_KEY \
+  --broadcast
+```
+
+**Activate a queued cutting board (after 1 epoch):**
+
+```bash
+make keeper-activate-cutting-board PUBKEY=0x... NETWORK=mainnet
+```
+
+To activate cutting boards for multiple validators in a single transaction, use the shell script directly:
+
+```bash
+# Edit PUBKEYS array in the script, then run:
+bash shell/keeper/keeper_activate_queued_cutting_board.sh
+```
+
+**Check current cutting board state:**
+
+```bash
+# View queued cutting board for a validator
+cast call $INFRARED_PROXY "queuedCuttingBoard(bytes)((uint64,(address,uint96)[]))" $PUBKEY \
+  --rpc-url $RPC_URL
+```
+
+> **Note:** Do not manually queue cutting boards for validators that are currently under `ValidatorControlAuction` NFT control — the NFT holder has priority until their allocation period expires. Check `docs/CUTTING_BOARD_AUCTIONS.md` for details.
+
+---
+
+### Manual Bribe & Auction Claiming
+
+In production, `auction-bot` manages the full bribe lifecycle. The steps below replicate it manually.
+
+**Step 1 — Harvest bribes from vaults to BribeCollector:**
+
+Specify the whitelisted bribe tokens that have accumulated in the PoL vaults. WBERA and HONEY are always included; add any additional whitelisted tokens.
+
+```bash
+make keeper-harvest-bribes NETWORK=mainnet
+```
+
+Or via shell script (edit the token list for the current epoch):
+
+```bash
+# Edit INCENTIVE_TOKENS array in the script, then run:
+bash shell/keeper/keeper_harvest_bribes.sh
+```
+
+**Step 2 — Claim incentives from BribeCollector to the multisig:**
+
+After bribes are in the collector, claim them with expected minimum amounts (set to 0 for any-amount):
+
+```bash
+make keeper-claim-incentives TOKENS=0x...,0x... NETWORK=mainnet
+```
+
+Or via shell script (edit recipient, tokens, and amounts):
+
+```bash
+bash shell/keeper/keeper_claim_incentives.sh
+```
+
+**Step 3 — Sweep accumulated payout token (iBGT) to sIR vault:**
+
+If using `IRAuction`, sweep any accumulated IR/iBGT payout into the staked IR vault:
+
+```bash
+bash shell/keeper/keeper_sweep_payout_token.sh
+```
+
+**Base reward auction claiming:**
+
+The `BaseCollector` (if deployed) follows the same pattern as BribeCollector. Check `DEPLOYMENTS.md` for the BaseCollector address and use `claimFees()` directly via cast:
+
+```bash
+cast send $BASE_COLLECTOR "claimFees()" \
+  --rpc-url $RPC_URL \
+  --private-key $PRIVATE_KEY
+```
+
+---
+
+### Manual iBERA Keeper Operations
+
+In production, `ibera-keeper` handles all consensus layer deposit and withdrawal proof submissions. The steps below are for manual intervention. Proof data is generated by the [bera-proofs](https://github.com/infrared-dao/bera-proofs) service, which requires access to a beacon RPC endpoint.
+
+#### Prerequisites
+
+Ensure `bera-proofs` is running and accessible:
+
+```bash
+# bera-proofs requires a beacon RPC endpoint
+# Set BEACON_RPC_URL in your environment (e.g. https://beacon.berachain.com)
+# The service exposes proof data as JSON files consumed by the keeper scripts
+```
+
+#### Execute Deposit Proofs
+
+Used after BERA has been queued in `InfraredBERADepositor` and the corresponding validators have been activated on the consensus layer. The `AMOUNT` is the total BERA (in wei) being confirmed, and `PROOFS_PATH` is the proof JSON from bera-proofs.
+
+```bash
+forge script script/keeper/InfraredBERAKeeper.s.sol:InfraredBERAKeeper \
+  --sig "executeDepositProofs(address,uint256,string)" \
+  $DEPOSITOR $AMOUNT $PROOFS_PATH \
+  --rpc-url $RPC_URL \
+  --private-key $PRIVATE_KEY \
+  --broadcast -vvvv
+```
+
+Or via shell script (edit `AMOUNT` and `PROOFS_PATH`):
+
+```bash
+bash shell/keeper/keeper_execute_proofs_iberadepositor.sh
+```
+
+#### Execute Withdrawal Proofs
+
+Used after an EIP-7002 voluntary exit has completed (~27 hours) and the withdrawn BERA is available. `AMOUNT` is the total BERA withdrawn and `PROOFS_PATH` is the corresponding proof JSON.
+
+```bash
+forge script script/keeper/InfraredBERAKeeper.s.sol:InfraredBERAKeeper \
+  --sig "executeWithdrawProofs(address,uint256,string)" \
+  $WITHDRAWOR $AMOUNT $PROOFS_PATH \
+  --rpc-url $RPC_URL \
+  --private-key $PRIVATE_KEY \
+  --broadcast -vvvv
+```
+
+Or via shell script (edit `AMOUNT` and `PROOFS_PATH`):
+
+```bash
+bash shell/keeper/keeper_execute_proofs_iberawithdrawor.sh
+```
+
+#### Queue Validator Rebalance
+
+Used to shift stake from one validator depositor to the withdrawor queue, triggering a rebalance between validators. `AMOUNT` is the BERA (in wei) to move.
+
+```bash
+cast send $WITHDRAWOR "queue(address,uint256)" $DEPOSITOR $AMOUNT \
+  --rpc-url $RPC_URL \
+  --private-key $PRIVATE_KEY
+```
+
+Or via shell script (edit `WITHDRAWOR`, `DEPOSITOR`, and `AMOUNT`, then uncomment the live `cast send`):
+
+```bash
+bash shell/keeper/keeper_queue_rebalance.sh
+```
+
+#### iBERA State Checks
+
+```bash
+make check-deposits NETWORK=mainnet               # Total tracked BERA
+make check-pending NETWORK=mainnet                # BERA in queues (not yet on CL)
+make check-confirmed NETWORK=mainnet              # BERA confirmed on CL
+make check-exchange-rate NETWORK=mainnet          # iBERA/BERA rate
+make check-ibera-withdrawal-queue NETWORK=mainnet # Queued withdrawal amount
+```
+
+---
+
+### Build & Test
+
+```bash
+make build                    # Development build
+make build-production         # Optimizer: 50 runs
+make test                     # All tests
+make test-unit                # Unit tests
+make test-integration         # Integration tests
+make test-coverage            # Coverage report
+make format && make lint       # Code quality
+```
+
+**See `MAKEFILE_REFERENCE.md` for the complete command reference.**
+**See `shell/README.md` for a full index of shell scripts.**
+
+---
+
+## 7. Reference
+
+### Expected Timelines
+
+| Operation | Duration |
+|-----------|----------|
+| User deposit → receive iBERA | Instant |
+| Deposit queue processing | Up to 1 hour |
+| Validator activation | Up to 27 hours |
+| Reward harvest cycle | Every 24 hours |
+| iBERA withdrawal | ~27 hours (EIP-7002) |
+| BGT boost activation | 1 epoch after queuing |
 
 ### iBERA Exchange Rate
 
 ```
 Exchange Rate = deposits / totalSupply
 
-Mint:  shares = (totalSupply * amount) / deposits
-Burn:  amount = (deposits * shares) / totalSupply
+Mint:  shares = (totalSupply × amount) / deposits
+Burn:  amount = (deposits × shares) / totalSupply
 ```
 
-**Example:** 10000 deposits, 9000 totalSupply
-```
-Exchange Rate = 10000 / 9000 = 1.111 BERA per iBERA
+### Fee Calculation
 
-User deposits 100 BERA:
-shares = (9000 * 100) / 10000 = 90 iBERA
-
-User burns 90 iBERA:
-amount = (10000 * 90) / 9000 = 100 BERA
 ```
+Protocol Fee = Reward × HarvestFeeRate / 1e6
+User Reward  = Reward − Protocol Fee
+```
+
+### Related Documentation
+
+| Document | Purpose |
+|----------|---------|
+| `MAKEFILE_REFERENCE.md` | Quick command reference |
+| `DEPLOYMENTS.md` | Contract addresses |
+| `docs/UPGRADE_GUIDE.md` | Safe upgrade procedures for all upgradeable contracts |
+| `docs/IR_BRIDGE.md` | IR token LayerZero bridge (Berachain ↔ BSC) |
+| `docs/CUTTING_BOARD_AUCTIONS.md` | Cutting board Dutch auctions and validator control auctions |
+| `src/staking/README.md` | iBERA staking architecture |
+| `src/core/README.md` | Core protocol architecture |
+| `CLAUDE.md` | Full codebase guide for developers |
+| `SECURITY.md` | Bug bounty and responsible disclosure |
 
 ---
 
-## Support & Escalation
-
-### Documentation
-
-- **Architecture:** See `CLAUDE.md`
-- **Contract Versions:** See `CONTRACT_VERSIONS.md`
-- **Cleanup Plan:** See `REPO_CLEANUP_PLAN.md`
-- **Security Analysis:** See `SECURITY_ANALYSIS.md`
-
-### Emergency Contacts
-
-1. **Protocol Emergency:** Contact governance multisig signers
-2. **Keeper Issues:** Contact DevOps team
-3. **Security Incident:** Follow incident response plan
-4. **Contract Bugs:** Pause affected contracts, notify auditors
-
-### Reporting Issues
-
-```bash
-# Create issue with details:
-# - Network (mainnet/testnet)
-# - Transaction hash (if applicable)
-# - Expected vs actual behavior
-# - Steps to reproduce
-```
-
----
-
-**Last Updated:** October 14, 2025
 **Maintained By:** Infrared Protocol Team
-**Review Schedule:** Monthly or after major upgrades
+**Review Schedule:** After major upgrades or service changes

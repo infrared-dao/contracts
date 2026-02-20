@@ -1,115 +1,208 @@
-# Staking Contracts - Infrared Protocol
+# Staking Contracts — Infrared Protocol
 
-The `staking` folder in the Infrared Protocol provides contracts for liquid staking of BERA (Berachain's native gas token). The system enables users to stake their BERA and receive iBERA tokens while participating in Berachain's consensus mechanism through Infrared's managed validators.
+The `staking` module provides liquid staking for BERA (Berachain's native gas token). Users deposit BERA and receive **iBERA** tokens, which appreciate over time as validator execution layer rewards are compounded back into the pool.
 
 ---
 
 ## Concepts
 
-### Liquid Staking Mechanism
+### Liquid Staking
 
-The liquid staking system provides a way to stake BERA (native gas token) while maintaining liquidity through iBERA tokens. This mechanism is managed through a set of specialized contracts that handle deposits, withdrawals, and the claiming process, ensuring safe and efficient operations.
+Users deposit BERA into `InfraredBERA`, receive iBERA in return, and can later burn iBERA to reclaim BERA plus accumulated yield. The exchange rate between iBERA and BERA increases monotonically as EL rewards are compounded.
 
 ### Queue-based Operations
 
-The protocol implements a queue-based system for both deposits and withdrawals to manage validator operations efficiently:
+All consensus layer interactions are asynchronous. Deposits and withdrawals are queued on-chain and processed by the keeper once beacon chain confirmation is available.
 
-- **Deposit Queue**: Manages incoming BERA deposits through `IBERADepositor`, ensuring proper validator stake distribution
-- **Withdrawal Queue**: Handles BERA withdrawal requests through `IBERAWithdrawor`, coordinating unstaking from validators
-- **Claim System**: Provides secure BERA claiming through `IBERAClaimor` after withdrawal processing
+- **Deposit queue** — `InfraredBERADepositor` accumulates BERA until a full validator deposit is ready, then executes via the Berachain deposit precompile
+- **Withdrawal queue** — `InfraredBERAWithdrawor` queues EIP-7002 voluntary exits, waits for consensus layer processing (~27 hours), then releases BERA to claimants
+- **Claim** — after withdrawal is processed, users claim their BERA from `InfraredBERAClaimor`
 
 ### Fee Management
 
-The protocol captures value from two primary sources:
-- **Priority Fees & MEV**: Captured by validators during block production and received by `IBERAFeeReceivor`
-- **Protocol Fees**: Charged on deposits and withdrawals to sustain protocol operations
-- **Autocompounding**: Automatically reinvests collected fees to enhance staker yields
+Validators generate priority fees and MEV during block production. These flow to `IBERAFeeReceivor`, which splits them between the protocol treasury and the staking pool. The pool's share is compounded back via `compound()`, growing the iBERA exchange rate for all holders.
+
+---
+
+## Accounting Model
+
+### Core Variables
+
+| Variable | Description |
+|----------|-------------|
+| `deposits` | Total BERA the system is responsible for — includes both queued and CL-confirmed stake |
+| `pending()` | BERA sitting in the deposit or withdrawal queue, not yet confirmed on the consensus layer |
+| `confirmed()` | BERA confirmed active on the consensus layer: `deposits - pending()` |
+| `totalSupply` | Total iBERA tokens in circulation |
+
+### Exchange Rate
+
+```
+Exchange Rate = deposits / totalSupply
+```
+
+One iBERA is redeemable for `deposits / totalSupply` BERA. Because `deposits` grows as EL rewards are compounded in and `totalSupply` stays flat until mint/burn, the rate increases over time.
+
+**Mint** (deposit BERA → receive iBERA):
+```
+shares = (amount × totalSupply) / deposits
+```
+
+**Burn** (redeem iBERA → receive BERA):
+```
+amount = (shares × deposits) / totalSupply
+```
+
+### `compound()` — Rate Growth Mechanism
+
+Both `mint()` and `burn()` call `compound()` internally before calculating shares. `compound()` pulls any accumulated ETH from `IBERAFeeReceivor` and adds it to `deposits` without issuing new iBERA, permanently increasing the exchange rate. This means the rate at the time of each operation reflects the most current EL rewards.
+
+**Example:**
+```
+Initial state: deposits = 1000 BERA, totalSupply = 1000 iBERA → rate = 1.0
+
+After compounding 10 BERA of EL rewards:
+  deposits = 1010, totalSupply = 1000 → rate = 1.01
+
+User burns 100 iBERA:
+  amount = (100 × 1010) / 1000 = 101 BERA returned
+```
+
+---
+
+## Withdrawal Queue Lifecycle
+
+Withdrawals follow a multi-step lifecycle due to the consensus layer delay (~27 hours for EIP-7002 exits):
+
+```
+User calls burn(shares)
+        │
+        ▼
+[QUEUED] — iBERA burned, withdrawal request recorded in InfraredBERAWithdrawor
+        │   User's BERA is now locked, waiting for validator exit
+        │
+        ▼ Keeper submits EIP-7002 voluntary exit + proof
+[PROCESSING] — Validator initiating exit on the consensus layer
+        │   Duration: ~27 hours
+        │
+        ▼ Keeper calls executeWithdrawProofs() with beacon proof
+[PROCESSED] — BERA released to InfraredBERAClaimor, claimable by user
+        │
+        ▼ User calls claim()
+[CLAIMED] — BERA transferred to user's wallet
+```
+
+**State checks:**
+```bash
+make check-ibera-withdrawal-queue NETWORK=mainnet  # total BERA queued
+make check-pending NETWORK=mainnet                 # BERA in queues (deposit + withdrawal)
+make check-confirmed NETWORK=mainnet               # BERA confirmed on CL
+```
+
+**Timeline:**
+| Step | Duration |
+|------|----------|
+| Queue to validator exit initiation | Up to 1 hour (keeper cadence) |
+| Validator exit processing (EIP-7002) | ~27 hours |
+| Proof submission to claim availability | Minutes (keeper cadence) |
 
 ---
 
 ## Key Actors
 
-1. **Staker**: Users who deposit BERA into the protocol, receiving iBERA tokens in return. They can burn iBERA to withdraw their BERA when desired.
-
-2. **Keeper**: Trusted actor responsible for:
-   - Processing deposit and withdrawal queues
-   - Managing validator operations
-   - Executing fee collection and distribution
-
-3. **Protocol Governor**: Controls protocol parameters and can:
-   - Update fee rates
-   - Configure minimum amounts
-   - Manage protocol settings
-
-4. **Validator**: Produces blocks and generates priority fees & MEV, which flow to the `IBERAFeeReceivor` contract.
+| Actor | Role |
+|-------|------|
+| **Staker** | Deposits BERA, receives iBERA; burns iBERA to initiate withdrawal and then claims BERA |
+| **Keeper** | Processes deposit/withdrawal queues, submits beacon chain proofs, executes fee sweeps |
+| **Protocol Governor** | Updates fee rates, minimum amounts, and contract parameters via Safe multisig |
+| **Validator** | Produces blocks; priority fees and MEV flow to `IBERAFeeReceivor` for compounding |
 
 ---
 
 ## Core Contracts
 
-### 1. `IBERA.sol`
+### `InfraredBERA.sol`
 
-Primary contract managing the liquid staking system, coordinating between depositors, withdrawors, and fee collection.
+Primary coordinator. Mints and burns iBERA, owns the `deposits` accounting, and calls `compound()` before every share calculation.
 
-- **Liquid Staking Token**: Mints and burns iBERA tokens representing staked BERA positions
-- **Stake Management**: Tracks validator stakes and manages deposit/withdrawal coordination
-- **Fee Configuration**: Sets and updates protocol fee parameters
-- **Autocompounding**: Manages the reinvestment of collected fees into the staking pool
+- `mint(receiver)` — accepts BERA, compounds EL rewards, mints iBERA shares
+- `burn(shares, receiver)` — burns iBERA, queues withdrawal, returns receipt
+- `compound()` — pulls fees from `IBERAFeeReceivor`, adds to `deposits`, grows the exchange rate
+- `deposits` / `pending()` / `confirmed()` — accounting state
 
-### 2. `IBERADepositor.sol`
+### `InfraredBERADepositor.sol`
 
-Handles the secure queueing and execution of BERA deposits to Berachain's native staking system.
+Manages the BERA → consensus layer deposit flow.
 
-- **Queue Management**: Maintains ordered deposit requests with associated fees
-- **Deposit Execution**: Interacts with Berachain's deposit precompile
-- **Validator Distribution**: Coordinates deposit distribution across protocol validators
+- Queues incoming BERA from `InfraredBERA.mint()`
+- Keeper calls `executeDepositProofs(depositor, amount, proofsPath)` once validators are active on the CL, confirming the deposit and updating `deposits`
+- Distributes deposits across multiple validators
 
-### 3. `IBERAWithdrawor.sol`
+### `InfraredBERAWithdrawor.sol`
 
-Manages the withdrawal process from Berachain's native staking system.
+Manages validator exits and the withdrawal queue.
 
-- **Withdrawal Queueing**: Orders and tracks withdrawal requests
-- **Validator Interaction**: Manages withdrawal requests from protocol validators
-- **Rebalancing**: Handles stake rebalancing between validators during withdrawals
-- **Processing**: Coordinates with `IBERAClaimor` for final user withdrawals
+- `queue(depositor, amount)` — used by keeper to rebalance stake between validators
+- Keeper submits EIP-7002 exit requests and then calls `executeWithdrawProofs(withdrawor, amount, proofsPath)` once the exit is confirmed on the CL
+- Routes released BERA to `InfraredBERAClaimor`
 
-### 4. `IBERAClaimor.sol`
+### `InfraredBERAClaimor.sol`
 
-Provides secure claiming mechanism for processed withdrawals.
+Holds processed withdrawal funds until users claim.
 
-- **Claim Tracking**: Maintains user claim records
-- **Secure Withdrawals**: Ensures safe BERA transfer to withdrawing users
-- **Batching**: Enables efficient processing of multiple claims
+- Maintains per-user claimable balances
+- `claim()` — transfers BERA to the user after their withdrawal is processed
+- Supports batched claims
 
-### 5. `IBERAFeeReceivor.sol`
+### `IBERAFeeReceivor.sol`
 
-Collects and manages priority fees and MEV generated by protocol validators.
+Receives validator EL rewards (priority fees, MEV) as the designated `fee_recipient` for Infrared validators.
 
-- **Fee Collection**: Receives priority fees and MEV from block production
-- **Distribution**: Splits fees between protocol treasury and autocompounding
-- **Sweeping**: Periodically processes accumulated fees into the protocol
+- Accumulated ETH is split on sweep: a portion to the treasury, the rest pushed to `InfraredBERA.compound()`
+- Sweep is called automatically by `compound()` on every mint/burn, and can also be triggered manually by the keeper
 
 ---
 
 ## Flow of Funds
 
-1. **Deposit Flow**:
-   - User deposits BERA → `IBERA` contract
-   - `IBERADepositor` queues deposit
-   - Keeper executes deposit to Berachain staking
-   - User receives iBERA tokens
+```
+DEPOSIT
+  User ──BERA──▶ InfraredBERA.mint()
+                      │ compound() pulls EL rewards first
+                      │ shares minted to user
+                      ▼
+               InfraredBERADepositor
+                      │ queued until deposit batch ready
+                      ▼
+               Berachain deposit precompile
+                      │ stake confirmed on CL
+                      ▼
+               executeDepositProofs() → deposits accounting updated
 
-2. **Withdrawal Flow**:
-   - User burns iBERA → `IBERA` contract
-   - `IBERAWithdrawor` queues withdrawal
-   - Keeper processes withdrawal from validators
-   - `IBERAClaimor` enables BERA claim
-   - User claims BERA
+WITHDRAWAL
+  User ──iBERA──▶ InfraredBERA.burn()
+                      │ iBERA burned, withdrawal queued
+                      ▼
+               InfraredBERAWithdrawor
+                      │ EIP-7002 exit submitted (~27h)
+                      ▼
+               executeWithdrawProofs() → BERA released
+                      ▼
+               InfraredBERAClaimor ──BERA──▶ User.claim()
 
-3. **Fee Flow**:
-   - Validators generate priority fees & MEV
-   - `IBERAFeeReceivor` collects rewards
-   - Fees split between treasury and autocompound
-   - Autocompounded portion reinvested into protocol
+EL REWARDS
+  Validator block rewards ──ETH──▶ IBERAFeeReceivor
+                                        │ on sweep
+                            ┌───────────┴───────────┐
+                            ▼                       ▼
+                         Treasury            InfraredBERA.compound()
+                                                   │ deposits += amount
+                                                   │ exchange rate increases
+```
 
-This system ensures efficient management of native BERA staking while providing liquidity through iBERA tokens and capturing validator rewards for protocol participants.
+---
+
+## Related Documentation
+
+- [`OPERATIONS.md`](../../OPERATIONS.md) — manual keeper operations (§6.5), exchange rate formula (§7)
+- [`docs/UPGRADE_GUIDE.md`](../../docs/UPGRADE_GUIDE.md) — upgrading the staking contracts
