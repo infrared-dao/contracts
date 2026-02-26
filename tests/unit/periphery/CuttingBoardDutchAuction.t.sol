@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import "forge-std/Test.sol";
 import {CuttingBoardDutchAuction} from
-    "src/periphery/CuttingBoardDutchAuction.sol";
+    "src/periphery/deprecated/CuttingBoardDutchAuction.sol";
 import {CuttingBoardNFT} from "src/periphery/CuttingBoardNFT.sol";
 import {CuttingBoardManager} from "src/periphery/CuttingBoardManager.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
@@ -130,7 +130,7 @@ contract CuttingBoardDutchAuctionTest is Test {
         uint256 allocationDuration
     );
 
-    function setUp() public {
+    function setUp() public virtual {
         owner = address(this);
         keeper = makeAddr("keeper");
         treasury = makeAddr("treasury");
@@ -1951,7 +1951,7 @@ contract CuttingBoardDutchAuctionTest is Test {
         );
     }
 
-    function test_edgeCase_MinimumPriceTooHighCausesRevert() public {
+    function test_edgeCase_MinimumPriceTooHighCausesRevert() public virtual {
         // This test documents that setting minimumPrice too high relative to
         // expired auction's base price will cause InvalidPriceRange
         auction.setInitialPrice(INITIAL_PRICE);

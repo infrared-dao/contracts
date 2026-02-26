@@ -3,7 +3,7 @@ pragma solidity ^0.8.26;
 
 import "forge-std/Script.sol";
 import {CuttingBoardDutchAuction} from
-    "src/periphery/CuttingBoardDutchAuction.sol";
+    "src/periphery/deprecated/CuttingBoardDutchAuction.sol";
 import {CuttingBoardNFT} from "src/periphery/CuttingBoardNFT.sol";
 import {CuttingBoardManager} from "src/periphery/CuttingBoardManager.sol";
 import {ERC1967Proxy} from

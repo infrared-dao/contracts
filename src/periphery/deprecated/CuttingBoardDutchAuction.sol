@@ -4,8 +4,8 @@ pragma solidity ^0.8.26;
 import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {Upgradeable} from "src/utils/Upgradeable.sol";
-import {CuttingBoardNFT} from "./CuttingBoardNFT.sol";
-import {CuttingBoardManager} from "./CuttingBoardManager.sol";
+import {CuttingBoardNFT} from "src/periphery/CuttingBoardNFT.sol";
+import {CuttingBoardManager} from "src/periphery/CuttingBoardManager.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {IBeraChefVaultCheck} from "src/interfaces/IBeraChefVaultCheck.sol";
 
@@ -93,7 +93,7 @@ contract CuttingBoardDutchAuction is Upgradeable {
         0x67c283459ab08c5e5e83c645bebd5b8d5f91d5b9fb7d2a34ff4694a99438fd00;
 
     function _getCuttingBoardDutchAuctionStorage()
-        private
+        internal
         pure
         returns (CuttingBoardDutchAuctionStorage storage $)
     {
