@@ -15,7 +15,7 @@ Please include a description of the issue, steps to reproduce, and an assessment
 **In-scope contracts:**
 - `src/core/` — Infrared, InfraredVault, BribeCollector, InfraredDistributor, MultiRewards
 - `src/staking/` — InfraredBERA, InfraredBERADepositor, InfraredBERAWithdrawor, IBERAFeeReceivor
-- `src/periphery/` — RewardDistributor, IRRewardDistributor, IRAuction, MerkleDistributor, CuttingBoardDutchAuction, CuttingBoardManager
+- `src/periphery/` — IRAuction, MerkleDistributor, CuttingBoardDutchAuction, CuttingBoardManager
 
 **Out of scope:**
 - `src/depreciated/` — historical implementations kept for reference only
@@ -40,14 +40,37 @@ Please include a description of the issue, steps to reproduce, and an assessment
 
 All audit reports are available in the [`audits/`](./audits/) directory and on the [Infrared documentation site](https://infrared.finance/docs/audits).
 
-| Auditor | Scope | Report |
-|---------|-------|--------|
-| Zellic | Core protocol (initial) | [`audits/Infrared - Zellic Audit Report.pdf`](./audits/Infrared%20-%20Zellic%20Audit%20Report.pdf) |
-| Zellic | Berachain core integration | [`audits/Infrared Berachain Core Integration - Zellic Audit Report.pdf`](./audits/Infrared%20Berachain%20Core%20Integration%20-%20Zellic%20Audit%20Report.pdf) |
-| Zenith | Full protocol | [`audits/Zenith Audit Report - Infrared Finance.pdf`](./audits/Zenith%20Audit%20Report%20-%20Infrared%20Finance.pdf) |
-| Cantina (code review) | Core & staking | [`audits/report-cantinacode-infrared.pdf`](./audits/report-cantinacode-infrared.pdf) |
-| Cantina (code review) | Follow-up review | [`audits/report-cantinacode-infrared-1.pdf`](./audits/report-cantinacode-infrared-1.pdf) |
-| Cantina (competition) | Full protocol | [`audits/report-competition-infrared-contracts.pdf`](./audits/report-competition-infrared-contracts.pdf) |
+| Date | Auditor | Report |
+|------|---------|--------|
+| Apr 2024 | Zellic | [`Infrared - Zellic Audit Report.pdf`](./audits/Infrared%20-%20Zellic%20Audit%20Report.pdf) |
+| Aug 2024 | Cantina | [`report-cantinacode-infrared.pdf`](./audits/report-cantinacode-infrared.pdf) |
+| Oct 2024 | Zellic | [`Infrared Berachain Core Integration - Zellic Audit Report.pdf`](./audits/Infrared%20Berachain%20Core%20Integration%20-%20Zellic%20Audit%20Report.pdf) |
+| Feb 2025 | Zenith | [`Zenith Audit Report - Infrared Finance.pdf`](./audits/Zenith%20Audit%20Report%20-%20Infrared%20Finance.pdf) |
+| Feb 2025 | Cantina (competition) | [`report-competition-infrared-contracts.pdf`](./audits/report-competition-infrared-contracts.pdf) |
+| Feb 2025 | Cantina | [`report-cantinacode-infrared-1.pdf`](./audits/report-cantinacode-infrared-1.pdf) |
+| Feb 2025 | Spearbit | [`Infrared_Finance_Incidence_Response_Review_Report_Feb_2025_2.pdf`](./audits/Infrared_Finance_Incidence_Response_Review_Report_Feb_2025_2.pdf) |
+| Mar 2025 | Cantina | [`report-cantinacode-infrared-0310-bribeCollector.pdf`](./audits/report-cantinacode-infrared-0310-bribeCollector.pdf) |
+| Mar 2025 | Cantina | [`report-cantinacode-infrared-0320.pdf`](./audits/report-cantinacode-infrared-0320.pdf) |
+| Apr 2025 | Zenith | [`Infrared - Zenith Audit Report.pdf`](./audits/Infrared%20-%20Zenith%20Audit%20Report.pdf) |
+| Jul 2025 | Cantina | [`report-cantinacode-infrared-03072025.pdf`](./audits/report-cantinacode-infrared-03072025.pdf) |
+| Jul 2025 | Zenith | [`Infrared - Zenith Audit Report 09.07.2025.pdf`](./audits/Infrared%20-%20Zenith%20Audit%20Report%2009.07.2025.pdf) |
+| Aug 2025 | Zenith | [`Infrared - Zenith Audit Report - 20082025.pdf`](./audits/Infrared%20-%20Zenith%20Audit%20Report%20-%2020082025.pdf) |
+| Sep 2025 | Cantina | [`Infraredv1.5.pdf`](./audits/Infraredv1.5.pdf) |
+| Sep 2025 | Zenith | [`Infrared Merkle Distributor - Zenith Audit Report.pdf`](./audits/Infrared%20Merkle%20Distributor%20-%20Zenith%20Audit%20Report.pdf) |
+| Nov 2025 | Cantina | [`Infrared Operations & Future Vaults Security Review.pdf`](./audits/Infrared%20Operations%20%26%20Future%20Vaults%20Security%20Review.pdf) |
+| Nov 2025 | Cantina | [`infraredContractsSecurityReview.pdf`](./audits/infraredContractsSecurityReview.pdf) |
+| Nov 2025 | Cantina | [`infrared_contract_security_review.pdf`](./audits/infrared_contract_security_review.pdf) |
+| Nov 2025 | Cantina | [`infrared_security_review_12_11_2025.pdf`](./audits/infrared_security_review_12_11_2025.pdf) |
+| Nov 2025 | Cantina | [`Infrared Smart Contract Security Assessment.pdf`](./audits/Infrared%20Smart%20Contract%20Security%20Assessment.pdf) |
+| Nov 2025 | Spearbit | [`Infrared OFT Adapter Security Review.pdf`](./audits/Infrared%20OFT%20Adapter%20Security%20Review.pdf) |
+| Nov 2025 | Cantina | [`report-cantinacode-infrared-5.pdf`](./audits/report-cantinacode-infrared-5.pdf) |
+| Nov 2025 | Cantina | [`report-cantinacode-infrared-pr647.pdf`](./audits/report-cantinacode-infrared-pr647.pdf) |
+| Dec 2025 | Cantina | [`report-cantinacode-infrared-1201.pdf`](./audits/report-cantinacode-infrared-1201.pdf) |
+| Jan 2026 | Cantina | [`cantinacode-24.01.2026.pdf`](./audits/cantinacode-24.01.2026.pdf) |
+
+### AI-Assisted Audit
+
+An AI-assisted security review was conducted with findings and responses documented in [`docs/AI_AUDIT_NOTES.md`](./docs/AI_AUDIT_NOTES.md).
 
 Published security advisories are available on the [GitHub Security tab](https://github.com/infrared-dao/infrared-contracts/security/advisories).
 

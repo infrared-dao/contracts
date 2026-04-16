@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {Upgradeable} from "src/utils/Upgradeable.sol";
-import {CuttingBoardNFT} from "./CuttingBoardNFT.sol";
+import {CuttingBoardNFT} from "src/periphery/CuttingBoardNFT.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {IBeraChefVaultCheck} from "src/interfaces/IBeraChefVaultCheck.sol";
 

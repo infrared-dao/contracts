@@ -2,7 +2,8 @@
 pragma solidity ^0.8.26;
 
 import "forge-std/Test.sol";
-import {CuttingBoardManager} from "src/periphery/CuttingBoardManager.sol";
+import {CuttingBoardManager} from
+    "src/depreciated/periphery/CuttingBoardManager.sol";
 import {CuttingBoardNFT} from "src/periphery/CuttingBoardNFT.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {ERC1967Proxy} from

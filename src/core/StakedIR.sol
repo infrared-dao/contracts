@@ -66,8 +66,10 @@ contract StakedIR is
     /*                       STORAGE                              */
     /*.•°:°.´+˚.*°.˚:*.´•*.+°.•°:´*.´•*.•°.•°:°.´:•˚°.*°.˚:*.´+°.•*/
 
-    /// @notice ERC-7201 storage location for StakedIR
-    /// @dev keccak256(abi.encode(uint256(keccak256(bytes("infrared.stakedIRStorage"))) - 1)) & ~bytes32(uint256(0xff));
+    /// @notice Namespaced storage location for StakedIR
+    /// @dev Derived as (keccak256(bytes("infrared.stakedIRStorage")) - 1) & ~bytes32(uint256(0xff)).
+    ///      Note: this uses a single-keccak derivation, not the double-keccak formula from ERC-7201.
+    ///      The slot is locked in for backwards compatibility with deployed storage.
     bytes32 private constant STAKED_IR_STORAGE_LOCATION =
         0xe37d8c878a50f0326695af34a6b5c1ac8f3bc817d7b9727cc43175799b685e00;
 

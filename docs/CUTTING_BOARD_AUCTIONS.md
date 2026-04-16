@@ -8,7 +8,7 @@ Infrared runs a Dutch auction system for monetizing BGT emission allocation righ
 
 | System | Contract | What's auctioned | Winner receives |
 |--------|----------|-----------------|-----------------|
-| **Control Auction** | `ValidatorControlAuction` | Full cutting board control rights for a validator | NFT granting ability to update allocations repeatedly for a set period |
+| **Control Auction** | `CuttingBoardDutchAuction` | Full cutting board control rights for a validator | NFT granting ability to update allocations repeatedly for a set period |
 
 Dutch auction price mechanism: prices start high and decay linearly to a base price over the auction duration. Winners pay the current price at claim time.
 
@@ -16,7 +16,7 @@ Dutch auction price mechanism: prices start high and decay linearly to a base pr
 
 ---
 
-## Control Auction (`ValidatorControlAuction`)
+## Control Auction (`CuttingBoardDutchAuction`)
 
 ### Overview
 
@@ -29,7 +29,7 @@ Winners receive an ERC-721 NFT granting temporary full control over a specific v
 
 ```
 ┌──────────────────────────────────────────┐
-│         ValidatorControlAuction          │
+│        CuttingBoardDutchAuction          │
 │  • Dutch auction mechanism               │
 │  • Mints NFT on claim                    │
 │  • Tracks validator availability         │
@@ -37,7 +37,7 @@ Winners receive an ERC-721 NFT granting temporary full control over a specific v
                    │ mints
                    ▼
 ┌──────────────────────────────────────────┐
-│          ValidatorControlNFT             │
+│            CuttingBoardNFT               │
 │  • ERC-721 with expiry timestamp         │
 │  • Tradeable on secondary markets        │
 │  • Stores validator pubkey & auction ID  │
@@ -45,7 +45,7 @@ Winners receive an ERC-721 NFT granting temporary full control over a specific v
                    │ validates ownership
                    ▼
 ┌──────────────────────────────────────────┐
-│         ValidatorControlManager          │
+│          CuttingBoardManager             │
 │  • Holds KEEPER_ROLE on Infrared         │
 │  • Validates NFT ownership & weights     │
 │  • Rate-limits updates                   │
@@ -69,7 +69,7 @@ Winners receive an ERC-721 NFT granting temporary full control over a specific v
 
 ```bash
 # Create environment file
-cat > .env.validator-auction << 'EOF'
+cat > .env.cutting-board-auction << 'EOF'
 PRIVATE_KEY=0x...
 RPC_URL_TESTNET=https://...
 PAYMENT_TOKEN=0x...
@@ -87,18 +87,24 @@ MINIMUM_PRICE=100000000000000000000
 MIN_UPDATE_DELAY=100
 EOF
 
-source .env.validator-auction
+source .env.cutting-board-auction
 
-forge script script/deploy/DeployValidatorControlAuction.s.sol \
+forge script script/deploy/DeployCuttingBoardAuction.s.sol \
     --rpc-url $RPC_URL_TESTNET --broadcast --verify
 ```
 
 **Deployment order matters** (circular dependency between NFT and Auction):
-1. Deploy `ValidatorControlNFT` — needs auction address (use CREATE2 or deploy auction first)
-2. Deploy `ValidatorControlManager`
-3. Deploy `ValidatorControlAuction` — needs NFT and Manager addresses
-4. Call `ValidatorControlNFT.setManager(managerAddress)`
+1. Deploy `CuttingBoardNFT` — needs auction address (use CREATE2 or deploy auction first)
+2. Deploy `CuttingBoardManager`
+3. Deploy `CuttingBoardDutchAuction` — needs NFT and Manager addresses
+4. Call `CuttingBoardNFT.setManager(managerAddress)`
 5. Grant `KEEPER_ROLE` to Manager on Infrared contract
+
+**Post-deployment verification checklist:**
+- Verify NFT's `auction` address matches deployed auction
+- Verify NFT's `manager` address matches deployed manager
+- Verify Manager has `KEEPER_ROLE` on Infrared
+- Verify auction is initialized with correct treasury/paymentToken/chef/manager/NFT
 
 **Post-deployment:**
 ```solidity
@@ -216,7 +222,7 @@ auction.startCuttingBoardAuction(validatorPubkey);  // Re-auctionable
 ## Security Notes
 
 ### For Protocol
-- `ValidatorControlManager` must hold `KEEPER_ROLE` on Infrared
+- `CuttingBoardManager` must hold `KEEPER_ROLE` on Infrared
 - `infrared-strategy` must skip controlled validators during active allocation periods
 - Owner can pause Manager or revoke individual NFTs in emergencies
 - Keeper can update price parameters (`minimumPrice`, `basePriceDivisor`, `startingPriceMultiplier`) — consider time-locks for production
@@ -232,17 +238,17 @@ auction.startCuttingBoardAuction(validatorPubkey);  // Re-auctionable
 ## Testing
 
 ```bash
-# Emissions auction tests
+# Dutch auction tests
 forge test --match-path tests/unit/periphery/CuttingBoardDutchAuction.t.sol
 
-# Control auction tests
-forge test --match-contract ValidatorControl
-forge test --match-path tests/unit/periphery/ValidatorControlNFT.t.sol
-forge test --match-path tests/unit/periphery/ValidatorControlManager.t.sol
-forge test --match-path tests/unit/periphery/ValidatorControlAuction.t.sol
+# Control NFT tests
+forge test --match-path tests/unit/periphery/CuttingBoardNFT.t.sol
+
+# Manager tests
+forge test --match-path tests/unit/periphery/CuttingBoardManager.t.sol
 
 # Gas report
-forge test --match-contract ValidatorControl --gas-report
+forge test --match-path tests/unit/periphery/CuttingBoardDutchAuction.t.sol --gas-report
 ```
 
 ---
@@ -266,6 +272,5 @@ forge test --match-contract ValidatorControl --gas-report
 
 - [Infrared Protocol Docs](https://docs.infrared.finance)
 - [BeraChef / PoL Documentation](https://docs.berachain.com/pol)
-- Contract deployment: `script/deploy/DeployCuttingBoardDutchAuction.s.sol`
-- Contract deployment: `script/deploy/DeployValidatorControlAuction.s.sol`
+- Contract deployment: `script/deploy/DeployCuttingBoardAuction.s.sol`
 - GitHub Issues: https://github.com/infrared-dao/infrared-contracts/issues

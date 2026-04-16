@@ -2,7 +2,7 @@
 pragma solidity ^0.8.26;
 
 import {CuttingBoardDutchAuction} from
-    "./deprecated/CuttingBoardDutchAuction.sol";
+    "src/depreciated/periphery/CuttingBoardDutchAuction.sol";
 
 /**
  * @title CuttingBoardDutchAuctionV1_1

@@ -3,9 +3,10 @@ pragma solidity ^0.8.26;
 
 import "forge-std/Test.sol";
 import {CuttingBoardDutchAuction} from
-    "src/periphery/deprecated/CuttingBoardDutchAuction.sol";
+    "src/depreciated/periphery/CuttingBoardDutchAuction.sol";
 import {CuttingBoardNFT} from "src/periphery/CuttingBoardNFT.sol";
-import {CuttingBoardManager} from "src/periphery/CuttingBoardManager.sol";
+import {CuttingBoardManager} from
+    "src/depreciated/periphery/CuttingBoardManager.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {ERC1967Proxy} from

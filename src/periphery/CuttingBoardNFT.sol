@@ -3,7 +3,6 @@ pragma solidity ^0.8.26;
 
 import {ERC721} from "@solmate/tokens/ERC721.sol";
 import {Owned} from "@solmate/auth/Owned.sol";
-import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /**
  * @title CuttingBoardNFT
@@ -13,8 +12,6 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
  *      used in DeFi protocols as collateral or for yield optimization strategies.
  */
 contract CuttingBoardNFT is ERC721, Owned {
-    using Strings for uint256;
-
     /// @notice Represents the control rights associated with an NFT
     struct ControlRights {
         bytes validatorPubkey;

@@ -5,7 +5,8 @@ import {SafeTransferLib} from "@solmate/utils/SafeTransferLib.sol";
 import {ERC20} from "@solmate/tokens/ERC20.sol";
 import {Upgradeable} from "src/utils/Upgradeable.sol";
 import {CuttingBoardNFT} from "src/periphery/CuttingBoardNFT.sol";
-import {CuttingBoardManager} from "src/periphery/CuttingBoardManager.sol";
+import {CuttingBoardManager} from
+    "src/depreciated/periphery/CuttingBoardManager.sol";
 import {IBeraChef} from "@berachain/pol/interfaces/IBeraChef.sol";
 import {IBeraChefVaultCheck} from "src/interfaces/IBeraChefVaultCheck.sol";
 
