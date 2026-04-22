@@ -1,0 +1,38 @@
+{
+  "_comment": "Addresses watched by Infrared-specific Hypernative alerts. Used as context for the infrared_alerts.py monitor (scripts/infrared_alerts.py). Keep labels short — they appear in the Claude prompt.",
+  "network": "berachain-mainnet",
+  "contracts": [
+    {"name": "Infrared",                 "address": "0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126", "role": "main coordinator (validators, vaults, rewards)"},
+    {"name": "iBGT",                     "address": "0xac03CABA51e17c86c921E1f6CBFBdC91F8BB2E6b", "role": "liquid staked BGT token"},
+    {"name": "iBGTVault",                "address": "0x4EF0c533D065118907f68e6017467Eb05DBb2c8C", "role": "iBGT reward vault"},
+    {"name": "iBERA",                    "address": "0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5", "role": "liquid staked BERA token"},
+    {"name": "InfraredBERADepositor",    "address": "0x04CddC538ea65908106416986aDaeCeFD4CAB7D7", "role": "iBERA deposit queue -> validators"},
+    {"name": "InfraredBERAWithdrawor",   "address": "0x8c0E122960dc2E97dc0059c07d6901Dce72818E1", "role": "iBERA withdrawal queue"},
+    {"name": "InfraredBERAFeeReceivor",  "address": "0xf6a4A6aCECd5311327AE3866624486b6179fEF97", "role": "EL reward (priority fee + MEV) sink"},
+    {"name": "BribeCollector",           "address": "0x8d44170e120B80a7E898bFba8cb26B01ad21298C", "role": "bribe auction collector"},
+    {"name": "InfraredDistributor",      "address": "0x1fAD980dfafF71E3Fdd9bef643ab2Ff2BdC4Ccd6", "role": "iBGT distributor to validators"},
+    {"name": "IbgtRedeemer",             "address": "0x3E8edA9821C588A57200B790204C0066A1681046", "role": "iBGT redemption"},
+    {"name": "IR",                       "address": "0xa1B644AEC990Ad6023811cED36E6A2d6D128C7C9", "role": "IR governance token"},
+    {"name": "IR OFT Adapter",           "address": "0xfd0fA49F8aA1d61dA390E10EAD23C650B0F9C2B5", "role": "LayerZero OFT adapter (2-of-2 DVN: LayerZero Labs + Berachain)"},
+    {"name": "StakedIR",                 "address": "0xb5E9cfD2751363F38a696626C18DB4aFf7512756", "role": "IR staking"},
+    {"name": "IRAuction",                "address": "0x283071D22d8d70340beBD5E09e03262EBC3DEFdb", "role": "IR auction"},
+    {"name": "CuttingBoardDutchAuction", "address": "0x50Ab64a24268b79dd10Dab18c59AFeF256E6DC84", "role": "cutting-board weight auction"},
+    {"name": "CuttingBoardManager",      "address": "0xFDfC1F27909C0983aF7A5509aa44333e0c00C49c", "role": "cutting-board proposal/approval"},
+    {"name": "CuttingBoardNFT",          "address": "0xEC09569A9A186027EcD1C951F5F80F9a43184fb1", "role": "NFT granting validator control rights"},
+    {"name": "wiBGT",                    "address": "0x4f3C10D2bC480638048Fa67a7D00237a33670C1B", "role": "wrapped iBGT"},
+    {"name": "BatchClaimor",             "address": "0x1D6844b42784d3ADbD7fDFa5887d56d22Aa9FB67", "role": "batch reward claims"},
+    {"name": "MerkleDistributor",        "address": "0x5F791523314ca809A1146184311e35001b6E6FC8", "role": "merkle reward distribution"},
+    {"name": "BYUSD reward distributor", "address": "0x2114079132C56827237f581eF1a0625680d29576", "role": "BYUSD distributor"}
+  ],
+  "multisigs": [
+    {"name": "GOVERNANCE_ROLE multisig", "address": "0x182a31A27A0D39d735b31e80534CFE1fCd92c38f", "role": "highest privilege: upgrades, fee config, validator set"}
+  ],
+  "keepers": [
+    {"name": "Harvest keeper",   "address": "TBD", "role": "runs harvestBase / harvestOperatorRewards / harvestBribes — frequent calls are NORMAL"},
+    {"name": "Rebalance keeper", "address": "TBD", "role": "queues validator deposits/withdrawals — large BERA flows are NORMAL"},
+    {"name": "Compound keeper",  "address": "TBD", "role": "triggers IBERAFeeReceivor.sweep and InfraredBERA.compound — recurring is NORMAL"}
+  ],
+  "treasury": [
+    {"name": "Protocol treasury", "address": "TBD", "role": "collects protocol fees; large inbound flows from Infrared / InfraredBERAFeeReceivor are EXPECTED"}
+  ]
+}

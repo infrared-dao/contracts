@@ -67,3 +67,20 @@ jobs:
         with:
           path: .github/security/seen-hacks.json
           key: seen-hacks-${{ github.run_id }}
+
+      - name: Notify Slack on workflow failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_BOT_TOKEN" ] || [ -z "$SLACK_CHANNEL_ID" ]; then
+            echo "canary: slack config missing, skipping"
+            exit 0
+          fi
+          curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data "{\"channel\":\"$SLACK_CHANNEL_ID\",\"text\":\":rotating_light: *hack-monitor* workflow failed or classified all hacks as degraded. Check: $RUN_URL\"}" \
+            > /dev/null

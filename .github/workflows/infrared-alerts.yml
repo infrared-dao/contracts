@@ -1,0 +1,85 @@
+name: infrared-alerts
+
+# Every 30 minutes: pull Hypernative alerts from the Infrared-specific
+# Slack channel, ask Claude whether each is a real signal or a false
+# positive. Claude's verdict is posted back as a threaded reply under
+# the original alert. Real / suspicious alerts also open a GitHub issue.
+#
+# Seen alert IDs persist via actions/cache — no commits to the default
+# branch. The workflow never fails on missing secrets: each integration
+# short-circuits with a warning.
+
+on:
+  schedule:
+    # Every 30 minutes
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+concurrency:
+  group: infrared-alerts
+  cancel-in-progress: false
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests anthropic
+
+      - name: Restore seen-alerts cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .github/security/seen-alerts.json
+          key: seen-alerts-${{ github.run_id }}
+          restore-keys: |
+            seen-alerts-
+
+      - name: Run alerts monitor
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          INFRARED_ALERTS_CHANNEL_ID: ${{ secrets.INFRARED_ALERTS_CHANNEL_ID }}
+          INFRARED_ALERTS_AUTHORS: ${{ secrets.INFRARED_ALERTS_AUTHORS }}
+          INFRARED_ESCALATION_MENTION: ${{ secrets.INFRARED_ESCALATION_MENTION }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MAX_ALERTS_PER_RUN: '10'
+          LOOKBACK_MINUTES: '45'
+        run: python3 scripts/infrared_alerts.py
+
+      - name: Save seen-alerts cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .github/security/seen-alerts.json
+          key: seen-alerts-${{ github.run_id }}
+
+      - name: Notify Slack on workflow failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          INFRARED_ALERTS_CHANNEL_ID: ${{ secrets.INFRARED_ALERTS_CHANNEL_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_BOT_TOKEN" ] || [ -z "$INFRARED_ALERTS_CHANNEL_ID" ]; then
+            echo "canary: slack config missing, skipping"
+            exit 0
+          fi
+          curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data "{\"channel\":\"$INFRARED_ALERTS_CHANNEL_ID\",\"text\":\"<!channel> :rotating_light: *infrared-alerts* workflow failed or classified all alerts as degraded. Check: $RUN_URL\"}" \
+            > /dev/null
