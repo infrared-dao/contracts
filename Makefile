@@ -1022,3 +1022,14 @@ oft-help: ## Show OFT-specific help and usage
 	@echo "  USER        - Address for balance checks"
 	@echo ""
 	@echo "$(YELLOW)For detailed guide:$(NC) See docs/OFT_COMPLETE_SETUP_GUIDE.md"
+
+# ========================================
+# AI Security Analysis
+# ========================================
+# Ethskills audit-skill pattern scanner. Runs offline against src/,
+# produces a reading list of which checklists apply to which files.
+# Not a vulnerability scanner — see docs/AI_SECURITY.md.
+
+ai-security-scan: ## Run ethskills pattern scanner against src/
+	@mkdir -p ai-reports
+	@python3 scripts/ethskills_analyzer.py

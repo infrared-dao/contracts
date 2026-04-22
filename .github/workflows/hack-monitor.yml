@@ -1,0 +1,65 @@
+name: hack-monitor
+
+# Daily DeFi hack monitor. Pulls recent threats from a curated Slack
+# triage channel, runs each through Claude to judge whether it's relevant
+# to this codebase, and opens a GitHub issue per hack. Seen IDs are
+# persisted in .github/security/seen-hacks.json so each run only processes
+# new items.
+#
+# Philosophy: notification-only. Nothing on-chain. No auto-pause, no key
+# rotation, no merges. The workflow never fails on missing secrets — each
+# fetcher returns [] if its API is unavailable.
+
+on:
+  schedule:
+    # 13:00 UTC daily — after US/EU trading hours open, before APAC close
+    - cron: '0 13 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  issues: write
+
+concurrency:
+  group: hack-monitor
+  cancel-in-progress: false
+
+jobs:
+  monitor:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests anthropic
+
+      - name: Run hack monitor
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+          SLACK_ALLOWED_AUTHORS: ${{ secrets.SLACK_ALLOWED_AUTHORS }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          MAX_HACKS_PER_RUN: '3'
+        run: python3 scripts/hack_monitor.py
+
+      - name: Commit updated seen-hacks state
+        run: |
+          if git diff --quiet .github/security/seen-hacks.json; then
+            echo "No state changes to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .github/security/seen-hacks.json
+          git commit -m "chore(security): update seen-hacks state [skip ci]"
+          git push
