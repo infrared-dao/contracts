@@ -584,6 +584,35 @@ Severity rules:
 
 # ---------- issue / comment / slack bodies ----------
 
+def _format_analysis_block(analysis: dict) -> list[str]:
+    """Rich Claude-analysis markdown used in both new-issue bodies and
+    duplicate-comment bodies. Sharing means a duplicate gets the same
+    evidence as an original — reasoning, recommended action, affected
+    contracts — not a neutered summary."""
+    cls = analysis.get("classification", "?")
+    sev = analysis.get("severity", "?")
+    emoji = {"real": "🔴", "suspicious": "🟡", "false-positive": "🟢"}.get(cls, "⚪")
+    lines = [
+        f"## Claude classification {emoji}",
+        "",
+        f"- **Classification:** `{cls}`",
+        f"- **Severity:** `{sev}`",
+        f"- **Confidence:** `{analysis.get('confidence', '?')}`",
+        f"- **Alert type:** {analysis.get('alert_type', '?')}",
+    ]
+    affected = analysis.get("affected_contracts") or []
+    if affected:
+        lines.append(f"- **Affected:** {', '.join(f'`{a}`' for a in affected[:10])}")
+    lines.extend([
+        "",
+        "**Reasoning:** " + str(analysis.get("reasoning", "_(none)_")),
+        "",
+        "**Recommended action:** " + str(analysis.get("recommended_action", "_(none)_")),
+        "",
+    ])
+    return lines
+
+
 def build_issue_body(alert: Alert, analysis: dict | None) -> str:
     lines = [
         f"**Observed:** {alert.timestamp}",
@@ -595,27 +624,7 @@ def build_issue_body(alert: Alert, analysis: dict | None) -> str:
         "",
     ]
     if analysis:
-        cls = analysis.get("classification", "?")
-        sev = analysis.get("severity", "?")
-        emoji = {"real": "🔴", "suspicious": "🟡", "false-positive": "🟢"}.get(cls, "⚪")
-        lines.extend([
-            f"## Auto-classification {emoji}",
-            "",
-            f"- **Classification:** `{cls}`",
-            f"- **Severity:** `{sev}`",
-            f"- **Confidence:** `{analysis.get('confidence', '?')}`",
-            f"- **Alert type:** {analysis.get('alert_type', '?')}",
-        ])
-        affected = analysis.get("affected_contracts") or []
-        if affected:
-            lines.append(f"- **Affected:** {', '.join(f'`{a}`' for a in affected[:10])}")
-        lines.extend([
-            "",
-            "**Reasoning:** " + str(analysis.get("reasoning", "_(none)_")),
-            "",
-            "**Recommended action:** " + str(analysis.get("recommended_action", "_(none)_")),
-            "",
-        ])
+        lines.extend(_format_analysis_block(analysis))
     else:
         lines.extend([
             "## Manual triage required",
@@ -643,16 +652,15 @@ def build_comment_body(alert: Alert, analysis: dict | None) -> str:
         f"**Observed:** {alert.timestamp}",
         f"**Alert URL:** {alert.url}",
         "",
+        "## Alert contents",
+        "",
         alert.description[:2500] or "_(no description)_",
+        "",
     ]
     if analysis:
-        lines.extend([
-            "",
-            f"**Classification:** `{analysis.get('classification', '?')}` · "
-            f"**Severity:** `{analysis.get('severity', '?')}`",
-            "",
-            str(analysis.get("reasoning", "")),
-        ])
+        lines.extend(_format_analysis_block(analysis))
+    else:
+        lines.append("_(no auto-classification — ANTHROPIC_API_KEY missing or call failed)_")
     return "\n".join(lines)
 
 

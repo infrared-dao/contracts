@@ -384,6 +384,42 @@ sharing an attack class are NOT duplicates."""
 
 # ---------- github issue ----------
 
+def _format_analysis_block(analysis: dict) -> list[str]:
+    """Rich Claude-analysis markdown used in both new-issue bodies and
+    duplicate-comment bodies. Keeping it shared means a duplicate
+    report gets the same evidence as an original — not a neutered
+    summary — so triagers don't have to go hunt for it."""
+    app = analysis.get("applicable", "unknown")
+    emoji = {"yes": "🔴", "maybe": "🟡", "no": "🟢"}.get(app, "⚪")
+    lines = [
+        f"## Claude analysis {emoji}",
+        "",
+        f"- **Applicable to Infrared:** `{app}`",
+        f"- **Severity:** `{analysis.get('severity', '?')}`",
+        f"- **Confidence:** `{analysis.get('confidence', '?')}`",
+        f"- **Attack class:** {analysis.get('attack_class', '?')}",
+        "",
+        "**Reasoning:** " + str(analysis.get("reasoning", "_(none)_")),
+        "",
+    ]
+    files = analysis.get("files_to_review") or []
+    if files:
+        lines.append("**Files to review:**")
+        lines.extend(f"- `{f}`" for f in files[:20])
+        lines.append("")
+    checklists = analysis.get("ethskills_checklists") or []
+    if checklists:
+        lines.append("**Ethskills checklists to apply:**")
+        lines.extend(f"- `ethskills/{c}`" for c in checklists)
+        lines.append("")
+    actions = analysis.get("suggested_actions") or []
+    if actions:
+        lines.append("**Suggested actions:**")
+        lines.extend(f"- {a}" for a in actions)
+        lines.append("")
+    return lines
+
+
 def build_issue_body(hack: Hack, analysis: dict | None) -> str:
     lines = [
         f"**Source:** `{hack.source}`",
@@ -400,34 +436,7 @@ def build_issue_body(hack: Hack, analysis: dict | None) -> str:
     lines.append("")
 
     if analysis:
-        app = analysis.get("applicable", "unknown")
-        emoji = {"yes": "🔴", "maybe": "🟡", "no": "🟢"}.get(app, "⚪")
-        lines.extend([
-            f"## Auto-analysis {emoji}",
-            "",
-            f"- **Applicable to Infrared:** `{app}`",
-            f"- **Severity:** `{analysis.get('severity', '?')}`",
-            f"- **Confidence:** `{analysis.get('confidence', '?')}`",
-            f"- **Attack class:** {analysis.get('attack_class', '?')}",
-            "",
-            "**Reasoning:** " + str(analysis.get("reasoning", "_(none)_")),
-            "",
-        ])
-        files = analysis.get("files_to_review") or []
-        if files:
-            lines.append("**Files to review:**")
-            lines.extend(f"- `{f}`" for f in files[:20])
-            lines.append("")
-        checklists = analysis.get("ethskills_checklists") or []
-        if checklists:
-            lines.append("**Ethskills checklists to apply:**")
-            lines.extend(f"- `ethskills/{c}`" for c in checklists)
-            lines.append("")
-        actions = analysis.get("suggested_actions") or []
-        if actions:
-            lines.append("**Suggested actions:**")
-            lines.extend(f"- {a}" for a in actions)
-            lines.append("")
+        lines.extend(_format_analysis_block(analysis))
     else:
         lines.extend([
             "## Manual review prompt",
@@ -496,15 +505,14 @@ def build_comment_body(hack: Hack, analysis: dict | None) -> str:
     if hack.url:
         lines.append(f"**URL:** {hack.url}")
     lines.append("")
+    lines.append("## Report")
+    lines.append("")
     lines.append(hack.description[:2000] or "_(no description available)_")
+    lines.append("")
     if analysis:
-        lines.extend([
-            "",
-            f"**Auto-analysis:** applicable={analysis.get('applicable', '?')}, "
-            f"severity={analysis.get('severity', '?')}",
-            "",
-            str(analysis.get("reasoning", "")),
-        ])
+        lines.extend(_format_analysis_block(analysis))
+    else:
+        lines.append("_(no auto-analysis — ANTHROPIC_API_KEY missing or call failed)_")
     return "\n".join(lines)
 
 
