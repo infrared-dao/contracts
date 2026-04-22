@@ -13,7 +13,7 @@ All integrations are best-effort: missing secrets or failing services are
 logged and skipped. The workflow does not fail on external service state.
 
 Environment variables (all optional except where noted):
-  GITHUB_TOKEN, GITHUB_REPOSITORY     required to open issues
+  GITHUB_TOKEN, GITHUB_REPOSITORY     required to open/comment on issues
   SLACK_BOT_TOKEN, SLACK_CHANNEL_ID   required to fetch any hacks
   SLACK_ALLOWED_AUTHORS               optional comma-separated allowlist of
                                       Slack user / bot_id / app_id / username
@@ -24,6 +24,9 @@ Environment variables (all optional except where noted):
   MAX_HACKS_PER_RUN                   per-run cap (default 3)
   LOOKBACK_DAYS                       how many days of Slack history to scan
                                       (default 2; bump for discovery/backfill)
+  GITHUB_STEP_SUMMARY                 set by GH Actions; filtered/duplicate
+                                      hacks are written here instead of
+                                      opening issues.
 """
 
 import argparse
@@ -202,9 +205,54 @@ def fetch_slack() -> list[Hack]:
 
 
 
+# ---------- github issue listing ----------
+
+RECENT_ISSUES_LOOKBACK_DAYS = 14
+
+
+def fetch_recent_issues() -> list[dict]:
+    """Fetch recent open hack-monitor issues for duplicate detection.
+
+    Returns a list of {"number", "title", "body"} dicts. Empty on any error
+    or missing auth — dedup is best-effort, not correctness-critical.
+    """
+    token = os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not token or not repo:
+        return []
+    since = (datetime.now(timezone.utc) - timedelta(days=RECENT_ISSUES_LOOKBACK_DAYS)).isoformat()
+    try:
+        r = requests.get(
+            f"https://api.github.com/repos/{repo}/issues",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            params={"labels": "hack-monitor", "state": "open", "per_page": 50, "since": since},
+            timeout=HTTP_TIMEOUT,
+        )
+        r.raise_for_status()
+        issues = []
+        for item in r.json():
+            # /issues returns PRs too; skip them
+            if "pull_request" in item:
+                continue
+            issues.append({
+                "number": item.get("number"),
+                "title": item.get("title", ""),
+                "body": (item.get("body") or "")[:500],
+            })
+        log.info(f"github: fetched {len(issues)} recent open hack-monitor issues")
+        return issues
+    except Exception as e:
+        log.warning(f"github: fetching recent issues failed: {e}")
+        return []
+
+
 # ---------- analysis ----------
 
-def analyze_with_claude(hack: Hack, src_files: list[str]) -> dict | None:
+def analyze_with_claude(hack: Hack, src_files: list[str], recent_issues: list[dict]) -> dict | None:
     key = os.environ.get("ANTHROPIC_API_KEY")
     if not key:
         return None
@@ -217,6 +265,23 @@ def analyze_with_claude(hack: Hack, src_files: list[str]) -> dict | None:
     file_summary = "\n".join(f"- {f}" for f in sorted(src_files)[:80])
     loss = f"${hack.loss_usd:,.0f}" if hack.loss_usd else "unknown"
 
+    if recent_issues:
+        issues_block = "\n\n".join(
+            f"#{i['number']} · {i['title']}\n{i['body'][:400]}" for i in recent_issues
+        )
+        duplicate_section = f"""## Recent open hack-monitor issues
+
+Each block is an existing open GitHub issue about a prior hack report. If
+the new report below is about the same underlying incident as any of
+these (same protocol, same attack, same asset — even if the report angle
+is different), set `duplicate_of` to that issue number. Otherwise, set
+it to null.
+
+{issues_block}
+"""
+    else:
+        duplicate_section = "## Recent open hack-monitor issues\n\n(none)\n"
+
     prompt = f"""You are reviewing a DeFi security incident against the Infrared Protocol codebase.
 
 Infrared is a liquid staking protocol on Berachain. Key components:
@@ -225,6 +290,7 @@ Infrared is a liquid staking protocol on Berachain. Key components:
 - UUPS upgradeable contracts with ERC-7201 namespaced storage
 - BerachainRewardsVault / BGT integration
 - Multi-token reward distribution (MultiRewards)
+- Cross-chain bridging uses LayerZero with a 2-of-2 DVN setup (LayerZero Labs + Berachain nodes)
 
 ## Hack report
 
@@ -240,22 +306,34 @@ Infrared is a liquid staking protocol on Berachain. Key components:
 
 {file_summary}
 
+{duplicate_section}
 ## Your task
 
-Assess whether this exploit pattern could apply to Infrared. Respond with ONLY a JSON object, no prose:
+Assess whether this exploit pattern could apply to Infrared, and whether
+it duplicates an existing open issue. Respond with ONLY a JSON object,
+no prose:
 
 {{
   "applicable": "yes" | "no" | "maybe",
   "severity": "critical" | "high" | "medium" | "low" | "info",
   "confidence": "high" | "medium" | "low",
   "attack_class": "short label, e.g. 'price manipulation', 'reentrancy'",
+  "duplicate_of": null | <issue_number from the list above>,
   "files_to_review": ["src/path/to/file.sol", ...],
   "ethskills_checklists": ["evm-audit-*.md", ...],
   "reasoning": "2-4 sentences on why this does or does not apply to Infrared specifically",
   "suggested_actions": ["concrete next step", ...]
 }}
 
-Be strict: if the exploit is unrelated to Infrared's threat model (bridges we don't use, oracles we don't integrate, CEX exploits, chains we don't deploy to), answer "no" with low severity. Only answer "yes" when you can point to specific files or patterns present in the file list above."""
+Be strict on applicability: if the exploit is unrelated to Infrared's
+threat model (bridges we don't use, oracles we don't integrate, CEX
+exploits, chains we don't deploy to, single-DVN designs we don't share),
+answer "no" with low severity. Only answer "yes" when you can point to
+specific files or patterns present in the file list above.
+
+Be strict on duplicates: only set `duplicate_of` when the issue listed
+above is clearly about the same underlying incident. Different incidents
+sharing an attack class are NOT duplicates."""
 
     try:
         client = anthropic.Anthropic(api_key=key)
@@ -354,6 +432,68 @@ def build_issue_body(hack: Hack, analysis: dict | None) -> str:
     return "\n".join(lines)
 
 
+def post_comment(issue_number: int, body: str) -> bool:
+    """Add a comment to an existing hack-monitor issue (duplicate case)."""
+    token = os.environ.get("GITHUB_TOKEN")
+    repo = os.environ.get("GITHUB_REPOSITORY")
+    if not token or not repo:
+        log.warning("github: missing GITHUB_TOKEN or GITHUB_REPOSITORY, skipping comment")
+        return False
+    try:
+        r = requests.post(
+            f"https://api.github.com/repos/{repo}/issues/{issue_number}/comments",
+            headers={
+                "Authorization": f"Bearer {token}",
+                "Accept": "application/vnd.github+json",
+                "X-GitHub-Api-Version": "2022-11-28",
+            },
+            json={"body": body},
+            timeout=HTTP_TIMEOUT,
+        )
+        r.raise_for_status()
+        log.info(f"commented on issue #{issue_number}: {r.json().get('html_url', '(no url)')}")
+        return True
+    except Exception as e:
+        log.warning(f"github: comment creation failed: {e}")
+        return False
+
+
+def build_comment_body(hack: Hack, analysis: dict | None) -> str:
+    lines = [
+        "**Additional report of the same incident** picked up by the hack monitor.",
+        "",
+        f"**Source:** `{hack.source}`",
+        f"**Observed:** {hack.timestamp}",
+    ]
+    if hack.url:
+        lines.append(f"**URL:** {hack.url}")
+    lines.append("")
+    lines.append(hack.description[:2000] or "_(no description available)_")
+    if analysis:
+        lines.extend([
+            "",
+            f"**Auto-analysis:** applicable={analysis.get('applicable', '?')}, "
+            f"severity={analysis.get('severity', '?')}",
+            "",
+            str(analysis.get("reasoning", "")),
+        ])
+    return "\n".join(lines)
+
+
+def append_step_summary(lines: list[str]) -> None:
+    """Write markdown to the GitHub Actions run summary (falls back to stdout)."""
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    text = "\n".join(lines) + "\n"
+    if not path:
+        print(text)
+        return
+    try:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(text)
+    except OSError as e:
+        log.warning(f"github: writing step summary failed: {e}")
+
+
 def open_issue(hack: Hack, analysis: dict | None) -> bool:
     token = os.environ.get("GITHUB_TOKEN")
     repo = os.environ.get("GITHUB_REPOSITORY")
@@ -426,18 +566,58 @@ def main() -> int:
         new_hacks = new_hacks[:max_hacks]
 
     src_files = [str(p) for p in SRC_DIR.rglob("*.sol")] if SRC_DIR.is_dir() else []
+    recent_issues = [] if args.dry_run else fetch_recent_issues()
+
+    summary_rows: list[str] = []
 
     for hack in new_hacks:
         log.info(f"processing: [{hack.source}] {hack.title[:80]}")
-        analysis = analyze_with_claude(hack, src_files)
+        analysis = analyze_with_claude(hack, src_files, recent_issues)
+        applicable = (analysis or {}).get("applicable", "unknown")
+        dup_of = (analysis or {}).get("duplicate_of")
+        # duplicate_of can arrive as int or string; normalize
+        try:
+            dup_of = int(dup_of) if dup_of not in (None, "", "null") else None
+        except (TypeError, ValueError):
+            dup_of = None
+
         if args.dry_run:
-            print(f"\n{'=' * 70}\n[hack-monitor] {hack.title[:100]}\n{'=' * 70}")
+            disposition = (
+                f"duplicate of #{dup_of}" if dup_of
+                else "filtered (not applicable)" if applicable == "no"
+                else "would open new issue"
+            )
+            print(f"\n{'=' * 70}\n[hack-monitor] {hack.title[:100]}\n[{disposition}]\n{'=' * 70}")
             print(build_issue_body(hack, analysis))
+            continue
+
+        if dup_of:
+            post_comment(dup_of, build_comment_body(hack, analysis))
+            summary_rows.append(f"| 🔗 | {hack.title[:80]} | Comment added to #{dup_of} |")
+        elif applicable == "no":
+            reason = (analysis or {}).get("reasoning", "")
+            summary_rows.append(f"| 🟢 | {hack.title[:80]} | Filtered as not applicable — {reason[:200]} |")
+            log.info(f"skipping issue creation (applicable=no): {hack.title[:80]}")
         else:
-            open_issue(hack, analysis)
-            # Mark seen regardless: avoid retry loops on flaky data.
-            # Issue creation failures are already logged for humans to notice.
-            seen_ids.add(hack.id)
+            opened = open_issue(hack, analysis)
+            emoji = "🔴" if applicable == "yes" else "🟡" if applicable == "maybe" else "⚪"
+            status = "issue opened" if opened else "issue creation failed"
+            summary_rows.append(f"| {emoji} | {hack.title[:80]} | {status} (applicable={applicable}) |")
+
+        # Mark seen regardless: avoid retry loops on flaky data.
+        seen_ids.add(hack.id)
+
+    if not args.dry_run and summary_rows:
+        today = datetime.now(timezone.utc).date().isoformat()
+        append_step_summary([
+            f"## Hack monitor triage — {today}",
+            "",
+            f"Processed {len(new_hacks)} new hack(s).",
+            "",
+            "| Status | Title | Disposition |",
+            "|---|---|---|",
+            *summary_rows,
+        ])
 
     if not args.dry_run:
         state["seen_ids"] = sorted(seen_ids)
