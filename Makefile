@@ -536,6 +536,10 @@ health-check: ## Run protocol health checks
 	@echo ""
 	@echo "$(GREEN)Health check complete$(NC)"
 
+health-check-daily: ## Run the daily health-check script locally (mainnet only)
+	@echo "$(GREEN)=== Daily health check (mainnet) ===$(NC)"
+	@RPC_URL_MAINNET=$(RPC_URL_mainnet) python3 scripts/health_check.py
+
 monitor-queue: ## Monitor withdrawal queue depth
 	@echo "$(YELLOW)Monitoring withdrawal queue...$(NC)"
 	@while true; do \

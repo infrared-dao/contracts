@@ -1,0 +1,82 @@
+name: health-check
+
+# Daily on-chain protocol health check for Infrared mainnet.
+# Collects state, compares against yesterday's snapshot (persisted via
+# actions/cache), posts a digest to Slack, and opens a GitHub issue when
+# any CRITICAL signal trips.
+#
+# Philosophy: slow-moving protocol-level health only. Per-transaction
+# anomalies stay with Hypernative / the infrared-alerts workflow.
+
+on:
+  schedule:
+    # 14:00 UTC daily — one hour after hack-monitor so cache contention is nil
+    - cron: '0 14 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: health-check
+  cancel-in-progress: false
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install requests web3
+
+      - name: Restore health-snapshot cache
+        uses: actions/cache/restore@v4
+        with:
+          path: .github/security/health-snapshot.json
+          key: health-snapshot-${{ github.run_id }}
+          restore-keys: |
+            health-snapshot-
+
+      - name: Run health check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          INFRARED_HEALTH_CHANNEL_ID: ${{ secrets.INFRARED_HEALTH_CHANNEL_ID }}
+          INFRARED_ESCALATION_MENTION: ${{ secrets.INFRARED_ESCALATION_MENTION }}
+          RPC_URL_MAINNET: ${{ secrets.RPC_URL_MAINNET }}
+        run: python3 scripts/health_check.py
+
+      - name: Save health-snapshot cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: .github/security/health-snapshot.json
+          key: health-snapshot-${{ github.run_id }}
+
+      - name: Notify Slack on workflow failure
+        if: failure()
+        env:
+          SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+          INFRARED_HEALTH_CHANNEL_ID: ${{ secrets.INFRARED_HEALTH_CHANNEL_ID }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          if [ -z "$SLACK_BOT_TOKEN" ] || [ -z "$INFRARED_HEALTH_CHANNEL_ID" ]; then
+            echo "canary: slack config missing, skipping"
+            exit 0
+          fi
+          curl -sS -X POST https://slack.com/api/chat.postMessage \
+            -H "Authorization: Bearer $SLACK_BOT_TOKEN" \
+            -H "Content-Type: application/json; charset=utf-8" \
+            --data "{\"channel\":\"$INFRARED_HEALTH_CHANNEL_ID\",\"text\":\":rotating_light: *health-check* workflow failed. Check: $RUN_URL\"}" \
+            > /dev/null
