@@ -49,7 +49,8 @@ jobs:
           SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
           SLACK_ALLOWED_AUTHORS: ${{ secrets.SLACK_ALLOWED_AUTHORS }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          MAX_HACKS_PER_RUN: '3'
+          MAX_HACKS_PER_RUN: '5'
+          LOOKBACK_DAYS: '7'
         run: python3 scripts/hack_monitor.py
 
       - name: Commit updated seen-hacks state
