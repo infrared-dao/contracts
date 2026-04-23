@@ -209,8 +209,8 @@ contract InfraredBERAKeeper is Script {
         strRaw = json.parseRaw(".validator_index");
         validatorIndex = abi.decode(strRaw, (uint256));
 
-        strRaw = json.parseRaw(".validator_leaf");
-        validatorLeaf = abi.decode(strRaw, (bytes32));
+        // strRaw = json.parseRaw(".validator_leaf");
+        // validatorLeaf = abi.decode(strRaw, (bytes32));
 
         strRaw = json.parseRaw(".balance_leaf");
         balanceLeaf = abi.decode(strRaw, (bytes32));
@@ -385,8 +385,8 @@ contract InfraredBERAKeeper is Script {
         strRaw = json.parseRaw(".validator_index");
         validatorIndex = abi.decode(strRaw, (uint256));
 
-        strRaw = json.parseRaw(".validator_leaf");
-        validatorLeaf = abi.decode(strRaw, (bytes32));
+        // strRaw = json.parseRaw(".validator_leaf");
+        // validatorLeaf = abi.decode(strRaw, (bytes32));
 
         strRaw = json.parseRaw(".balance_leaf");
         balanceLeaf = abi.decode(strRaw, (bytes32));

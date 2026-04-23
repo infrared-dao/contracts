@@ -22,7 +22,8 @@
     {"name": "wiBGT",                    "address": "0x4f3C10D2bC480638048Fa67a7D00237a33670C1B", "role": "wrapped iBGT"},
     {"name": "BatchClaimor",             "address": "0x1D6844b42784d3ADbD7fDFa5887d56d22Aa9FB67", "role": "batch reward claims"},
     {"name": "MerkleDistributor",        "address": "0x5F791523314ca809A1146184311e35001b6E6FC8", "role": "merkle reward distribution"},
-    {"name": "BYUSD reward distributor", "address": "0x2114079132C56827237f581eF1a0625680d29576", "role": "BYUSD distributor"}
+    {"name": "BYUSD reward distributor", "address": "0x2114079132C56827237f581eF1a0625680d29576", "role": "BYUSD distributor"},
+    {"name": "FlashSwap",                "address": "0x3339dd891329987d0e667209280d14849b75bd62", "role": "Auction bot extension"}
   ],
   "multisigs": [
     {"name": "GOVERNANCE_ROLE multisig", "address": "0x182a31A27A0D39d735b31e80534CFE1fCd92c38f", "role": "highest privilege: upgrades, fee config, validator set"}
@@ -33,6 +34,7 @@
     {"name": "Compound keeper",  "address": "TBD", "role": "triggers IBERAFeeReceivor.sweep and InfraredBERA.compound — recurring is NORMAL"}
   ],
   "treasury": [
-    {"name": "Protocol treasury", "address": "TBD", "role": "collects protocol fees; large inbound flows from Infrared / InfraredBERAFeeReceivor are EXPECTED"}
+    {"name": "Protocol treasury 1", "address": "0x182a31A27A0D39d735b31e80534CFE1fCd92c38f", "role": "collects protocol fees; large inbound flows from Infrared / InfraredBERAFeeReceivor are EXPECTED"},
+    {"name": "Protocol treasury 2", "address": "0x242D55c9404E0Ed1fD37dB1f00D60437820fe4f0", "role": "collects charm fees"}
   ]
 }

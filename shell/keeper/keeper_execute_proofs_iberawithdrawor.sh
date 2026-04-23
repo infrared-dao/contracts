@@ -12,8 +12,8 @@ DEPOSITOR=0x51761dC3fFB5B54186a70ef1d55c44153671D1FF
 # IBERA="0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5"
 
 # common
-AMOUNT=5000000000000000000000000
-PROOFS_PATH="/tests/data/proof5.json"
+AMOUNT=0
+PROOFS_PATH="/tests/data/proof_Bepolia_Luganodes_exit.json"
 
 forge script script/keeper/InfraredBERAKeeper.s.sol:InfraredBERAKeeper \
     --sig "executeWithdrawProofs(address,address,uint256,string)" $WITHDRAWOR $IBERA $AMOUNT $PROOFS_PATH \
