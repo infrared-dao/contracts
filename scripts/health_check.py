@@ -19,14 +19,21 @@ Signals:
     - Exchange rate monotonic: rate_today >= rate_yesterday
     - IR boost concentration: sum(BGT.boosted(IR, p) for p in IR validators)
       / BGT.boosts(IR) >= 1/2
+    - IR unboosted BGT cap: unboosted / (boosts + queued + unboosted) <= 10%
+    - iBGT collateralization: iBGT.totalSupply() <= total IR BGT holdings
+    - Paused state: none of iBERA / Depositor / Withdrawor paused
 
   INFO (digest only, no issue)
     - 24h deltas on: iBERA deposits, iBERA totalSupply, exchange rate,
       iBGT totalSupply, BGT.boosts(IR), BGT.queuedBoost(IR),
-      BGT.unboostedBalanceOf(IR)
+      BGT.unboostedBalanceOf(IR), FeeReceivor BERA balance
     - Implied iBERA APR from exchange-rate delta (annualized)
     - Validator set diff (added / removed pubkeys)
     - Active validator count
+    - Per-validator BGT boost stats (avg / min / max)
+    - Per-validator BERA stake stats (avg / min / max)
+    - Auctioned vs. IR-allocated validators (Dutch auction winners)
+    - Withdrawor reserves vs. queued amount
 
 Environment variables:
   RPC_URL_MAINNET                 required; HTTPS JSON-RPC endpoint
@@ -56,12 +63,17 @@ STATE_PATH = Path(".github/security/health-snapshot.json")
 HTTP_TIMEOUT = 30
 SECONDS_PER_YEAR = 365 * 24 * 60 * 60
 BOOST_CONCENTRATION_FLOOR = 1 / 2
+UNBOOSTED_BGT_CAP = 0.10  # unboosted / total IR BGT must stay below this
 
 # Mainnet addresses — mirror Makefile defaults
 INFRARED = Web3.to_checksum_address("0xb71b3DaEA39012Fb0f2B14D2a9C86da9292fC126")
 IBERA = Web3.to_checksum_address("0x9b6761bf2397Bb5a6624a856cC84A3A14Dcd3fe5")
 IBGT = Web3.to_checksum_address("0xac03CABA51e17c86c921E1f6CBFBdC91F8BB2E6b")
 BGT = Web3.to_checksum_address("0x656b95E550C07a9ffe548bd4085c72418Ceb1dba")
+IBERA_DEPOSITOR = Web3.to_checksum_address("0x04CddC538ea65908106416986aDaeCeFD4CAB7D7")
+IBERA_WITHDRAWOR = Web3.to_checksum_address("0x8c0E122960dc2E97dc0059c07d6901Dce72818E1")
+IBERA_FEE_RECEIVOR = Web3.to_checksum_address("0xf6a4A6aCECd5311327AE3866624486b6179fEF97")
+CUTTING_BOARD_AUCTION = Web3.to_checksum_address("0x50Ab64a24268b79dd10Dab18c59AFeF256E6DC84")
 
 # Minimal ABIs — only the methods this script calls
 INFRARED_ABI = [
@@ -81,6 +93,26 @@ IBERA_ABI = [
      "inputs": [], "outputs": [{"type": "uint256"}]},
     {"name": "totalSupply", "type": "function", "stateMutability": "view",
      "inputs": [], "outputs": [{"type": "uint256"}]},
+    {"name": "stakes", "type": "function", "stateMutability": "view",
+     "inputs": [{"type": "bytes"}], "outputs": [{"type": "uint256"}]},
+    {"name": "paused", "type": "function", "stateMutability": "view",
+     "inputs": [], "outputs": [{"type": "bool"}]},
+]
+PAUSABLE_ABI = [
+    {"name": "paused", "type": "function", "stateMutability": "view",
+     "inputs": [], "outputs": [{"type": "bool"}]},
+]
+WITHDRAWOR_ABI = [
+    {"name": "reserves", "type": "function", "stateMutability": "view",
+     "inputs": [], "outputs": [{"type": "uint256"}]},
+    {"name": "getQueuedAmount", "type": "function", "stateMutability": "view",
+     "inputs": [], "outputs": [{"type": "uint256"}]},
+    {"name": "paused", "type": "function", "stateMutability": "view",
+     "inputs": [], "outputs": [{"type": "bool"}]},
+]
+AUCTION_ABI = [
+    {"name": "isValidatorAllocated", "type": "function", "stateMutability": "view",
+     "inputs": [{"type": "bytes"}], "outputs": [{"type": "bool"}]},
 ]
 IBGT_ABI = [
     {"name": "totalSupply", "type": "function", "stateMutability": "view",
@@ -114,6 +146,18 @@ class Snapshot:
     bgt_unboosted_ir: int = 0
     validator_pubkeys: list[str] = field(default_factory=list)
     boost_to_own_set: int = 0  # sum of boosted(IR, p) across IR validators
+    # Per-validator (aligned with validator_pubkeys). Empty on RPC failure.
+    per_validator_boosts: list[int] = field(default_factory=list)
+    per_validator_bera_stakes: list[int] = field(default_factory=list)
+    # Dutch-auction winners currently controlling IR validator allocations.
+    auctioned_pubkeys: list[str] = field(default_factory=list)
+    # Operational state.
+    fee_receivor_balance: int = 0
+    withdrawor_reserves: int = 0
+    withdrawor_queued: int = 0
+    ibera_paused: bool = False
+    depositor_paused: bool = False
+    withdrawor_paused: bool = False
 
     @property
     def exchange_rate(self) -> float:
@@ -125,6 +169,10 @@ class Snapshot:
         return self.ibera_deposits / self.ibera_total_supply
 
     @property
+    def total_ir_bgt(self) -> int:
+        return self.bgt_boosts_ir + self.bgt_queued_ir + self.bgt_unboosted_ir
+
+    @property
     def boost_concentration(self) -> float:
         # Ratio of IR's BGT that lands on IR-operated validators. 1.0 when
         # IR hasn't placed any boosts yet (vacuously concentrated).
@@ -132,13 +180,23 @@ class Snapshot:
             return 1.0
         return self.boost_to_own_set / self.bgt_boosts_ir
 
+    @property
+    def unboosted_fraction(self) -> float:
+        total = self.total_ir_bgt
+        if total == 0:
+            return 0.0
+        return self.bgt_unboosted_ir / total
+
 
 def load_snapshot() -> Snapshot | None:
     if not STATE_PATH.exists():
         return None
     try:
         raw = json.loads(STATE_PATH.read_text())
-        return Snapshot(**raw)
+        # Drop unknown keys so snapshots written by newer schema versions still load.
+        known = {f.name for f in Snapshot.__dataclass_fields__.values()}
+        filtered = {k: v for k, v in raw.items() if k in known}
+        return Snapshot(**filtered)
     except (OSError, json.JSONDecodeError, TypeError) as e:
         log.warning(f"snapshot: failed to read {STATE_PATH}: {e}; treating as first run")
         return None
@@ -156,19 +214,48 @@ def _collect(w3: Web3) -> Snapshot:
     ibera = w3.eth.contract(address=IBERA, abi=IBERA_ABI)
     ibgt = w3.eth.contract(address=IBGT, abi=IBGT_ABI)
     bgt = w3.eth.contract(address=BGT, abi=BGT_ABI)
+    depositor = w3.eth.contract(address=IBERA_DEPOSITOR, abi=PAUSABLE_ABI)
+    withdrawor = w3.eth.contract(address=IBERA_WITHDRAWOR, abi=WITHDRAWOR_ABI)
+    auction = w3.eth.contract(address=CUTTING_BOARD_AUCTION, abi=AUCTION_ABI)
 
     validators = infrared.functions.infraredValidators().call()
     pubkeys = [v[0] for v in validators]  # raw bytes
     pubkey_hex = ["0x" + p.hex() for p in pubkeys]
 
-    # Per-validator IR boost. Sum instead of batching — the set is small
-    # (tens, not hundreds) and a multicall helper would be overkill here.
-    boost_to_own_set = 0
-    for pk in pubkeys:
+    # Per-validator IR boost + per-validator BERA stake + auction allocation.
+    # Set is small (tens, not hundreds); sequential calls are fine, a multicall
+    # helper would be overkill. Per-call try/except so one revert doesn't
+    # torpedo the whole snapshot.
+    per_validator_boosts: list[int] = []
+    per_validator_bera_stakes: list[int] = []
+    auctioned_pubkeys: list[str] = []
+    for pk, pk_hex in zip(pubkeys, pubkey_hex):
         try:
-            boost_to_own_set += bgt.functions.boosted(INFRARED, pk).call()
+            per_validator_boosts.append(bgt.functions.boosted(INFRARED, pk).call())
         except ContractLogicError as e:
             log.warning(f"bgt.boosted({pk.hex()}) reverted: {e}")
+            per_validator_boosts.append(0)
+        try:
+            per_validator_bera_stakes.append(ibera.functions.stakes(pk).call())
+        except ContractLogicError as e:
+            log.warning(f"iBERA.stakes({pk.hex()}) reverted: {e}")
+            per_validator_bera_stakes.append(0)
+        try:
+            if auction.functions.isValidatorAllocated(pk).call():
+                auctioned_pubkeys.append(pk_hex)
+        except ContractLogicError as e:
+            log.warning(f"auction.isValidatorAllocated({pk.hex()}) reverted: {e}")
+
+    boost_to_own_set = sum(per_validator_boosts)
+
+    # Pause flags. If a pausable() reverts (e.g., contract isn't Pausable),
+    # default to False rather than breaking the snapshot.
+    def _paused(contract) -> bool:
+        try:
+            return bool(contract.functions.paused().call())
+        except ContractLogicError as e:
+            log.warning(f"paused() reverted on {contract.address}: {e}")
+            return False
 
     return Snapshot(
         ts=datetime.now(timezone.utc).isoformat(timespec="seconds"),
@@ -182,6 +269,15 @@ def _collect(w3: Web3) -> Snapshot:
         bgt_unboosted_ir=bgt.functions.unboostedBalanceOf(INFRARED).call(),
         validator_pubkeys=pubkey_hex,
         boost_to_own_set=boost_to_own_set,
+        per_validator_boosts=per_validator_boosts,
+        per_validator_bera_stakes=per_validator_bera_stakes,
+        auctioned_pubkeys=auctioned_pubkeys,
+        fee_receivor_balance=w3.eth.get_balance(IBERA_FEE_RECEIVOR),
+        withdrawor_reserves=withdrawor.functions.reserves().call(),
+        withdrawor_queued=withdrawor.functions.getQueuedAmount().call(),
+        ibera_paused=_paused(ibera),
+        depositor_paused=_paused(depositor),
+        withdrawor_paused=_paused(withdrawor),
     )
 
 
@@ -210,12 +306,38 @@ def _fmt_wei(x: int) -> str:
 
 
 def _fmt_delta(current: int, prior: int | None) -> str:
+    """Format a uint256 as `current (Δ, pct%)`. Falls back cleanly on first run."""
     if prior is None:
-        return "n/a (first run)"
+        return f"{_fmt_wei(current)} (Δ n/a, first run)"
     delta = current - prior
     pct = (delta / prior * 100) if prior else 0.0
     sign = "+" if delta >= 0 else ""
     return f"{_fmt_wei(current)} ({sign}{_fmt_wei(delta)}, {sign}{pct:.2f}%)"
+
+
+def _fmt_delta_float(current: float, prior: float | None, precision: int = 10) -> str:
+    """Like _fmt_delta but for ratios / floats (exchange rate, concentration)."""
+    if prior is None or prior == 0:
+        return f"{current:.{precision}f} (no baseline)"
+    delta = current - prior
+    pct = delta / prior * 100
+    sign = "+" if delta >= 0 else ""
+    return f"{current:.{precision}f} ({sign}{delta:.{precision}f}, {sign}{pct:.2f}%)"
+
+
+def _fmt_pct(fraction: float) -> str:
+    return f"{fraction * 100:.2f}%"
+
+
+def _fmt_stats_wei(values: list[int]) -> str:
+    """Format a list of wei amounts as `total=X avg=Y min=Z max=W (n=N)`."""
+    if not values:
+        return "n/a (no data)"
+    n = len(values)
+    total = sum(values)
+    avg = total // n
+    return (f"total={_fmt_wei(total)} avg={_fmt_wei(avg)} "
+            f"min={_fmt_wei(min(values))} max={_fmt_wei(max(values))} (n={n})")
 
 
 def compute_signals(current: Snapshot, prior: Snapshot | None) -> list[Signal]:
@@ -247,13 +369,60 @@ def compute_signals(current: Snapshot, prior: Snapshot | None) -> list[Signal]:
 
     # Boost concentration ≥ floor (see BOOST_CONCENTRATION_FLOOR).
     ratio = current.boost_concentration
+    prior_ratio = prior.boost_concentration if prior is not None else None
     sigs.append(Signal(
         name="IR boost concentration",
         severity="critical",
         triggered=ratio < BOOST_CONCENTRATION_FLOOR,
-        detail=(f"{ratio * 100:.2f}% of IR's {_fmt_wei(current.bgt_boosts_ir)} BGT boost "
+        detail=(f"{_fmt_pct(ratio)} of IR's {_fmt_wei(current.bgt_boosts_ir)} BGT boost "
                 f"lands on {len(current.validator_pubkeys)} IR validators "
-                f"(floor: {BOOST_CONCENTRATION_FLOOR * 100:.2f}%)"),
+                f"(floor: {_fmt_pct(BOOST_CONCENTRATION_FLOOR)}, "
+                f"Δ={_fmt_delta_float(ratio, prior_ratio, 4)})"),
+    ))
+
+    # Unboosted-BGT cap. Unboosted BGT is idle — keepers should be queueing
+    # it into boosts. Sustained high unboosted fraction means harvests are
+    # piling up faster than boost activation, or queueBoost is broken.
+    unboosted_frac = current.unboosted_fraction
+    prior_unboosted = prior.unboosted_fraction if prior is not None else None
+    sigs.append(Signal(
+        name="IR unboosted BGT cap",
+        severity="critical",
+        triggered=unboosted_frac > UNBOOSTED_BGT_CAP,
+        detail=(f"{_fmt_pct(unboosted_frac)} of {_fmt_wei(current.total_ir_bgt)} total IR BGT "
+                f"is unboosted (cap: {_fmt_pct(UNBOOSTED_BGT_CAP)}, "
+                f"Δ={_fmt_delta_float(unboosted_frac, prior_unboosted, 4)})"),
+    ))
+
+    # iBGT collateralization: every iBGT in circulation must be backed by
+    # BGT in Infrared (whether boosted, queued, or unboosted). Undercollat
+    # means someone minted iBGT without the corresponding BGT backing.
+    undercollat = current.ibgt_total_supply > current.total_ir_bgt
+    cover_ratio = (current.total_ir_bgt / current.ibgt_total_supply
+                   if current.ibgt_total_supply else float("inf"))
+    sigs.append(Signal(
+        name="iBGT collateralization",
+        severity="critical",
+        triggered=undercollat,
+        detail=(f"total IR BGT={_fmt_wei(current.total_ir_bgt)}, "
+                f"iBGT supply={_fmt_wei(current.ibgt_total_supply)}, "
+                f"coverage={cover_ratio:.4f}x"),
+    ))
+
+    # Pause flags. Any paused staking contract blocks user flows and should
+    # page immediately — these toggles are governance-only and rare.
+    pause_flags = {
+        "iBERA": current.ibera_paused,
+        "Depositor": current.depositor_paused,
+        "Withdrawor": current.withdrawor_paused,
+    }
+    paused_names = [k for k, v in pause_flags.items() if v]
+    sigs.append(Signal(
+        name="iBERA pause state",
+        severity="critical",
+        triggered=bool(paused_names),
+        detail=("paused: " + ", ".join(paused_names)) if paused_names
+               else "iBERA, Depositor, Withdrawor all unpaused",
     ))
 
     # --- INFO ---
@@ -270,15 +439,16 @@ def compute_signals(current: Snapshot, prior: Snapshot | None) -> list[Signal]:
         severity="info", triggered=False,
         detail=_fmt_delta(current.ibera_total_supply, prior_or("ibera_total_supply")),
     ))
-    if prior is not None and prior.exchange_rate > 0 and current.exchange_rate > 0:
-        rate_delta = current.exchange_rate - prior.exchange_rate
+    prior_rate = prior.exchange_rate if prior is not None and prior.exchange_rate > 0 else None
+    if prior_rate is not None and current.exchange_rate > 0:
+        rate_delta = current.exchange_rate - prior_rate
         # Annualize assuming ~24h between snapshots; cron pins this.
-        apr = (rate_delta / prior.exchange_rate) * 365 * 100
+        apr = (rate_delta / prior_rate) * 365 * 100
         sigs.append(Signal(
             name="iBERA exchange rate Δ24h",
             severity="info", triggered=False,
-            detail=(f"prior={prior.exchange_rate:.10f}, current={current.exchange_rate:.10f}, "
-                    f"implied APR={apr:+.2f}%"),
+            detail=f"{_fmt_delta_float(current.exchange_rate, prior_rate, 10)}, "
+                   f"implied APR={apr:+.2f}%",
         ))
     else:
         sigs.append(Signal(
@@ -306,6 +476,77 @@ def compute_signals(current: Snapshot, prior: Snapshot | None) -> list[Signal]:
         name="IR unboosted BGT",
         severity="info", triggered=False,
         detail=_fmt_delta(current.bgt_unboosted_ir, prior_or("bgt_unboosted_ir")),
+    ))
+    sigs.append(Signal(
+        name="Total IR BGT holdings",
+        severity="info", triggered=False,
+        detail=_fmt_delta(current.total_ir_bgt,
+                          prior.total_ir_bgt if prior is not None else None),
+    ))
+
+    # FeeReceivor balance — EL rewards (priority fees + MEV) awaiting sweep.
+    # A monotonically growing balance across multiple days means the sweep
+    # keeper is wedged or compound() isn't being called.
+    sigs.append(Signal(
+        name="FeeReceivor BERA balance",
+        severity="info", triggered=False,
+        detail=_fmt_delta(current.fee_receivor_balance,
+                          prior_or("fee_receivor_balance")),
+    ))
+
+    # Withdrawor reserves vs. queued amount. Shortage means withdrawal
+    # claimants will be blocked until validator exits process.
+    shortage = current.withdrawor_queued - current.withdrawor_reserves
+    if shortage > 0:
+        q_detail = (f"reserves={_fmt_wei(current.withdrawor_reserves)}, "
+                    f"queued={_fmt_wei(current.withdrawor_queued)}, "
+                    f"shortage={_fmt_wei(shortage)}")
+    else:
+        q_detail = (f"reserves={_fmt_wei(current.withdrawor_reserves)}, "
+                    f"queued={_fmt_wei(current.withdrawor_queued)}, "
+                    f"surplus={_fmt_wei(-shortage)}")
+    sigs.append(Signal(
+        name="Withdrawor reserves",
+        severity="info", triggered=False,
+        detail=q_detail,
+    ))
+
+    # Per-validator stake stats. Unevenness is fine (stake migrates as
+    # operators rotate), but surfaces the spread so operators can spot
+    # skew before it matters.
+    sigs.append(Signal(
+        name="Per-validator BGT boost",
+        severity="info", triggered=False,
+        detail=_fmt_stats_wei(current.per_validator_boosts),
+    ))
+    sigs.append(Signal(
+        name="Per-validator BERA stake",
+        severity="info", triggered=False,
+        detail=_fmt_stats_wei(current.per_validator_bera_stakes),
+    ))
+
+    # Dutch-auction winners currently controlling IR validator allocations.
+    # High count relative to total = more of the cutting board is set by
+    # external bidders rather than IR's chosen allocations.
+    auctioned = current.auctioned_pubkeys
+    n_val = len(current.validator_pubkeys)
+    n_auctioned = len(auctioned)
+    prior_auctioned = set(prior.auctioned_pubkeys) if prior is not None else set()
+    current_auctioned_set = set(auctioned)
+    newly_auctioned = sorted(current_auctioned_set - prior_auctioned)
+    exited_auction = sorted(prior_auctioned - current_auctioned_set)
+    auction_parts = [f"{n_auctioned}/{n_val} auctioned, "
+                     f"{n_val - n_auctioned} IR-allocated"]
+    if newly_auctioned:
+        auction_parts.append(f"+{len(newly_auctioned)}: "
+                             f"{', '.join(p[:14] + '…' for p in newly_auctioned)}")
+    if exited_auction:
+        auction_parts.append(f"-{len(exited_auction)}: "
+                             f"{', '.join(p[:14] + '…' for p in exited_auction)}")
+    sigs.append(Signal(
+        name="Auctioned validators",
+        severity="info", triggered=False,
+        detail="; ".join(auction_parts),
     ))
 
     # Validator set diff + count.
@@ -379,8 +620,14 @@ def render_headline(current: Snapshot, prior: Snapshot | None, signals: list[Sig
             rate_pct = (current.exchange_rate - prior.exchange_rate) / prior.exchange_rate * 100
             apr = rate_pct * 365
             parts.append(f"rate {rate_pct:+.4f}% (APR {apr:+.2f}%)")
+        parts.append(f"unboosted {_fmt_pct(current.unboosted_fraction)}")
     else:
-        parts.append(f"IR boost concentration {current.boost_concentration * 100:.1f}%")
+        # First-run fallback — surface the key steady-state readings so the
+        # first digest is useful even without deltas.
+        parts.append(f"{len(current.validator_pubkeys)} validators "
+                     f"({len(current.auctioned_pubkeys)} auctioned)")
+        parts.append(f"boost concentration {_fmt_pct(current.boost_concentration)}")
+        parts.append(f"unboosted {_fmt_pct(current.unboosted_fraction)}")
 
     return " ".join(parts[:1]) + " " + ", ".join(parts[1:]) + "."
 
