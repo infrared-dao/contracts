@@ -184,9 +184,11 @@ contract InfraredBERAKeeper is Script {
 
     function executeWithdrawProofs(
         address _withdrawor,
+        address _ibera,
         uint256 amount,
         string calldata proofFilePath
     ) public {
+        address _depositor = InfraredBERAV2(_ibera).depositor();
         // set proof data
         string memory json;
         {
@@ -207,8 +209,8 @@ contract InfraredBERAKeeper is Script {
         strRaw = json.parseRaw(".validator_index");
         validatorIndex = abi.decode(strRaw, (uint256));
 
-        strRaw = json.parseRaw(".validator_leaf");
-        validatorLeaf = abi.decode(strRaw, (bytes32));
+        // strRaw = json.parseRaw(".validator_leaf");
+        // validatorLeaf = abi.decode(strRaw, (bytes32));
 
         strRaw = json.parseRaw(".balance_leaf");
         balanceLeaf = abi.decode(strRaw, (bytes32));
@@ -218,29 +220,34 @@ contract InfraredBERAKeeper is Script {
         nextBlockTimestamp = nextBlockTimestamp + 2;
 
         strRaw = json.parseRaw(".validator_data");
-        JsonValidator memory _validator = abi.decode(strRaw, (JsonValidator));
+        {
+            JsonValidator memory _validator =
+                abi.decode(strRaw, (JsonValidator));
 
-        validatorStruct = BeaconRootsVerify.Validator({
-            pubkey: _validator.pubkey,
-            withdrawalCredentials: _validator.withdrawal_credentials,
-            effectiveBalance: _validator.effective_balance,
-            slashed: _validator.slashed,
-            activationEligibilityEpoch: _validator.activation_eligibility_epoch,
-            activationEpoch: _validator.activation_epoch,
-            exitEpoch: _validator.exit_epoch,
-            withdrawableEpoch: _validator.withdrawable_epoch
-        });
+            validatorStruct = BeaconRootsVerify.Validator({
+                pubkey: _validator.pubkey,
+                withdrawalCredentials: _validator.withdrawal_credentials,
+                effectiveBalance: _validator.effective_balance,
+                slashed: _validator.slashed,
+                activationEligibilityEpoch: _validator.activation_eligibility_epoch,
+                activationEpoch: _validator.activation_epoch,
+                exitEpoch: _validator.exit_epoch,
+                withdrawableEpoch: _validator.withdrawable_epoch
+            });
+        }
 
         strRaw = json.parseRaw(".header");
-        JsonHeader memory _header = abi.decode(strRaw, (JsonHeader));
+        {
+            JsonHeader memory _header = abi.decode(strRaw, (JsonHeader));
 
-        header = BeaconRootsVerify.BeaconBlockHeader({
-            slot: _header.slot,
-            proposerIndex: _header.proposer_index,
-            parentRoot: _header.parent_root,
-            stateRoot: _header.state_root,
-            bodyRoot: _header.body_root
-        });
+            header = BeaconRootsVerify.BeaconBlockHeader({
+                slot: _header.slot,
+                proposerIndex: _header.proposer_index,
+                parentRoot: _header.parent_root,
+                stateRoot: _header.state_root,
+                bodyRoot: _header.body_root
+            });
+        }
 
         // bytes32 expectedRoot =
         //     BeaconRootsVerify.calculateBeaconHeaderMerkleRoot(header);
@@ -254,6 +261,9 @@ contract InfraredBERAKeeper is Script {
         // ) revert();
 
         vm.startBroadcast();
+        // queue rebalance
+        InfraredBERAWithdrawor(payable(_withdrawor)).queue(_depositor, amount);
+        // execute withdraw
         InfraredBERAWithdrawor(payable(_withdrawor)).execute{
             value: InfraredBERAWithdrawor(payable(_withdrawor)).getFee()
         }(
@@ -375,8 +385,8 @@ contract InfraredBERAKeeper is Script {
         strRaw = json.parseRaw(".validator_index");
         validatorIndex = abi.decode(strRaw, (uint256));
 
-        strRaw = json.parseRaw(".validator_leaf");
-        validatorLeaf = abi.decode(strRaw, (bytes32));
+        // strRaw = json.parseRaw(".validator_leaf");
+        // validatorLeaf = abi.decode(strRaw, (bytes32));
 
         strRaw = json.parseRaw(".balance_leaf");
         balanceLeaf = abi.decode(strRaw, (bytes32));

@@ -25,3 +25,6 @@
 | MerkleDistributor          | `0x5F791523314ca809A1146184311e35001b6E6FC8` |
 | StakedIR                   | `0xb5E9cfD2751363F38a696626C18DB4aFf7512756` |
 | IRAuction                  | `0x283071D22d8d70340beBD5E09e03262EBC3DEFdb` |
+| CuttingBoardDutchAuction   | `0x50Ab64a24268b79dd10Dab18c59AFeF256E6DC84` |
+| CuttingBoardManager        | `0xFDfC1F27909C0983aF7A5509aa44333e0c00C49c` |
+| CuttingBoardNFT            | `0xEC09569A9A186027EcD1C951F5F80F9a43184fb1` |

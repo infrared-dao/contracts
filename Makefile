@@ -131,7 +131,7 @@ check-exchange-rate: ## Check iBERA/BERA exchange rate
 	@echo "$(YELLOW)iBERA Exchange Rate:$(NC)"
 	@echo "Deposits: $$(cast call $(IBERA_PROXY) 'deposits()(uint256)' --rpc-url $(RPC_URL))"
 	@echo "Total Supply: $$(cast call $(IBERA_PROXY) 'totalSupply()(uint256)' --rpc-url $(RPC_URL))"
-	@echo "iBERA rate (value of 1 iBERA (1e18 wei) in bera)": $$(cast call $(IBERA_RATE) 'getRate()(uint256)' --rpc-url $(RPC_URL))" 
+	@echo "iBERA rate (value of 1 iBERA (1e18 wei) in bera): $$(cast call $(IBERA_RATE) 'getRate()(uint256)' --rpc-url $(RPC_URL))" 
 
 check-protocol-fees: ## Check fees in iBGT, wBERA, HONEY, iBERA
 	@echo "$(YELLOW)Protocol fees accumulated:$(NC)"
@@ -535,6 +535,10 @@ health-check: ## Run protocol health checks
 	@make -s check-exchange-rate
 	@echo ""
 	@echo "$(GREEN)Health check complete$(NC)"
+
+health-check-daily: ## Run the daily health-check script locally (mainnet only)
+	@echo "$(GREEN)=== Daily health check (mainnet) ===$(NC)"
+	@RPC_URL_MAINNET=$(RPC_URL_mainnet) python3 scripts/health_check.py
 
 monitor-queue: ## Monitor withdrawal queue depth
 	@echo "$(YELLOW)Monitoring withdrawal queue...$(NC)"
@@ -1022,3 +1026,14 @@ oft-help: ## Show OFT-specific help and usage
 	@echo "  USER        - Address for balance checks"
 	@echo ""
 	@echo "$(YELLOW)For detailed guide:$(NC) See docs/OFT_COMPLETE_SETUP_GUIDE.md"
+
+# ========================================
+# AI Security Analysis
+# ========================================
+# Ethskills audit-skill pattern scanner. Runs offline against src/,
+# produces a reading list of which checklists apply to which files.
+# Not a vulnerability scanner — see docs/AI_SECURITY.md.
+
+ai-security-scan: ## Run ethskills pattern scanner against src/
+	@mkdir -p ai-reports
+	@python3 scripts/ethskills_analyzer.py

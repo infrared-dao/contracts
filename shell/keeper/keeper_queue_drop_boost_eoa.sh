@@ -9,11 +9,11 @@ RPC_URL="https://rpc.berachain.com"
 SCRIPT="script/keeper/InfraredKeeperScriptEOA.s.sol:InfraredKeeperScriptEOA"
 
 PUBKEYS=(
-    "0x84acfd38a13af12add8d82e1ef0842c4dfc1e4175fae5b8ab73770f9050cbf673cafdbf6d8ab679fe9ea13208f50b485"
+    "0x88be126bfda4eee190e6c01a224272ed706424851e203791c7279aeecb6b503059901db35b1821f1efe4e6b445f5cc9f"
 )
 
 AMOUNTS=(
-    2511088695951128453128
+    178865699943341153058816
 )
 
 IFS=, PUBKEYS_STR="${PUBKEYS[*]}"

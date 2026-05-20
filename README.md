@@ -52,6 +52,8 @@ The Infrared Protocol addresses critical limitations in Berachain's native staki
 | [📍 Deployments](https://infrared.finance/docs/developers/contract-deployments) | Contract addresses by network |
 | [🔍 Audits](https://infrared.finance/docs/audits) | Security audit reports |
 | [📖 NatSpec Docs](https://infrared-dao.github.io/infrared-contracts) | Auto-generated contract documentation |
+| [🔒 Security Policy](./SECURITY.md) | Bug bounty, audits, and responsible disclosure |
+| [⬆️ Upgrade Guide](./docs/UPGRADE_GUIDE.md) | Safe upgrade procedures for upgradeable contracts |
 
 ## Architecture
 
@@ -784,9 +786,8 @@ All audit reports are available in the [audits directory](./audits/) and on our 
 
 ### Bug Bounty
 
-We have an active bug bounty program. Please review our [security policy](./SECURITY.md) for details on:
-- Scope and rewards
-- Responsible disclosure process
+To report a vulnerability, please review our [security policy](./SECURITY.md) for:
+- Scope and responsible disclosure process
 - Out-of-scope vulnerabilities
 
 ### Security Contact

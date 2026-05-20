@@ -627,6 +627,18 @@ contract InfraredMultisigGovernance is BatchScript {
         vm.stopBroadcast();
     }
 
+    function updateIRBribeSplit(
+        bool send,
+        address safe,
+        address payable infrared,
+        uint256 _weight
+    ) external isBatch(safe) {
+        bytes memory data =
+            abi.encodeWithSignature("updateIRBribeSplit(uint256)", _weight);
+        addToBatch(infrared, 0, data);
+        executeBatch(send);
+    }
+
     function updateFee(
         address safe,
         address payable infrared,

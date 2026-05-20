@@ -1,6 +1,8 @@
 # Makefile Quick Reference
 
-**Quick access guide to the most commonly used Makefile commands**
+**Quick access guide to Makefile commands for development, debugging, and emergency operations.**
+
+> **Production note:** In production, reward harvesting is handled by [infrared-dao/backend](https://github.com/infrared-dao/backend), iBERA deposits/withdrawals by [infrared-dao/ibera-keeper](https://github.com/infrared-dao/ibera-keeper), validator strategy by [infrared-dao/infrared-strategy](https://github.com/infrared-dao/infrared-strategy), and bribe auctions by [infrared-dao/auction-bot](https://github.com/infrared-dao/auction-bot). The Makefile commands below are for local development, debugging, and manual emergency intervention.
 
 ---
 
@@ -54,6 +56,11 @@ make format
 | `make check-confirmed` | Confirmed validator stakes |
 | `make check-bgt` | BGT balance |
 | `make check-exchange-rate` | iBERA/BERA exchange rate |
+| `make check-fee-rates` | Display all protocol fee rates (types 0–7) |
+| `make check-protocol-fees` | Accumulated protocol fees (iBGT, wBERA, HONEY, iBERA) |
+| `make check-unboosted-bgt` | Unboosted BGT balance held by Infrared (useful before redeems) |
+| `make check-validators` | List all registered Infrared validators |
+| `make check-ibera-withdrawal-queue` | Total amount queued for iBERA withdrawal |
 | `make health-check` | Run full health check |
 
 **Add parameters:**
@@ -79,11 +86,15 @@ make check-rewards USER=0x...
 | `make keeper-harvest-operator` | Daily | Harvest operator rewards |
 | `make keeper-deposit-validator` | Hourly | Process validator deposits |
 | `make keeper-activate-commissions` | As needed | Activate queued commissions |
+| `make keeper-activate-cutting-board` | As needed | Activate queued cutting board for a validator |
+| `make keeper-claim-incentives` | As needed | Claim bribe incentives from BribeCollector |
 
 **Parameters:**
 ```bash
 make keeper-harvest-vault ASSET=0x... NETWORK=mainnet
 make keeper-queue-boost PUBKEY=0x... AMOUNT=1000000000000000000 NETWORK=mainnet
+make keeper-activate-cutting-board PUBKEY=0x... NETWORK=mainnet
+make keeper-claim-incentives TOKENS=0x...,0x... NETWORK=mainnet
 ```
 
 ---
@@ -131,11 +142,14 @@ make info-fee-types
 ```
 
 **Fee Types:**
-- 0: HarvestVaultFeeRate
-- 1: HarvestBribesFeeRate
-- 2: HarvestOperatorFeeRate
-- 3: HarvestBoostFeeRate
-- 4-7: Protocol rates
+- 0: HarvestOperatorFeeRate
+- 1: HarvestOperatorProtocolRate
+- 2: HarvestVaultFeeRate
+- 3: HarvestVaultProtocolRate
+- 4: HarvestBribesFeeRate
+- 5: HarvestBribesProtocolRate
+- 6: HarvestBoostFeeRate
+- 7: HarvestBoostProtocolRate
 
 **Fee Format:** Basis points (1e6 = 100%)
 - 5% = 50000
@@ -346,10 +360,11 @@ make gov-whitelist-token TOKEN=0x... NETWORK=mainnet
 ## 🔗 Related Documentation
 
 - **Full Operations Guide:** `OPERATIONS.md`
+- **IR Bridge (LayerZero OFT):** `docs/IR_BRIDGE.md`
+- **Cutting Board Auctions:** `docs/CUTTING_BOARD_AUCTIONS.md`
 - **Architecture:** `CLAUDE.md`
-- **Contract Versions:** `CONTRACT_VERSIONS.md`
-- **Cleanup Plan:** `REPO_CLEANUP_PLAN.md`
-- **Security Analysis:** `SECURITY_ANALYSIS.md`
+- **Deployments:** `DEPLOYMENTS.md`
+- **Security:** `SECURITY.md`
 
 ---
 
@@ -383,4 +398,4 @@ make config-validate
 
 **For detailed information, see:** `OPERATIONS.md`
 
-**Last Updated:** October 14, 2025
+**Last Updated:** February 2026

@@ -15,5 +15,8 @@
 | InfraredBERADepositor      | `0x51761dC3fFB5B54186a70ef1d55c44153671D1FF` |
 | InfraredBERAWithdraworLite | `0x901528D1c588662FF75b19Ade33618115131dA84` |
 | InfraredBERAFeeReceivor    | `0xF5740E876bE3902cA727306d0817b86DfDE00908` |
+| CuttingBoardDutchAuction   | `0x0302De7060AaD80f42C72E6463efFa9260C2ffD7` |
+| CuttingBoardNFT            | `0xbf5f2fd942467dc6E6055CD8dF5D360BF4a680bc` |
+| CuttingBoardManager        | `0x5036221140cD9048f19f08B66E54aba0208d464c` |
 
 ---
