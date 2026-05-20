@@ -1,9 +1,5 @@
 # Infrared Protocol 🔴
 
-[![pipeline](https://github.com/infrared-dao/contracts/actions/workflows/pipeline.yml/badge.svg)](https://github.com/infrared-dao/contracts/actions/workflows/pipeline.yml)
-[![Slither analysis](https://github.com/infrared-dao/contracts/actions/workflows/slither.yml/badge.svg)](https://github.com/infrared-dao/contracts/actions/workflows/slither.yml)
-
-
 > **Liquid Staking Infrastructure for Berachain's Proof-of-Liquidity**
 
 Infrared Protocol revolutionizes staking on Berachain by providing liquid staking derivatives (LSDs) that unlock the full potential of BGT and BERA while maintaining exposure to Proof-of-Liquidity rewards.
